@@ -4,12 +4,6 @@
 
 **gjendje** brings state management to multiple storage backends through one consistent API.
 
-## Install
-
-```sh
-pnpm add gjendje
-```
-
 ## Examples
 
 #### localStorage
