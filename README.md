@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/charliebeckstrand/habitat/main/logo.png" alt="Screenshot" width="100" />
+<img src="https://raw.githubusercontent.com/charliebeckstrand/gjendje/main/logo.png" alt="Screenshot" width="100" />
 
 # gjendje
 
@@ -73,7 +73,7 @@ Sets global defaults for all state instances. Call once at app startup before cr
 - `onRegister`
 - `onSync`
 
-[Full configure reference](https://github.com/charliebeckstrand/habitat/blob/main/docs/configure.md) — all options, validation, error handling, and examples.
+[Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md) — all options, validation, error handling, and examples.
 
 ## Scopes
 
@@ -105,7 +105,7 @@ Like `subscribe`, but scoped to a single key within an object value. Only fires 
 #### `intercept(fn)`
 Receives `(next, prev)` before each update. Return the value to store, or return `prev` to reject the change. Returns an `unsubscribe` function.
 
-[Full API reference](https://github.com/charliebeckstrand/habitat/blob/main/docs/api.md) — all methods, promise lifecycle, options, and types.
+[Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md) — all methods, promise lifecycle, options, and types.
 
 ## Middleware
 
@@ -132,7 +132,7 @@ Runs a side effect immediately and re-runs whenever any dependency changes. The 
 
 ## React
 
-[Full React API reference](https://github.com/charliebeckstrand/habitat/blob/main/docs/react.md)
+[Full React API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/react.md)
 
 ## License
 

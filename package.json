@@ -1,6 +1,6 @@
 {
 	"name": "gjendje",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "State that knows where it belongs",
 	"keywords": [
 		"state",
@@ -16,11 +16,11 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/charliebeckstrand/habitat.git"
+		"url": "git+https://github.com/charliebeckstrand/gjendje.git"
 	},
-	"homepage": "https://github.com/charliebeckstrand/habitat#readme",
+	"homepage": "https://github.com/charliebeckstrand/gjendje#readme",
 	"bugs": {
-		"url": "https://github.com/charliebeckstrand/habitat/issues"
+		"url": "https://github.com/charliebeckstrand/gjendje/issues"
 	},
 	"engines": {
 		"node": ">=18.0.0"
