@@ -20,7 +20,7 @@ theme.get()
 theme.set('dark')
 ```
 
-#### Storage Buckets
+#### Storage Buckets API
 ```ts
 import { state } from 'gjendje'
 
