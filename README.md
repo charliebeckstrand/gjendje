@@ -13,10 +13,7 @@ import { state } from 'gjendje'
 const theme = state('theme', {
   default: 'light',
   scope: 'local',
-  ssr: true // optional AsyncLocalStorage
 })
-
-await theme.ready
 
 theme.get()
 ```
