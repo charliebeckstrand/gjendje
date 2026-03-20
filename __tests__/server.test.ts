@@ -1,0 +1,92 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+import { state, withServerSession } from '../src/index.js'
+
+describe('server scope', () => {
+	it('returns default when called outside a session', () => {
+		const user = state('srv-default', { default: null as { id: string } | null, scope: 'server' })
+
+		expect(user.get()).toBeNull()
+
+		user.destroy()
+	})
+
+	it('throws on set outside a session', () => {
+		const user = state('srv-throw', { default: null as { id: string } | null, scope: 'server' })
+
+		expect(() => user.set({ id: '1' })).toThrow('[state]')
+
+		user.destroy()
+	})
+
+	it('reads and writes within a session', async () => {
+		const user = state('srv-readwrite', {
+			default: null as { id: string } | null,
+			scope: 'server',
+		})
+
+		await withServerSession(async () => {
+			user.set({ id: 'abc' })
+
+			expect(user.get()).toEqual({ id: 'abc' })
+		})
+
+		user.destroy()
+	})
+
+	it('isolates state between concurrent sessions', async () => {
+		const requestUser = state('srv-isolate', {
+			default: null as string | null,
+			scope: 'server',
+		})
+
+		const results: Array<string | null> = []
+
+		await Promise.all([
+			withServerSession(async () => {
+				requestUser.set('alice')
+				await new Promise((r) => setTimeout(r, 10))
+				results.push(requestUser.get())
+			}),
+			withServerSession(async () => {
+				requestUser.set('bob')
+				await new Promise((r) => setTimeout(r, 5))
+				results.push(requestUser.get())
+			}),
+		])
+
+		expect(results).toContain('alice')
+		expect(results).toContain('bob')
+
+		requestUser.destroy()
+	})
+
+	it('notifies subscribers within a session', async () => {
+		const value = state('srv-notify', { default: 0, scope: 'server' })
+		const calls: number[] = []
+
+		value.subscribe((v) => calls.push(v))
+
+		await withServerSession(async () => {
+			value.set(1)
+			value.set(2)
+		})
+
+		expect(calls).toEqual([1, 2])
+
+		value.destroy()
+	})
+
+	it('supports updater function within a session', async () => {
+		const count = state('srv-updater', { default: 0, scope: 'server' })
+
+		await withServerSession(async () => {
+			count.set((prev) => prev + 1)
+			count.set((prev) => prev + 1)
+
+			expect(count.get()).toBe(2)
+		})
+
+		count.destroy()
+	})
+})

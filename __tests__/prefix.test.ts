@@ -1,0 +1,162 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { configure, state } from '../src/index.js'
+
+function makeStorage(): Storage {
+	const store = new Map<string, string>()
+
+	return {
+		getItem: (k) => store.get(k) ?? null,
+		setItem: (k, v) => {
+			store.set(k, v)
+		},
+		removeItem: (k) => {
+			store.delete(k)
+		},
+		clear: () => {
+			store.clear()
+		},
+		get length() {
+			return store.size
+		},
+		key: (i) => [...store.keys()][i] ?? null,
+	}
+}
+
+beforeEach(() => {
+	configure({ prefix: undefined })
+
+	Object.defineProperty(globalThis, 'localStorage', {
+		value: makeStorage(),
+		configurable: true,
+	})
+
+	Object.defineProperty(globalThis, 'sessionStorage', {
+		value: makeStorage(),
+		configurable: true,
+	})
+
+	Object.defineProperty(globalThis, 'window', {
+		value: { addEventListener: () => {}, removeEventListener: () => {} },
+		configurable: true,
+		writable: true,
+	})
+})
+
+// ---------------------------------------------------------------------------
+// global prefix
+// ---------------------------------------------------------------------------
+
+describe('global prefix', () => {
+	it('prepends global prefix to localStorage key', () => {
+		configure({ prefix: 'myapp' })
+
+		const theme = state('pfx-global', { default: 'light', scope: 'local' })
+
+		theme.set('dark')
+
+		expect(localStorage.getItem('myapp:pfx-global')).toBe('"dark"')
+
+		theme.destroy()
+	})
+
+	it('prepends global prefix to sessionStorage key', () => {
+		configure({ prefix: 'myapp' })
+
+		const step = state('pfx-tab', { default: 1, scope: 'tab' })
+
+		step.set(2)
+
+		expect(sessionStorage.getItem('myapp:pfx-tab')).toBe('2')
+
+		step.destroy()
+	})
+
+	it('reads prefixed value from storage on init', () => {
+		configure({ prefix: 'myapp' })
+
+		localStorage.setItem('myapp:pfx-read', '"dark"')
+
+		const theme = state('pfx-read', { default: 'light', scope: 'local' })
+
+		expect(theme.get()).toBe('dark')
+
+		theme.destroy()
+	})
+
+	it('does not prefix render scope', () => {
+		configure({ prefix: 'myapp' })
+
+		const x = state('pfx-render', { default: 0, scope: 'render' })
+
+		x.set(42)
+
+		expect(x.get()).toBe(42)
+
+		x.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// per-instance prefix override
+// ---------------------------------------------------------------------------
+
+describe('per-instance prefix', () => {
+	it('overrides global prefix with a custom string', () => {
+		configure({ prefix: 'global' })
+
+		const theme = state('pfx-override', { default: 'light', scope: 'local', prefix: 'custom' })
+
+		theme.set('dark')
+
+		expect(localStorage.getItem('custom:pfx-override')).toBe('"dark"')
+		expect(localStorage.getItem('global:pfx-override')).toBeNull()
+
+		theme.destroy()
+	})
+
+	it('disables prefix with false', () => {
+		configure({ prefix: 'myapp' })
+
+		const theme = state('pfx-disabled', { default: 'light', scope: 'local', prefix: false })
+
+		theme.set('dark')
+
+		expect(localStorage.getItem('pfx-disabled')).toBe('"dark"')
+		expect(localStorage.getItem('myapp:pfx-disabled')).toBeNull()
+
+		theme.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// no prefix configured
+// ---------------------------------------------------------------------------
+
+describe('no prefix', () => {
+	it('uses raw key when no prefix is configured', () => {
+		const theme = state('pfx-none', { default: 'light', scope: 'local' })
+
+		theme.set('dark')
+
+		expect(localStorage.getItem('pfx-none')).toBe('"dark"')
+
+		theme.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// instance identity with prefix
+// ---------------------------------------------------------------------------
+
+describe('instance identity with prefix', () => {
+	it('same key + scope returns same instance regardless of prefix', () => {
+		configure({ prefix: 'myapp' })
+
+		const a = state('pfx-identity', { default: 'light', scope: 'local' })
+		const b = state('pfx-identity', { default: 'light', scope: 'local' })
+
+		expect(a).toBe(b)
+
+		a.destroy()
+	})
+})

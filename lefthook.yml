@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: true
+  commands:
+    typecheck:
+      run: pnpm typecheck
+    lint:
+      run: pnpm lint:check
+    format:
+      run: pnpm biome format src/ __tests__/
+
+pre-push:
+  parallel: false
+  commands:
+    test:
+      run: pnpm test

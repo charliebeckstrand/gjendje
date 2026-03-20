@@ -1,0 +1,89 @@
+import type { BaseInstance } from './types.js'
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type DepValues<T extends ReadonlyArray<BaseInstance<unknown>>> = {
+	[K in keyof T]: T[K] extends BaseInstance<infer V> ? V : never
+}
+
+type Cleanup = () => void
+
+export interface EffectHandle {
+	/** Stop the effect and run the last cleanup function if any */
+	stop(): void
+}
+
+// ---------------------------------------------------------------------------
+// effect
+// ---------------------------------------------------------------------------
+
+/**
+ * Run a side effect when state dependencies change.
+ * Runs immediately with current values, then re-runs on any change.
+ *
+ * The callback can return a cleanup function that runs before the next
+ * execution and when the effect is stopped.
+ *
+ * ```ts
+ * const stop = effect([theme, fontSize], ([t, f]) => {
+ *   document.body.setAttribute('data-theme', t)
+ *   document.documentElement.style.fontSize = `${f}px`
+ *
+ *   return () => {
+ *     document.body.removeAttribute('data-theme')
+ *   }
+ * })
+ *
+ * // Later — stop listening and clean up
+ * stop()
+ * ```
+ */
+export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
+	deps: TDeps,
+	fn: (values: DepValues<TDeps>) => Cleanup | undefined,
+): EffectHandle {
+	let cleanup: Cleanup | undefined
+
+	let isStopped = false
+
+	function getDepValues(): DepValues<TDeps> {
+		return deps.map((dep) => dep.get()) as DepValues<TDeps>
+	}
+
+	function run(): void {
+		if (isStopped) return
+
+		// Run previous cleanup before re-executing
+		if (cleanup) {
+			cleanup()
+			cleanup = undefined
+		}
+
+		cleanup = fn(getDepValues())
+	}
+
+	// Subscribe to all dependencies
+	const unsubscribers = deps.map((dep) => dep.subscribe(() => run()))
+
+	// Run immediately with current values
+	run()
+
+	return {
+		stop() {
+			if (isStopped) return
+
+			isStopped = true
+
+			for (const unsub of unsubscribers) {
+				unsub()
+			}
+
+			if (cleanup) {
+				cleanup()
+				cleanup = undefined
+			}
+		},
+	}
+}

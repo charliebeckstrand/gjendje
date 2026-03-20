@@ -1,0 +1,23 @@
+[
+	{
+		"name": "gjendje (core)",
+		"path": "dist/index.js",
+		"limit": "4 kB",
+		"import": "{ state, batch }",
+		"ignore": ["async_hooks"]
+	},
+	{
+		"name": "gjendje (all)",
+		"path": "dist/index.js",
+		"limit": "8 kB",
+		"import": "{ state, computed, effect, collection, batch, withServerSession }",
+		"ignore": ["async_hooks"]
+	},
+	{
+		"name": "gjendje/react",
+		"path": "dist/react/index.js",
+		"limit": "3 kB",
+		"import": "{ useStore, useSharedState, useBucket }",
+		"ignore": ["async_hooks"]
+	}
+]

@@ -1,0 +1,391 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { state } from '../src/index.js'
+
+function makeStorage(): Storage {
+	const store = new Map<string, string>()
+
+	return {
+		getItem: (k) => store.get(k) ?? null,
+		setItem: (k, v) => {
+			store.set(k, v)
+		},
+		removeItem: (k) => {
+			store.delete(k)
+		},
+		clear: () => {
+			store.clear()
+		},
+		get length() {
+			return store.size
+		},
+		key: (i) => [...store.keys()][i] ?? null,
+	}
+}
+
+const fallbackStorage = makeStorage()
+
+beforeEach(() => {
+	fallbackStorage.clear()
+
+	Object.defineProperty(globalThis, 'localStorage', {
+		value: fallbackStorage,
+		configurable: true,
+	})
+
+	Object.defineProperty(globalThis, 'sessionStorage', {
+		value: makeStorage(),
+		configurable: true,
+	})
+
+	Object.defineProperty(globalThis, 'window', {
+		value: { addEventListener: () => {}, removeEventListener: () => {} },
+		configurable: true,
+		writable: true,
+	})
+
+	Object.defineProperty(globalThis, 'BroadcastChannel', {
+		value: class {
+			onmessage = null
+			postMessage() {}
+			close() {}
+		},
+		configurable: true,
+	})
+
+	// Remove navigator.storageBuckets by default — tests that need it add it
+	Object.defineProperty(globalThis, 'navigator', {
+		value: {},
+		configurable: true,
+		writable: true,
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Fallback behaviour (no Storage Buckets support)
+// ---------------------------------------------------------------------------
+
+describe('bucket scope — fallback', () => {
+	it('returns default before ready resolves', () => {
+		const prefs = state('bkt-default', {
+			default: { theme: 'light' },
+			scope: 'bucket',
+			bucket: { name: 'test-bucket' },
+		})
+
+		expect(prefs.get()).toEqual({ theme: 'light' })
+
+		prefs.destroy()
+	})
+
+	it('falls back to localStorage when Storage Buckets unavailable', async () => {
+		const prefs = state('bkt-fallback', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'test-bucket', fallback: 'local' },
+		})
+
+		await prefs.ready
+
+		prefs.set('dark')
+
+		expect(fallbackStorage.getItem('bkt-fallback')).toBe('"dark"')
+
+		prefs.destroy()
+	})
+
+	it('falls back to sessionStorage when fallback is tab', async () => {
+		const prefs = state('bkt-tab-fallback', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'test-bucket', fallback: 'tab' },
+		})
+
+		await prefs.ready
+
+		prefs.set('dark')
+
+		expect(sessionStorage.getItem('bkt-tab-fallback')).toBe('"dark"')
+
+		prefs.destroy()
+	})
+
+	it('ready resolves even when falling back', async () => {
+		const prefs = state('bkt-ready-fallback', {
+			default: 0,
+			scope: 'bucket',
+			bucket: { name: 'test-bucket' },
+		})
+
+		await expect(prefs.ready).resolves.toBeUndefined()
+
+		prefs.destroy()
+	})
+
+	it('notifies subscribers after ready resolves if stored value differs', async () => {
+		fallbackStorage.setItem('bkt-notify', '"dark"')
+
+		const theme = state('bkt-notify', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'test-bucket' },
+		})
+
+		const listener = vi.fn()
+
+		theme.subscribe(listener)
+
+		await theme.ready
+
+		expect(listener).toHaveBeenCalledWith('dark')
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		theme.destroy()
+	})
+
+	it('reads stored value after ready resolves', async () => {
+		fallbackStorage.setItem('bkt-read', '"dark"')
+
+		const theme = state('bkt-read', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'test-bucket' },
+		})
+
+		await theme.ready
+
+		expect(theme.get()).toBe('dark')
+
+		theme.destroy()
+	})
+
+	it('get() returns default before ready', () => {
+		fallbackStorage.setItem('bkt-before-ready', '"dark"')
+
+		const theme = state('bkt-before-ready', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'test-bucket' },
+		})
+
+		// Before awaiting ready — returns default
+		expect(theme.get()).toBe('light')
+
+		theme.destroy()
+	})
+
+	it('set() writes after ready resolves', async () => {
+		const theme = state('bkt-set', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'test-bucket' },
+		})
+
+		await theme.ready
+
+		theme.set('dark')
+
+		expect(theme.get()).toBe('dark')
+
+		theme.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Storage Buckets API support
+// ---------------------------------------------------------------------------
+
+describe('bucket scope — native Storage Buckets', () => {
+	beforeEach(() => {
+		const bucketStorage = makeStorage()
+
+		const mockBucket = {
+			localStorage: async () => bucketStorage,
+		}
+
+		const mockManager = {
+			open: vi.fn().mockResolvedValue(mockBucket),
+		}
+
+		Object.defineProperty(globalThis, 'navigator', {
+			value: { storageBuckets: mockManager },
+			configurable: true,
+			writable: true,
+		})
+	})
+
+	it('opens a named bucket', async () => {
+		const prefs = state('bkt-native', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'user-prefs' },
+		})
+
+		await prefs.ready
+
+		expect(navigator.storageBuckets?.open).toHaveBeenCalledWith(
+			'user-prefs',
+			expect.objectContaining({ durability: 'strict' }),
+		)
+
+		prefs.destroy()
+	})
+
+	it('passes persisted option to bucket open', async () => {
+		const prefs = state('bkt-persisted', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'user-prefs', persisted: true },
+		})
+
+		await prefs.ready
+
+		expect(navigator.storageBuckets?.open).toHaveBeenCalledWith(
+			'user-prefs',
+			expect.objectContaining({ persisted: true }),
+		)
+
+		prefs.destroy()
+	})
+
+	it('parses expires string and passes timestamp', async () => {
+		const before = Date.now()
+
+		const prefs = state('bkt-expires', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'user-prefs', expires: '7d' },
+		})
+
+		await prefs.ready
+
+		const call = (navigator.storageBuckets?.open as ReturnType<typeof vi.fn>).mock.calls[0]
+		const openOptions = call?.[1] as { expires?: number }
+		const after = Date.now()
+
+		const sevenDays = 7 * 24 * 60 * 60 * 1000
+
+		expect(openOptions?.expires).toBeGreaterThanOrEqual(before + sevenDays)
+		expect(openOptions?.expires).toBeLessThanOrEqual(after + sevenDays)
+
+		prefs.destroy()
+	})
+
+	it('parses quota string and passes bytes', async () => {
+		const prefs = state('bkt-quota', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'user-prefs', quota: '10mb' },
+		})
+
+		await prefs.ready
+
+		const call = (navigator.storageBuckets?.open as ReturnType<typeof vi.fn>).mock.calls[0]
+		const openOptions = call?.[1] as { quota?: number }
+
+		expect(openOptions?.quota).toBe(10 * 1024 * 1024)
+
+		prefs.destroy()
+	})
+
+	it('reads and writes to the bucket storage', async () => {
+		const theme = state('bkt-rw', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'user-prefs' },
+		})
+
+		await theme.ready
+
+		theme.set('dark')
+
+		expect(theme.get()).toBe('dark')
+
+		theme.destroy()
+	})
+
+	it('throws if bucket option is missing', () => {
+		expect(() => {
+			state('bkt-no-options', {
+				default: 'light',
+				scope: 'bucket',
+			})
+		}).toThrow('[state]')
+	})
+
+	it('warns on invalid expires format', async () => {
+		const warnings: string[] = []
+
+		const originalWarn = console.warn
+
+		console.warn = (msg: string) => warnings.push(msg)
+
+		try {
+			const prefs = state('bkt-bad-expires', {
+				default: 'light',
+				scope: 'bucket',
+				bucket: { name: 'user-prefs', expires: '7 days' },
+			})
+
+			await prefs.ready
+
+			expect(warnings.length).toBeGreaterThan(0)
+			expect(warnings.some((w) => w.includes('Invalid bucket expires'))).toBe(true)
+
+			prefs.destroy()
+		} finally {
+			console.warn = originalWarn
+		}
+	})
+
+	it('warns on invalid quota format', async () => {
+		const warnings: string[] = []
+
+		const originalWarn = console.warn
+
+		console.warn = (msg: string) => warnings.push(msg)
+
+		try {
+			const prefs = state('bkt-bad-quota', {
+				default: 'light',
+				scope: 'bucket',
+				bucket: { name: 'user-prefs', quota: '10 megabytes' },
+			})
+
+			await prefs.ready
+
+			expect(warnings.length).toBeGreaterThan(0)
+			expect(warnings.some((w) => w.includes('Invalid bucket quota'))).toBe(true)
+
+			prefs.destroy()
+		} finally {
+			console.warn = originalWarn
+		}
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Destroy during initialization
+// ---------------------------------------------------------------------------
+
+describe('bucket scope — destroy during init', () => {
+	it('does not leak delegate when destroyed before ready', async () => {
+		const prefs = state('bkt-destroy-early', {
+			default: 'light',
+			scope: 'bucket',
+			bucket: { name: 'test-bucket' },
+		})
+
+		const listener = vi.fn()
+
+		prefs.subscribe(listener)
+
+		// Destroy immediately before ready resolves
+		prefs.destroy()
+
+		// Let the async init complete
+		await new Promise((r) => setTimeout(r, 10))
+
+		// Listener should not have been called after destroy
+		expect(listener).not.toHaveBeenCalled()
+	})
+})
