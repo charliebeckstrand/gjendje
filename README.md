@@ -2,7 +2,7 @@
 
 # gjendje
 
-**gjendje** is a unified state management API for any storage backend.
+**gjendje** unifieds state management across any storage backend.
 
 ## Examples
 
