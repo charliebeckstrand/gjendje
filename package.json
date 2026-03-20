@@ -1,7 +1,7 @@
 {
 	"name": "gjendje",
 	"version": "0.3.2",
-	"description": "TypeScript State management library that provides reactive, persistent storage buckets with a simple API.",
+	"description": "TypeScript State management library",
 	"keywords": [
 		"state",
 		"storage",
