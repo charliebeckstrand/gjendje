@@ -16,8 +16,9 @@ const theme = state('theme', {
   ssr: true // optional AsyncLocalStorage
 })
 
+await theme.ready
+
 theme.get()
-theme.set('dark')
 ```
 
 #### Storage Buckets API
