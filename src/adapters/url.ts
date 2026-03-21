@@ -26,7 +26,9 @@ export function createUrlAdapter<T>(
 
 			if (raw === null) return defaultValue
 
-			return mergeKeys(serializer.parse(decodeURIComponent(raw)), defaultValue, persist)
+			// URLSearchParams.get() already decodes percent-encoding,
+			// so no additional decodeURIComponent is needed.
+			return mergeKeys(serializer.parse(raw), defaultValue, persist)
 		} catch {
 			return defaultValue
 		}
@@ -45,7 +47,9 @@ export function createUrlAdapter<T>(
 			if (isDefault) {
 				params.delete(key)
 			} else {
-				params.set(key, encodeURIComponent(stringified))
+				// URLSearchParams.set() encodes values automatically,
+				// so no additional encodeURIComponent is needed.
+				params.set(key, stringified)
 			}
 
 			const search = params.toString()

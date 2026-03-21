@@ -1,5 +1,15 @@
 # gjendje
 
+## 0.4.1
+
+### Patch Changes
+
+- Security audit hardening:
+  - Fix URL adapter double-encoding: remove redundant `encodeURIComponent`/`decodeURIComponent` since `URLSearchParams` handles encoding automatically
+  - Prevent migration infinite loops: reject non-safe-integer version envelopes in `isVersionedValue` and cap migration steps at 1,000 in `runMigrations`
+  - Harden BroadcastChannel message validation: reject messages with unexpected extra keys
+  - Fix `pickKeys` prototype chain read: use `Object.hasOwn()` instead of `in` operator
+
 ## 0.4.0
 
 ### Minor Changes

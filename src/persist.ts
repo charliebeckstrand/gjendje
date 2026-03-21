@@ -4,7 +4,7 @@ import type { Scope, StateOptions, VersionedValue } from './types.js'
 function isVersionedValue(value: unknown): value is VersionedValue<unknown> {
 	const hasShape = value !== null && typeof value === 'object' && 'v' in value && 'data' in value
 
-	return hasShape && typeof (value as VersionedValue<unknown>).v === 'number'
+	return hasShape && Number.isSafeInteger((value as VersionedValue<unknown>).v)
 }
 
 /**
@@ -99,7 +99,7 @@ export function pickKeys<T>(value: T, keys: string[] | undefined): T {
 	const partial: Record<string, unknown> = {}
 
 	for (const k of keys) {
-		if (k in (value as Record<string, unknown>)) {
+		if (Object.hasOwn(value as Record<string, unknown>, k)) {
 			partial[k] = (value as Record<string, unknown>)[k]
 		}
 	}
@@ -125,12 +125,20 @@ export function mergeKeys<T>(stored: T, defaultValue: T, keys: string[] | undefi
  * Run the migration chain from storedVersion up to currentVersion.
  * Each migration function transforms the value one version at a time.
  */
+/** Maximum migration steps to prevent runaway loops from corrupted version numbers. */
+const MAX_MIGRATION_STEPS = 1000
+
 function runMigrations(
 	data: unknown,
 	fromVersion: number,
 	toVersion: number,
 	migrations: Record<number, (old: unknown) => unknown>,
 ): unknown {
+	if (fromVersion < 0 || toVersion - fromVersion > MAX_MIGRATION_STEPS) {
+		log('warn', `Migration range v${fromVersion}→v${toVersion} is out of bounds — skipping.`)
+		return data
+	}
+
 	let current = data
 
 	for (let v = fromVersion; v < toVersion; v++) {
