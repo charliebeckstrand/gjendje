@@ -9,6 +9,7 @@ import { getConfig, log, reportError } from './config.js'
 import { getRegistered, register, unregister } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
 import type { Adapter, BaseInstance, Scope, StateOptions } from './types.js'
+import { shallowEqual } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Scope sets (module-level to avoid per-instance allocation)
@@ -169,7 +170,7 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 				const serverValue = defaultValue
 				const clientValue = storedValue
 
-				if (JSON.stringify(storedValue) !== JSON.stringify(defaultValue)) {
+				if (!shallowEqual(storedValue, defaultValue)) {
 					instance.set(storedValue)
 				}
 
@@ -206,6 +207,8 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 				next = interceptor(next, prev)
 			}
 
+			if (options.isEqual?.(next, prev)) return
+
 			lastValue = next
 
 			adapter.set(next)
@@ -232,6 +235,8 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 			for (const interceptor of _interceptors) {
 				next = interceptor(next, prev)
 			}
+
+			if (options.isEqual?.(next, prev)) return
 
 			lastValue = next
 

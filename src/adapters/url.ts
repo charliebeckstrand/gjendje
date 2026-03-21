@@ -1,6 +1,7 @@
 import { notify } from '../batch.js'
+import { createListeners } from '../listeners.js'
 import { mergeKeys, pickKeys } from '../persist.js'
-import type { Adapter, Listener, Serializer, Unsubscribe } from '../types.js'
+import type { Adapter, Serializer } from '../types.js'
 
 export function createUrlAdapter<T>(
 	key: string,
@@ -12,7 +13,7 @@ export function createUrlAdapter<T>(
 		throw new Error('[state] URL scope is not available in this environment.')
 	}
 
-	const listeners = new Set<Listener<T>>()
+	const listeners = createListeners<T>()
 
 	function read(): T {
 		try {
@@ -54,11 +55,7 @@ export function createUrlAdapter<T>(
 
 	let lastNotifiedValue: T = defaultValue
 
-	const notifyListeners = () => {
-		for (const listener of listeners) {
-			listener(lastNotifiedValue)
-		}
-	}
+	const notifyListeners = () => listeners.notify(lastNotifiedValue)
 
 	function onPopState(): void {
 		lastNotifiedValue = read()
@@ -83,13 +80,7 @@ export function createUrlAdapter<T>(
 			notify(notifyListeners)
 		},
 
-		subscribe(listener: Listener<T>): Unsubscribe {
-			listeners.add(listener)
-
-			return () => {
-				listeners.delete(listener)
-			}
-		},
+		subscribe: listeners.subscribe,
 
 		destroy() {
 			listeners.clear()

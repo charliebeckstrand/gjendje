@@ -217,6 +217,14 @@ export interface StateOptions<T> {
 	 * Only meaningful for object-typed state with a persistent scope.
 	 */
 	persist?: Array<keyof T & string>
+
+	/**
+	 * Custom equality function. When provided, set() skips the update
+	 * (no storage write, no subscriber notification) if isEqual(next, prev)
+	 * returns true. Useful for preventing unnecessary re-renders with
+	 * structurally equal objects.
+	 */
+	isEqual?: (a: T, b: T) => boolean
 }
 
 // ---------------------------------------------------------------------------

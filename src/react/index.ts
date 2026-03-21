@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState as useReactState, useSyncExternalStore } from 'react'
+import {
+	useCallback,
+	useEffect,
+	useState as useReactState,
+	useRef,
+	useSyncExternalStore,
+} from 'react'
 import type { BucketOptions, CollectionInstance, StateInstance, StateOptions } from '../index.js'
 import { collection, state } from '../index.js'
 
@@ -293,6 +299,71 @@ export function useCollection<T>(key: string, options: StateOptions<T[]>): Colle
 }
 
 // ---------------------------------------------------------------------------
+// useSelector — derived value with equality-gated re-renders
+//
+// Selects a slice of state and only re-renders when that slice changes.
+// Accepts an optional equality function (defaults to Object.is).
+//
+// ```tsx
+// const theme = useSelector(prefsState, (p) => p.theme)
+// // re-renders only when prefs.theme changes
+// ```
+// ---------------------------------------------------------------------------
+
+export function useSelector<T, S>(
+	instance: StateInstance<T>,
+	selector: (value: T) => S,
+	isEqual: (a: S, b: S) => boolean = Object.is,
+): S {
+	const selectorRef = useRef(selector)
+	const isEqualRef = useRef(isEqual)
+
+	selectorRef.current = selector
+	isEqualRef.current = isEqual
+
+	const getSnapshot = useCallback(() => {
+		return selectorRef.current(instance.get())
+	}, [instance])
+
+	return useSyncExternalStore(
+		useCallback(
+			(onStoreChange) => {
+				let prev = selectorRef.current(instance.get())
+
+				return instance.subscribe(() => {
+					const next = selectorRef.current(instance.get())
+
+					if (!isEqualRef.current(prev, next)) {
+						prev = next
+						onStoreChange()
+					}
+				})
+			},
+			[instance],
+		),
+		getSnapshot,
+	)
+}
+
+// ---------------------------------------------------------------------------
+// useStoreValue — read-only reactive value
+//
+// Lighter alternative to useSharedState when you only need the value.
+//
+// ```tsx
+// const theme = useStoreValue(themeState)
+// ```
+// ---------------------------------------------------------------------------
+
+export function useStoreValue<T>(instance: StateInstance<T>): T {
+	return useSyncExternalStore(
+		useCallback((onStoreChange) => instance.subscribe(onStoreChange), [instance]),
+		() => instance.get(),
+		() => instance.get(),
+	)
+}
+
+// ---------------------------------------------------------------------------
 // Re-exports
 // ---------------------------------------------------------------------------
 
@@ -303,4 +374,13 @@ export type {
 	StateInstance,
 	StateOptions,
 } from '../index.js'
-export { batch, collection, computed, effect, state, withServerSession } from '../index.js'
+export {
+	batch,
+	collection,
+	computed,
+	effect,
+	snapshot,
+	state,
+	withHistory,
+	withServerSession,
+} from '../index.js'

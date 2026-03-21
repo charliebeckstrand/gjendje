@@ -1,5 +1,8 @@
 import { notify } from '../batch.js'
-import type { Adapter, BucketOptions, Listener, StateOptions, Unsubscribe } from '../types.js'
+import { log } from '../config.js'
+import { createListeners } from '../listeners.js'
+import type { Adapter, BucketOptions, StateOptions } from '../types.js'
+import { shallowEqual } from '../utils.js'
 import { createStorageAdapter } from './storage.js'
 
 // ---------------------------------------------------------------------------
@@ -100,15 +103,11 @@ export function createBucketAdapter<T>(
 	const { default: defaultValue } = options
 	const fallbackScope = bucketOptions.fallback ?? 'local'
 
-	const listeners = new Set<Listener<T>>()
+	const listeners = createListeners<T>()
 
 	let lastNotifiedValue: T = defaultValue
 
-	const notifyListeners = () => {
-		for (const listener of listeners) {
-			listener(lastNotifiedValue)
-		}
-	}
+	const notifyListeners = () => listeners.notify(lastNotifiedValue)
 
 	// Storage delegate — starts as null, set after ready resolves
 	let delegate: Adapter<T> | null = null
@@ -147,8 +146,9 @@ export function createBucketAdapter<T>(
 				if (parsed != null) {
 					openOptions.expires = parsed
 				} else {
-					console.warn(
-						`[state] Invalid bucket expires format: "${bucketOptions.expires}". ` +
+					log(
+						'warn',
+						`Invalid bucket expires format: "${bucketOptions.expires}". ` +
 							'Expected a number or a string like "7d", "24h", "30m".',
 					)
 				}
@@ -160,8 +160,9 @@ export function createBucketAdapter<T>(
 				if (parsed != null) {
 					openOptions.quota = parsed
 				} else {
-					console.warn(
-						`[state] Invalid bucket quota format: "${bucketOptions.quota}". ` +
+					log(
+						'warn',
+						`Invalid bucket quota format: "${bucketOptions.quota}". ` +
 							'Expected a number or a string like "10mb", "50kb", "1gb".',
 					)
 				}
@@ -197,7 +198,7 @@ export function createBucketAdapter<T>(
 		// Notify subscribers if the stored value differs from the default
 		const storedValue = delegate.get()
 
-		if (JSON.stringify(storedValue) !== JSON.stringify(defaultValue)) {
+		if (!shallowEqual(storedValue, defaultValue)) {
 			lastNotifiedValue = storedValue
 
 			notify(notifyListeners)
@@ -226,13 +227,7 @@ export function createBucketAdapter<T>(
 			notify(notifyListeners)
 		},
 
-		subscribe(listener: Listener<T>): Unsubscribe {
-			listeners.add(listener)
-
-			return () => {
-				listeners.delete(listener)
-			}
-		},
+		subscribe: listeners.subscribe,
 
 		destroy() {
 			isDestroyed = true

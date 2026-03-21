@@ -1,5 +1,6 @@
 import { notify } from './batch.js'
-import type { BaseInstance, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
+import { createListeners } from './listeners.js'
+import type { BaseInstance, ReadonlyInstance } from './types.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -15,6 +16,17 @@ type DepValues<T extends ReadonlyArray<BaseInstance<unknown>>> = {
  * but no set or reset since the value is always determined by its sources.
  */
 export interface ComputedInstance<T> extends ReadonlyInstance<T> {}
+
+export interface ComputedOptions {
+	/** Optional key for debugging and DevTools introspection. */
+	key?: string
+}
+
+// ---------------------------------------------------------------------------
+// Auto-incrementing key counter
+// ---------------------------------------------------------------------------
+
+let computedCounter = 0
 
 // ---------------------------------------------------------------------------
 // computed
@@ -40,8 +52,11 @@ export interface ComputedInstance<T> extends ReadonlyInstance<T> {}
 export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TResult>(
 	deps: TDeps,
 	fn: (values: DepValues<TDeps>) => TResult,
+	options?: ComputedOptions,
 ): ComputedInstance<TResult> {
-	const listeners = new Set<Listener<TResult>>()
+	const listeners = createListeners<TResult>()
+
+	const instanceKey = options?.key ?? `computed:${computedCounter++}`
 
 	let cached: TResult
 
@@ -64,9 +79,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	const notifyListeners = () => {
 		const value = recompute()
 
-		for (const listener of listeners) {
-			listener(value)
-		}
+		listeners.notify(value)
 	}
 
 	const unsubscribers = deps.map((dep) =>
@@ -87,7 +100,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	})
 
 	return {
-		key: '',
+		key: instanceKey,
 		scope: 'render' as const,
 
 		get ready(): Promise<void> {
@@ -118,13 +131,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 			return recompute()
 		},
 
-		subscribe(listener: Listener<TResult>): Unsubscribe {
-			listeners.add(listener)
-
-			return () => {
-				listeners.delete(listener)
-			}
-		},
+		subscribe: listeners.subscribe,
 
 		destroy() {
 			if (isDestroyed) return

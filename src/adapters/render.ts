@@ -1,16 +1,13 @@
 import { notify } from '../batch.js'
-import type { Adapter, Listener, Unsubscribe } from '../types.js'
+import { createListeners } from '../listeners.js'
+import type { Adapter } from '../types.js'
 
 export function createRenderAdapter<T>(defaultValue: T): Adapter<T> {
 	let current = defaultValue
 
-	const listeners = new Set<Listener<T>>()
+	const listeners = createListeners<T>()
 
-	const notifyListeners = () => {
-		for (const listener of listeners) {
-			listener(current)
-		}
-	}
+	const notifyListeners = () => listeners.notify(current)
 
 	return {
 		ready: Promise.resolve() as Promise<void>,
@@ -25,13 +22,7 @@ export function createRenderAdapter<T>(defaultValue: T): Adapter<T> {
 			notify(notifyListeners)
 		},
 
-		subscribe(listener: Listener<T>): Unsubscribe {
-			listeners.add(listener)
-
-			return () => {
-				listeners.delete(listener)
-			}
-		},
+		subscribe: listeners.subscribe,
 
 		destroy() {
 			listeners.clear()

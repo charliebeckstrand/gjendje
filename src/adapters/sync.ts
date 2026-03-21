@@ -1,5 +1,6 @@
 import { getConfig } from '../config.js'
-import type { Adapter, Listener, Scope, Unsubscribe } from '../types.js'
+import { createListeners } from '../listeners.js'
+import type { Adapter, Scope, Unsubscribe } from '../types.js'
 
 /**
  * Wraps an existing adapter with BroadcastChannel support so that
@@ -10,12 +11,10 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 
 	const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(channelName) : null
 
-	const listeners = new Set<Listener<T>>()
+	const listeners = createListeners<T>()
 
 	adapter.subscribe((value) => {
-		for (const listener of listeners) {
-			listener(value)
-		}
+		listeners.notify(value)
 	})
 
 	if (channel) {
@@ -50,12 +49,8 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 			channel?.postMessage({ value })
 		},
 
-		subscribe(listener: Listener<T>): Unsubscribe {
-			listeners.add(listener)
-
-			return () => {
-				listeners.delete(listener)
-			}
+		subscribe(listener): Unsubscribe {
+			return listeners.subscribe(listener)
 		},
 
 		destroy() {
