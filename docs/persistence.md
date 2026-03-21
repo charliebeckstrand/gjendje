@@ -1,59 +1,10 @@
-# Middleware
+# Persistence
 
-Primitives that plug into the update pipeline of any `state` or `collection` instance.
-
----
-
-## `intercept(fn)`
-
-```ts
-instance.intercept(fn: (next: T, prev: T) => T): Unsubscribe
-```
-
-Runs **before** a value is stored.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `next` | `T` | The incoming value |
-| `prev` | `T` | The current value |
-
-**Returns** `Unsubscribe` — call to remove this interceptor.
-
-**Behavior**
-- Return `next` (or a transformed version) to allow the update.
-- Return `prev` to reject the update.
-- Multiple interceptors run in registration order. Each receives the output of the previous one.
-- Runs on both `set()` and `reset()`.
+How persistent scopes (`local`, `tab`, `bucket`) read and write stored values.
 
 ---
 
-## `use(fn)`
-
-```ts
-instance.use(fn: (next: T, prev: T) => void): Unsubscribe
-```
-
-Runs **after** a value is stored.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `next` | `T` | The newly stored value |
-| `prev` | `T` | The previous value |
-
-**Returns** `Unsubscribe` — call to remove this hook.
-
-**Behavior**
-- Return value is ignored.
-- Multiple hooks run in registration order.
-- Runs on both `set()` and `reset()`.
-
----
-
-## Persistence
-
-Three features control how persistent scopes (`local`, `tab`, `bucket`) read and write stored values.
-
-### Custom serializer
+## Custom serializer
 
 ```ts
 serialize?: Serializer<T>
@@ -68,7 +19,9 @@ interface Serializer<T> {
 
 For types that don't round-trip through JSON (e.g., `Set`, `Map`, `Date`). When a custom serializer is provided, migration and validation are skipped.
 
-### Migration
+---
+
+## Migration
 
 ```ts
 version?: number
@@ -90,7 +43,9 @@ Stored format:
 { "v": 3, "data": { "theme": "light", "fontSize": 14, "compact": false } }
 ```
 
-### Selective persistence
+---
+
+## Selective persistence
 
 ```ts
 persist?: Array<keyof T & string>
@@ -98,7 +53,9 @@ persist?: Array<keyof T & string>
 
 Only persist the listed keys of an object value. Non-listed keys remain in memory but are excluded from storage writes. On read, persisted keys are merged with the default value.
 
-### Validation
+---
+
+## Validation
 
 ```ts
 validate?: (value: unknown) => value is T

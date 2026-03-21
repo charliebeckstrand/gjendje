@@ -62,7 +62,7 @@ Like `subscribe`, but scoped to a single key within an object value. Only fires 
 #### `intercept(fn)`
 Receives `(next, prev)` before each update. Return the value to store, or return `prev` to reject the change. Returns an `unsubscribe` function.
 
-[Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
+[Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md) · [Persistence reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
 
 ## Derived state
 
