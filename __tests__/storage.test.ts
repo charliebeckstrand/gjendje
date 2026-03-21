@@ -151,6 +151,88 @@ describe('storage write failures', () => {
 })
 
 // ---------------------------------------------------------------------------
+// read cache
+// ---------------------------------------------------------------------------
+
+describe('read cache', () => {
+	it('avoids re-parsing when storage has not changed', () => {
+		const parseFn = vi.fn((raw: string) => JSON.parse(raw) as string)
+
+		const theme = state('stor-cache-hit', {
+			default: 'light',
+			scope: 'local',
+			serialize: { stringify: JSON.stringify, parse: parseFn },
+		})
+
+		theme.set('dark')
+
+		// First get — must parse
+		expect(theme.get()).toBe('dark')
+		const callsAfterFirst = parseFn.mock.calls.length
+
+		// Subsequent gets with no storage change — should use cache
+		expect(theme.get()).toBe('dark')
+		expect(theme.get()).toBe('dark')
+		expect(theme.get()).toBe('dark')
+
+		expect(parseFn.mock.calls.length).toBe(callsAfterFirst)
+
+		theme.destroy()
+	})
+
+	it('invalidates cache after set()', () => {
+		const parseFn = vi.fn((raw: string) => JSON.parse(raw) as string)
+
+		const theme = state('stor-cache-invalidate', {
+			default: 'light',
+			scope: 'local',
+			serialize: { stringify: JSON.stringify, parse: parseFn },
+		})
+
+		theme.set('dark')
+		const val1 = theme.get()
+		const callsAfterDark = parseFn.mock.calls.length
+
+		theme.set('blue')
+		const val2 = theme.get()
+
+		expect(val1).toBe('dark')
+		expect(val2).toBe('blue')
+		// Must have parsed again after set changed the value
+		expect(parseFn.mock.calls.length).toBeGreaterThan(callsAfterDark)
+
+		theme.destroy()
+	})
+
+	it('returns default after failed write (quota exceeded)', () => {
+		const throwingStorage = makeStorage()
+		const originalSetItem = throwingStorage.setItem
+
+		throwingStorage.setItem = (k: string, v: string) => {
+			if (k === 'stor-cache-quota') {
+				throw new DOMException('QuotaExceededError', 'QuotaExceededError')
+			}
+
+			originalSetItem.call(throwingStorage, k, v)
+		}
+
+		Object.defineProperty(globalThis, 'localStorage', {
+			value: throwingStorage,
+			configurable: true,
+		})
+
+		const x = state('stor-cache-quota', { default: 'initial', scope: 'local' })
+
+		x.set('new-value')
+
+		// Cache was invalidated by failed write — re-reads from storage, gets default
+		expect(x.get()).toBe('initial')
+
+		x.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
 // tab scope
 // ---------------------------------------------------------------------------
 

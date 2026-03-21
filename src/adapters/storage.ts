@@ -13,25 +13,47 @@ export function createStorageAdapter<T>(
 
 	const listeners = createListeners<T>()
 
+	// Read cache — avoids re-parsing when the raw string in storage hasn't changed.
+	let cachedRaw: string | null | undefined
+	let cachedValue: T | undefined
+
+	function parse(raw: string): T {
+		if (serialize) {
+			return serialize.parse(raw)
+		}
+
+		return readAndMigrate(raw, options, key, options.scope)
+	}
+
 	function read(): T {
 		try {
 			const raw = storage.getItem(key)
 
-			if (raw === null) return defaultValue
+			if (raw === null) {
+				cachedRaw = null
+				cachedValue = undefined
+				return defaultValue
+			}
+
+			// Return cached parse result when the raw string is unchanged
+			if (raw === cachedRaw) return cachedValue as T
 
 			let value: T
 
-			if (serialize) {
-				try {
-					value = serialize.parse(raw)
-				} catch {
-					return defaultValue
-				}
-			} else {
-				value = readAndMigrate(raw, options, key, options.scope)
+			try {
+				value = parse(raw)
+			} catch {
+				cachedRaw = undefined
+				cachedValue = undefined
+				return defaultValue
 			}
 
-			return mergeKeys(value, defaultValue, persist)
+			value = mergeKeys(value, defaultValue, persist)
+
+			cachedRaw = raw
+			cachedValue = value
+
+			return value
 		} catch {
 			return defaultValue
 		}
@@ -44,7 +66,15 @@ export function createStorageAdapter<T>(
 			const raw = serialize ? serialize.stringify(toStore) : wrapForStorage(toStore, version)
 
 			storage.setItem(key, raw)
+
+			// Invalidate cache so next read() re-reads from storage
+			cachedRaw = undefined
+			cachedValue = undefined
 		} catch (e) {
+			// Invalidate cache — write may have partially succeeded
+			cachedRaw = undefined
+			cachedValue = undefined
+
 			log(
 				'error',
 				`Failed to write key "${key}" to storage: ${e instanceof Error ? e.message : String(e)}`,
@@ -65,6 +95,10 @@ export function createStorageAdapter<T>(
 
 	function onStorageEvent(event: StorageEvent): void {
 		if (event.storageArea !== storage || event.key !== key) return
+
+		// Invalidate cache — another tab changed storage
+		cachedRaw = undefined
+		cachedValue = undefined
 
 		lastNotifiedValue = read()
 
@@ -93,6 +127,9 @@ export function createStorageAdapter<T>(
 		subscribe: listeners.subscribe,
 
 		destroy() {
+			cachedRaw = undefined
+			cachedValue = undefined
+
 			listeners.clear()
 
 			if (typeof window !== 'undefined') {
