@@ -10,7 +10,7 @@ export default defineConfig({
 	splitting: true,
 	treeshake: true,
 	clean: true,
-	sourcemap: true,
+	sourcemap: false,
 	outDir: 'dist',
 	external: ['react'],
 })
