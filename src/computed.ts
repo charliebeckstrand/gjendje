@@ -73,7 +73,9 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		if (!isDirty) return cached
 
 		for (let i = 0; i < depLen; i++) {
-			;(depValues as unknown[])[i] = deps[i]!.get()
+			const dep = deps[i] as BaseInstance<unknown>
+
+			;(depValues as unknown[])[i] = dep.get()
 		}
 
 		cached = fn(depValues)
@@ -85,6 +87,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 	const notifyListeners = () => {
 		const prev = cached
+
 		const value = recompute()
 
 		// In diamond dependency graphs (A → [B, C] → D), D gets notified
@@ -104,7 +107,9 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	const unsubscribers = new Array(depLen)
 
 	for (let i = 0; i < depLen; i++) {
-		unsubscribers[i] = deps[i]!.subscribe(markDirty)
+		const dep = deps[i] as BaseInstance<unknown>
+
+		unsubscribers[i] = dep.subscribe(markDirty)
 	}
 
 	// Compute initial value eagerly so first get() is synchronous

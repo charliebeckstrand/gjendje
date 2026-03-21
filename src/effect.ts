@@ -69,7 +69,9 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 		}
 
 		for (let i = 0; i < depLen; i++) {
-			;(depValues as unknown[])[i] = deps[i]!.get()
+			const dep = deps[i] as BaseInstance<unknown>
+
+			;(depValues as unknown[])[i] = dep.get()
 		}
 
 		cleanup = fn(depValues)
@@ -79,7 +81,9 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 	const unsubscribers = new Array(depLen)
 
 	for (let i = 0; i < depLen; i++) {
-		unsubscribers[i] = deps[i]!.subscribe(run)
+		const dep = deps[i] as BaseInstance<unknown>
+
+		unsubscribers[i] = dep.subscribe(run)
 	}
 
 	// Run immediately with current values
