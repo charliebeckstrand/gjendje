@@ -29,19 +29,6 @@ Every `state()` call targets a scope — the storage backend that holds the valu
 
 ---
 
-## At a glance
-
-| Scope | Backend | Survives reload | Survives tab close | Cross-tab | Async |
-|-------|---------|----------------|--------------------|-----------|-------|
-| `render` | Memory | no | no | no | no |
-| `tab` | sessionStorage | yes | no | no | no |
-| `local` | localStorage | yes | yes | yes (with `sync`) | no |
-| `url` | URLSearchParams | yes | via link | via link | no |
-| `bucket` | Storage Buckets API | yes | yes | no | yes |
-| `server` | AsyncLocalStorage | per-request | n/a | n/a | no |
-
----
-
 ## `render`
 
 In-memory only. Lost on refresh. The default scope.
