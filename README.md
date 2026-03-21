@@ -2,7 +2,7 @@
 
 # gjendje
 
-**gjendje** unifies state management across any storage backend.
+**gjendje** unifies state management across storage backends.
 
 ## Examples
 
