@@ -2,7 +2,7 @@
 
 # gjendje
 
-**gjendje** unifies state management across storage backends.
+Unifies state management across storage backends.
 
 ## Install
 
