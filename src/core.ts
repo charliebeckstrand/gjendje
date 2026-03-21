@@ -22,6 +22,14 @@ const SYNCABLE_SCOPES = new Set<Scope>(['local', 'bucket'])
 // Shared resolved promise — avoids allocating a new one per instance
 const RESOLVED = Promise.resolve()
 
+// Shared no-op adapter shim for RenderStateImpl — allocated once, never per-instance
+const RENDER_SHIM: Adapter<unknown> = {
+	ready: RESOLVED,
+	get: () => undefined,
+	set: () => {},
+	subscribe: () => () => {},
+}
+
 // ---------------------------------------------------------------------------
 // Key prefixing
 // ---------------------------------------------------------------------------
@@ -410,17 +418,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 		options: StateOptions<T>,
 		config: Readonly<GjendjeConfig>,
 	) {
-		// Pass a minimal adapter shim — prototype methods that access _adapter
-		// are overridden below, so this is only used by the base constructor's
-		// adapter.get() call for _s.lastValue initialization.
-		const shim: Adapter<T> = {
-			ready: RESOLVED,
-			get: () => options.default,
-			set: () => {},
-			subscribe: () => () => {},
-		}
-
-		super(key, 'render', rKey, shim, options, config)
+		super(key, 'render', rKey, RENDER_SHIM as Adapter<T>, options, config)
 
 		// Extend the mutable state with render-specific fields
 		const rs = this._s as RenderMutableState<T>
@@ -608,6 +606,19 @@ class RenderStateImpl<T> extends StateImpl<T> {
  * Same key + same scope always returns the same instance.
  * This is the low-level factory used by both `state()` and `collection()`.
  */
+/**
+ * Fast path for render-scope instances. Called directly from factory.ts
+ * to skip redundant config/registry lookups and adapter setup.
+ */
+export function createRenderState<T>(
+	key: string,
+	rKey: string,
+	options: StateOptions<T>,
+	config: Readonly<GjendjeConfig>,
+): StateInstance<T> {
+	return new RenderStateImpl(key, rKey, options, config)
+}
+
 export function createBase<T>(key: string, options: StateOptions<T>): StateInstance<T> {
 	if (!key) {
 		throw new Error('[state] key must be a non-empty string.')

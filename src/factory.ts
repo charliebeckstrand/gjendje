@@ -1,17 +1,7 @@
 import { getConfig, log } from './config.js'
-import { createBase } from './core.js'
-import { scopedKey } from './registry.js'
+import { createBase, createRenderState } from './core.js'
+import { getRegistered, registerByKey, scopedKey } from './registry.js'
 import type { StateInstance, StateOptions } from './types.js'
-
-interface CachedInstance {
-	readonly isDestroyed: boolean
-}
-
-// Caches the StateInstance returned to consumers.
-// The registry in core.ts caches the same instance (shared by
-// both state() and collection()), while this cache ensures
-// duplicate state() calls return the same reference.
-const instanceCache = new Map<string, CachedInstance>()
 
 /**
  * Create a stateful value.
@@ -26,23 +16,48 @@ const instanceCache = new Map<string, CachedInstance>()
  * ```
  */
 export function state<T>(key: string, options: StateOptions<T>): StateInstance<T> {
-	const scope = options.scope ?? getConfig().scope ?? 'render'
+	if (!key) {
+		throw new Error('[state] key must be a non-empty string.')
+	}
 
-	const ck = scopedKey(key, scope)
+	const config = getConfig()
 
-	const cached = instanceCache.get(ck) as StateInstance<T> | undefined
+	if (config.keyPattern && !config.keyPattern.test(key)) {
+		throw new Error(
+			`[gjendje] Key "${key}" does not match the configured keyPattern ${config.keyPattern}.`,
+		)
+	}
 
-	if (cached && !cached.isDestroyed) {
-		if (getConfig().warnOnDuplicate) {
+	const scope = options.scope ?? config.scope ?? 'render'
+
+	const rKey = scopedKey(key, scope)
+
+	const existing = getRegistered<T>(rKey) as StateInstance<T> | undefined
+
+	if (existing && !existing.isDestroyed) {
+		if (config.warnOnDuplicate) {
 			log('warn', `Duplicate state("${key}") with scope "${scope}". Returning cached instance.`)
 		}
 
-		return cached
+		return existing
 	}
 
-	const instance = createBase(key, options)
+	// Render scope fast path — single constructor, no adapter, no SSR checks
+	if (scope === 'render' && !options.ssr && !config.ssr) {
+		if (options.sync) {
+			log(
+				'warn',
+				`sync: true is ignored for scope "render". Only "local" and "bucket" scopes support cross-tab sync.`,
+			)
+		}
 
-	instanceCache.set(ck, instance)
+		const instance = createRenderState(key, rKey, options, config)
 
-	return instance
+		registerByKey(rKey, key, scope, instance, config)
+
+		return instance
+	}
+
+	// All other scopes go through the full pipeline
+	return createBase(key, options)
 }
