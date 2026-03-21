@@ -4,7 +4,26 @@
 
 **gjendje** unifies state management across storage backends.
 
-## Examples
+## Configure
+
+Sets global defaults for all state instances.
+
+```ts
+configure({ scope: 'local' })
+
+const theme = state('theme', { default: 'light' })
+
+theme.scope // 'local'
+
+// Per-instance scope always takes precedence
+const temp = state('temp', { default: 0, scope: 'render' })
+
+temp.scope // 'render'
+```
+
+[Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md) — all options, validation, error handling, and examples.
+
+## Usage Examples
 
 #### localStorage
 ```ts
@@ -34,25 +53,6 @@ await settings.ready
 
 settings.set(prev => ({ ...prev, notifications: false }))
 ```
-
-## Configure
-
-Sets global defaults for all state instances. Call once at app startup before creating any state.
-
-```ts
-configure({ scope: 'local' })
-
-const theme = state('theme', { default: 'light' })
-
-theme.scope // 'local'
-
-// Per-instance scope always takes precedence
-const temp = state('temp', { default: 0, scope: 'render' })
-
-temp.scope // 'render'
-```
-
-[Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md) — all options, validation, error handling, and examples.
 
 ## Scopes
 
