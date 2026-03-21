@@ -4,10 +4,12 @@ import { createServerAdapter } from './adapters/server.js'
 import { createStorageAdapter } from './adapters/storage.js'
 import { withSync } from './adapters/sync.js'
 import { createUrlAdapter } from './adapters/url.js'
+import { notify } from './batch.js'
+import type { GjendjeConfig } from './config.js'
 import { getConfig, log, reportError } from './config.js'
-import { getRegistered, register, unregister } from './registry.js'
+import { getRegistered, registerByKey, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
-import type { Adapter, BaseInstance, Scope, StateOptions } from './types.js'
+import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
 import { shallowEqual } from './utils.js'
 
 // ---------------------------------------------------------------------------
@@ -16,6 +18,9 @@ import { shallowEqual } from './utils.js'
 
 const PERSISTENT_SCOPES = new Set<Scope>(['local', 'tab', 'bucket'])
 const SYNCABLE_SCOPES = new Set<Scope>(['local', 'bucket'])
+
+// Shared resolved promise — avoids allocating a new one per instance
+const RESOLVED = Promise.resolve()
 
 // ---------------------------------------------------------------------------
 // Key prefixing
@@ -94,10 +99,517 @@ function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptio
 }
 
 // ---------------------------------------------------------------------------
+// Mutable state container — shared by reference through Object.create chains.
+//
+// Enhancers like withHistory and collection use Object.create(instance) to
+// delegate methods via prototype. With a class, writing this.prop creates an
+// own property on the wrapper, shadowing the prototype's value. By storing
+// all mutable state in a single container object (_s), reads and writes
+// always go through the same shared reference.
+// ---------------------------------------------------------------------------
+
+interface MutableState<T> {
+	lastValue: T
+	isDestroyed: boolean
+	interceptors: Set<(next: T, prev: T) => T> | undefined
+	hooks: Set<(next: T, prev: T) => void> | undefined
+	settled: Promise<void>
+	resolveDestroyed: (() => void) | undefined
+	destroyed: Promise<void> | undefined
+	hydrated: Promise<void> | undefined
+	watchers: Map<PropertyKey, Set<Listener<unknown>>> | undefined
+	watchUnsub: Unsubscribe | undefined
+	watchPrev: unknown
+}
+
+// ---------------------------------------------------------------------------
+// Class-based StateInstance — methods on prototype, not per-instance closures
+// ---------------------------------------------------------------------------
+
+class StateImpl<T> implements StateInstance<T> {
+	readonly key: string
+	readonly scope: Scope
+
+	_adapter: Adapter<T>
+	_defaultValue: T
+	_options: StateOptions<T>
+	_rKey: string
+	_config: Readonly<GjendjeConfig>
+	_s: MutableState<T>
+
+	constructor(
+		key: string,
+		scope: Scope,
+		rKey: string,
+		adapter: Adapter<T>,
+		options: StateOptions<T>,
+		config: Readonly<GjendjeConfig>,
+	) {
+		this.key = key
+		this.scope = scope
+		this._rKey = rKey
+		this._adapter = adapter
+		this._defaultValue = options.default
+		this._options = options
+		this._config = config
+
+		this._s = {
+			lastValue: adapter.get(),
+			isDestroyed: false,
+			interceptors: undefined,
+			hooks: undefined,
+			settled: RESOLVED,
+			resolveDestroyed: undefined,
+			destroyed: undefined,
+			hydrated: undefined,
+			watchers: undefined,
+			watchUnsub: undefined,
+			watchPrev: undefined,
+		}
+	}
+
+	get(): T {
+		return this._s.isDestroyed ? this._s.lastValue : this._adapter.get()
+	}
+
+	peek(): T {
+		return this._s.isDestroyed ? this._s.lastValue : this._adapter.get()
+	}
+
+	set(valueOrUpdater: T | ((prev: T) => T)): void {
+		const s = this._s
+
+		if (s.isDestroyed) return
+
+		const prev = this._adapter.get()
+
+		let next =
+			typeof valueOrUpdater === 'function'
+				? (valueOrUpdater as (prev: T) => T)(prev)
+				: valueOrUpdater
+
+		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+			for (const interceptor of s.interceptors) {
+				next = interceptor(next, prev)
+			}
+		}
+
+		if (this._options.isEqual?.(next, prev)) return
+
+		s.lastValue = next
+
+		this._adapter.set(next)
+
+		s.settled = this._adapter.ready
+
+		if (s.hooks !== undefined && s.hooks.size > 0) {
+			for (const hook of s.hooks) {
+				hook(next, prev)
+			}
+		}
+	}
+
+	subscribe(listener: Listener<T>): Unsubscribe {
+		return this._adapter.subscribe(listener)
+	}
+
+	reset(): void {
+		const s = this._s
+
+		if (s.isDestroyed) return
+
+		const prev = this._adapter.get()
+
+		let next = this._defaultValue
+
+		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+			for (const interceptor of s.interceptors) {
+				next = interceptor(next, prev)
+			}
+		}
+
+		if (this._options.isEqual?.(next, prev)) return
+
+		s.lastValue = next
+
+		this._adapter.set(next)
+
+		s.settled = this._adapter.ready
+
+		if (s.hooks !== undefined && s.hooks.size > 0) {
+			for (const hook of s.hooks) {
+				hook(next, prev)
+			}
+		}
+	}
+
+	get ready(): Promise<void> {
+		return this._adapter.ready
+	}
+
+	get settled(): Promise<void> {
+		return this._s.settled
+	}
+
+	get hydrated(): Promise<void> {
+		return this._s.hydrated ?? RESOLVED
+	}
+
+	get destroyed(): Promise<void> {
+		const s = this._s
+
+		if (!s.destroyed) {
+			s.destroyed = new Promise<void>((resolve) => {
+				s.resolveDestroyed = resolve
+			})
+		}
+
+		return s.destroyed
+	}
+
+	get isDestroyed(): boolean {
+		return this._s.isDestroyed
+	}
+
+	intercept(fn: (next: T, prev: T) => T): Unsubscribe {
+		const s = this._s
+
+		if (!s.interceptors) s.interceptors = new Set()
+
+		s.interceptors.add(fn)
+
+		return () => {
+			s.interceptors?.delete(fn)
+		}
+	}
+
+	use(fn: (next: T, prev: T) => void): Unsubscribe {
+		const s = this._s
+
+		if (!s.hooks) s.hooks = new Set()
+
+		s.hooks.add(fn)
+
+		return () => {
+			s.hooks?.delete(fn)
+		}
+	}
+
+	watch<K extends T extends object ? keyof T : never>(
+		watchKey: K,
+		listener: (value: T[K & keyof T]) => void,
+	): Unsubscribe {
+		const s = this._s
+
+		if (!s.watchers) s.watchers = new Map()
+
+		this._ensureWatchSubscription()
+
+		let listeners = s.watchers.get(watchKey as PropertyKey)
+
+		if (!listeners) {
+			listeners = new Set()
+			s.watchers.set(watchKey as PropertyKey, listeners)
+		}
+
+		listeners.add(listener as Listener<unknown>)
+
+		return () => {
+			listeners.delete(listener as Listener<unknown>)
+
+			if (listeners.size === 0) {
+				s.watchers?.delete(watchKey as PropertyKey)
+			}
+		}
+	}
+
+	destroy(): void {
+		const s = this._s
+
+		if (s.isDestroyed) return
+
+		s.lastValue = this._adapter.get()
+
+		s.isDestroyed = true
+
+		s.interceptors?.clear()
+		s.hooks?.clear()
+		s.watchers?.clear()
+		s.watchUnsub?.()
+
+		this._adapter.destroy?.()
+
+		unregisterByKey(this._rKey)
+
+		this._config.onDestroy?.({ key: this.key, scope: this.scope })
+
+		if (s.resolveDestroyed) {
+			s.resolveDestroyed()
+		} else {
+			s.destroyed = RESOLVED
+		}
+	}
+
+	protected _ensureWatchSubscription(): void {
+		const s = this._s
+
+		if (s.watchUnsub) return
+
+		s.watchPrev = this._adapter.get()
+
+		s.watchUnsub = this._adapter.subscribe((next) => {
+			if (!s.watchers || s.watchers.size === 0) {
+				s.watchPrev = next
+
+				return
+			}
+
+			for (const [watchKey, listeners] of s.watchers) {
+				const prevVal =
+					s.watchPrev !== null && typeof s.watchPrev === 'object'
+						? (s.watchPrev as Record<PropertyKey, unknown>)[watchKey]
+						: undefined
+
+				const nextVal =
+					next !== null && typeof next === 'object'
+						? (next as Record<PropertyKey, unknown>)[watchKey]
+						: undefined
+
+				if (!Object.is(prevVal, nextVal)) {
+					for (const listener of listeners) {
+						listener(nextVal)
+					}
+				}
+			}
+
+			s.watchPrev = next
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// RenderStateImpl — specialized subclass for render scope that skips the
+// adapter object entirely. State is stored directly on the instance.
+// ---------------------------------------------------------------------------
+
+interface RenderMutableState<T> extends MutableState<T> {
+	current: T
+	renderListeners: Set<Listener<T>> | undefined
+	notifyFn: (() => void) | undefined
+}
+
+class RenderStateImpl<T> extends StateImpl<T> {
+	private get _rs(): RenderMutableState<T> {
+		return this._s as RenderMutableState<T>
+	}
+
+	constructor(
+		key: string,
+		rKey: string,
+		options: StateOptions<T>,
+		config: Readonly<GjendjeConfig>,
+	) {
+		// Pass a minimal adapter shim — prototype methods that access _adapter
+		// are overridden below, so this is only used by the base constructor's
+		// adapter.get() call for _s.lastValue initialization.
+		const shim: Adapter<T> = {
+			ready: RESOLVED,
+			get: () => options.default,
+			set: () => {},
+			subscribe: () => () => {},
+		}
+
+		super(key, 'render', rKey, shim, options, config)
+
+		// Extend the mutable state with render-specific fields
+		const rs = this._s as RenderMutableState<T>
+		rs.current = options.default
+		rs.renderListeners = undefined
+		rs.notifyFn = undefined
+	}
+
+	override get(): T {
+		const s = this._rs
+		return s.isDestroyed ? s.lastValue : s.current
+	}
+
+	override peek(): T {
+		const s = this._rs
+		return s.isDestroyed ? s.lastValue : s.current
+	}
+
+	override set(valueOrUpdater: T | ((prev: T) => T)): void {
+		const s = this._rs
+
+		if (s.isDestroyed) return
+
+		const prev = s.current
+
+		let next =
+			typeof valueOrUpdater === 'function'
+				? (valueOrUpdater as (prev: T) => T)(prev)
+				: valueOrUpdater
+
+		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+			for (const interceptor of s.interceptors) {
+				next = interceptor(next, prev)
+			}
+		}
+
+		if (this._options.isEqual?.(next, prev)) return
+
+		s.lastValue = next
+		s.current = next
+
+		if (s.notifyFn !== undefined && s.renderListeners !== undefined && s.renderListeners.size > 0) {
+			notify(s.notifyFn)
+		}
+
+		s.settled = RESOLVED
+
+		if (s.hooks !== undefined && s.hooks.size > 0) {
+			for (const hook of s.hooks) {
+				hook(next, prev)
+			}
+		}
+	}
+
+	override subscribe(listener: Listener<T>): Unsubscribe {
+		const s = this._rs
+
+		if (!s.renderListeners) {
+			const listeners = new Set<Listener<T>>()
+
+			s.renderListeners = listeners
+			s.notifyFn = () => {
+				for (const l of listeners) {
+					try {
+						l(s.current)
+					} catch (err) {
+						console.error('[gjendje] Listener threw:', err)
+					}
+				}
+			}
+		}
+
+		s.renderListeners.add(listener)
+
+		return () => {
+			s.renderListeners?.delete(listener)
+		}
+	}
+
+	override reset(): void {
+		const s = this._rs
+
+		if (s.isDestroyed) return
+
+		const prev = s.current
+
+		let next = this._defaultValue
+
+		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+			for (const interceptor of s.interceptors) {
+				next = interceptor(next, prev)
+			}
+		}
+
+		if (this._options.isEqual?.(next, prev)) return
+
+		s.lastValue = next
+		s.current = next
+
+		if (s.notifyFn !== undefined && s.renderListeners !== undefined && s.renderListeners.size > 0) {
+			notify(s.notifyFn)
+		}
+
+		s.settled = RESOLVED
+
+		if (s.hooks !== undefined && s.hooks.size > 0) {
+			for (const hook of s.hooks) {
+				hook(next, prev)
+			}
+		}
+	}
+
+	override get ready(): Promise<void> {
+		return RESOLVED
+	}
+
+	protected override _ensureWatchSubscription(): void {
+		const s = this._rs
+
+		if (s.watchUnsub) return
+
+		s.watchPrev = s.current
+
+		s.watchUnsub = this.subscribe((next) => {
+			if (!s.watchers || s.watchers.size === 0) {
+				s.watchPrev = next
+
+				return
+			}
+
+			for (const [watchKey, listeners] of s.watchers) {
+				const prevVal =
+					s.watchPrev !== null && typeof s.watchPrev === 'object'
+						? (s.watchPrev as Record<PropertyKey, unknown>)[watchKey]
+						: undefined
+
+				const nextVal =
+					next !== null && typeof next === 'object'
+						? (next as Record<PropertyKey, unknown>)[watchKey]
+						: undefined
+
+				if (!Object.is(prevVal, nextVal)) {
+					for (const listener of listeners) {
+						listener(nextVal)
+					}
+				}
+			}
+
+			s.watchPrev = next
+		})
+	}
+
+	override destroy(): void {
+		const s = this._rs
+
+		if (s.isDestroyed) return
+
+		s.lastValue = s.current
+
+		s.isDestroyed = true
+
+		s.interceptors?.clear()
+		s.hooks?.clear()
+		s.watchers?.clear()
+		s.watchUnsub?.()
+		s.renderListeners?.clear()
+
+		unregisterByKey(this._rKey)
+
+		this._config.onDestroy?.({ key: this.key, scope: this.scope })
+
+		if (s.resolveDestroyed) {
+			s.resolveDestroyed()
+		} else {
+			s.destroyed = RESOLVED
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Base instance factory
 // ---------------------------------------------------------------------------
 
-export function createBase<T>(key: string, options: StateOptions<T>): BaseInstance<T> {
+/**
+ * Create a state instance backed by the appropriate adapter for the given scope.
+ *
+ * Same key + same scope always returns the same instance.
+ * This is the low-level factory used by both `state()` and `collection()`.
+ */
+export function createBase<T>(key: string, options: StateOptions<T>): StateInstance<T> {
 	if (!key) {
 		throw new Error('[state] key must be a non-empty string.')
 	}
@@ -114,7 +626,9 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 	// Apply global defaults — per-instance options take precedence
 	const scope = options.scope ?? config.defaultScope ?? 'render'
 
-	const existing = getRegistered<T>(key, scope)
+	const rKey = scopedKey(key, scope)
+
+	const existing = getRegistered<T>(rKey) as StateInstance<T> | undefined
 
 	if (existing && !existing.isDestroyed) return existing
 
@@ -126,18 +640,10 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 		)
 	}
 
-	const defaultValue = options.default
-
 	const isSsrMode = (options.ssr ?? config.ssr) && BROWSER_SCOPES.has(scope)
-
 	const useRenderFallback = isSsrMode && isServer()
 
-	const storageKey = resolveStorageKey(key, options, config.prefix)
-
-	const baseAdapter = useRenderFallback
-		? createRenderAdapter(defaultValue)
-		: resolveAdapter(storageKey, scope, options)
-
+	// --- Sync warning (must run before the render fast-path) ---
 	const effectiveSync = options.sync ?? (config.sync && SYNCABLE_SCOPES.has(scope))
 
 	if (effectiveSync && !SYNCABLE_SCOPES.has(scope)) {
@@ -147,197 +653,51 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 		)
 	}
 
-	const shouldSync = effectiveSync && SYNCABLE_SCOPES.has(scope) && !useRenderFallback
+	// --- Fast path: render scope (no SSR, no sync) — skip adapter object ---
+	let instance: StateImpl<T>
 
-	const adapter = shouldSync ? withSync(baseAdapter, storageKey, scope) : baseAdapter
-
-	let lastValue = adapter.get()
-
-	let _isDestroyed = false
-
-	// --- middleware ---
-	const _interceptors = new Set<(next: T, prev: T) => T>()
-	const _hooks = new Set<(next: T, prev: T) => void>()
-
-	// --- settled: resolves when the most recent write has persisted ---
-	let _settled = Promise.resolve()
-
-	// --- destroyed: resolves when destroy() is called ---
-	let _resolveDestroyed: () => void
-
-	const _destroyed = new Promise<void>((resolve) => {
-		_resolveDestroyed = resolve
-	})
-
-	// --- hydrated: resolves when SSR hydration completes ---
-	let _hydrated: Promise<void>
-
-	// For SSR mode on the client — hydrate after render
-	if (isSsrMode && !isServer()) {
-		_hydrated = afterHydration(() => {
-			try {
-				const realAdapter = resolveAdapter(storageKey, scope, options)
-
-				const storedValue = realAdapter.get()
-
-				const serverValue = defaultValue
-				const clientValue = storedValue
-
-				if (!shallowEqual(storedValue, defaultValue)) {
-					instance.set(storedValue)
-				}
-
-				config.onHydrate?.({ key, scope, serverValue, clientValue })
-
-				// Clean up the temporary adapter to avoid leaking event listeners
-				realAdapter.destroy?.()
-			} catch (err) {
-				log('debug', `Hydration adapter unavailable for state("${key}") — using render fallback.`)
-				reportError(key, scope, err)
-			}
-		})
+	if (scope === 'render' && !isSsrMode) {
+		instance = new RenderStateImpl(key, rKey, options, config)
 	} else {
-		_hydrated = Promise.resolve()
+		const storageKey = resolveStorageKey(key, options, config.prefix)
+
+		const baseAdapter = useRenderFallback
+			? createRenderAdapter(options.default)
+			: resolveAdapter(storageKey, scope, options)
+
+		const shouldSync = effectiveSync && SYNCABLE_SCOPES.has(scope) && !useRenderFallback
+
+		const adapter = shouldSync ? withSync(baseAdapter, storageKey, scope) : baseAdapter
+
+		instance = new StateImpl(key, scope, rKey, adapter, options, config)
+
+		// SSR hydration
+		if (isSsrMode && !isServer()) {
+			instance._s.hydrated = afterHydration(() => {
+				try {
+					const realAdapter = resolveAdapter(storageKey, scope, options)
+
+					const storedValue = realAdapter.get()
+
+					const serverValue = options.default
+					const clientValue = storedValue
+
+					if (!shallowEqual(storedValue, options.default)) {
+						instance.set(storedValue)
+					}
+
+					config.onHydrate?.({ key, scope, serverValue, clientValue })
+
+					realAdapter.destroy?.()
+				} catch (err) {
+					log('debug', `Hydration adapter unavailable for state("${key}") — using render fallback.`)
+					reportError(key, scope, err)
+				}
+			})
+		}
 	}
 
-	const instance: BaseInstance<T> = {
-		get() {
-			return _isDestroyed ? lastValue : adapter.get()
-		},
-
-		peek() {
-			return _isDestroyed ? lastValue : adapter.get()
-		},
-
-		set(valueOrUpdater) {
-			if (_isDestroyed) return
-
-			const prev = adapter.get()
-
-			let next =
-				typeof valueOrUpdater === 'function'
-					? (valueOrUpdater as (prev: T) => T)(prev)
-					: valueOrUpdater
-
-			if (_interceptors.size > 0) {
-				for (const interceptor of _interceptors) {
-					next = interceptor(next, prev)
-				}
-			}
-
-			if (options.isEqual?.(next, prev)) return
-
-			lastValue = next
-
-			adapter.set(next)
-
-			// settled resolves when the adapter is ready (sync = immediate)
-			_settled = adapter.ready
-
-			if (_hooks.size > 0) {
-				for (const hook of _hooks) {
-					hook(next, prev)
-				}
-			}
-		},
-
-		subscribe(listener) {
-			return adapter.subscribe(listener)
-		},
-
-		reset() {
-			if (_isDestroyed) return
-
-			const prev = adapter.get()
-
-			let next = defaultValue
-
-			if (_interceptors.size > 0) {
-				for (const interceptor of _interceptors) {
-					next = interceptor(next, prev)
-				}
-			}
-
-			if (options.isEqual?.(next, prev)) return
-
-			lastValue = next
-
-			adapter.set(next)
-
-			_settled = adapter.ready
-
-			if (_hooks.size > 0) {
-				for (const hook of _hooks) {
-					hook(next, prev)
-				}
-			}
-		},
-
-		get ready() {
-			return adapter.ready
-		},
-
-		get settled() {
-			return _settled
-		},
-
-		get hydrated() {
-			return _hydrated
-		},
-
-		get destroyed() {
-			return _destroyed
-		},
-
-		get scope() {
-			return scope
-		},
-
-		get key() {
-			return key
-		},
-
-		get isDestroyed() {
-			return _isDestroyed
-		},
-
-		intercept(fn) {
-			_interceptors.add(fn)
-
-			return () => {
-				_interceptors.delete(fn)
-			}
-		},
-
-		use(fn) {
-			_hooks.add(fn)
-
-			return () => {
-				_hooks.delete(fn)
-			}
-		},
-
-		destroy() {
-			if (_isDestroyed) return
-
-			lastValue = adapter.get()
-
-			_isDestroyed = true
-
-			_interceptors.clear()
-			_hooks.clear()
-
-			adapter.destroy?.()
-
-			unregister(key, scope)
-
-			config.onDestroy?.({ key, scope })
-
-			_resolveDestroyed()
-		},
-	}
-
-	register(key, scope, instance)
+	registerByKey(rKey, key, scope, instance, config)
 
 	return instance
 }

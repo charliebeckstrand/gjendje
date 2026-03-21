@@ -14,45 +14,67 @@ export interface WithWatch<T> {
 	): Unsubscribe
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: constraint must use any for invariant BaseInstance
+/**
+ * Enhance a state instance with per-key change tracking.
+ *
+ * The `watch()` method only fires when a specific property of an object
+ * value changes, using Object.is for comparison.
+ *
+ * ```ts
+ * const user = state('user', { default: { name: 'Jane', age: 30 } })
+ * const w = withWatch(user)
+ *
+ * w.watch('name', (name) => console.log(name))
+ * ```
+ */
+// biome-ignore lint/suspicious/noExplicitAny: BaseInstance is invariant — any is required for generic constraint
 export function withWatch<TIn extends BaseInstance<any>>(
 	instance: TIn,
 ): TIn & WithWatch<TIn extends BaseInstance<infer T> ? T : unknown> {
 	type TOut = TIn & WithWatch<TIn extends BaseInstance<infer T> ? T : unknown>
 
-	const watchers = new Map<PropertyKey, Set<Listener<unknown>>>()
+	let watchers: Map<PropertyKey, Set<Listener<unknown>>> | undefined
+	let unsubscribe: Unsubscribe | undefined
+	let prev: unknown
+	let initialized = false
 
-	let prev = instance.get()
+	// Lazily subscribe to the base instance only when the first watcher is added
+	function ensureSubscription() {
+		if (unsubscribe) return
 
-	const unsubscribe = instance.subscribe((next) => {
-		if (watchers.size === 0) {
-			prev = next
-
-			return
+		if (!initialized) {
+			prev = instance.get()
+			initialized = true
 		}
 
-		for (const [watchKey, listeners] of watchers) {
-			const prevVal =
-				prev !== null && typeof prev === 'object'
-					? (prev as Record<PropertyKey, unknown>)[watchKey]
-					: undefined
+		unsubscribe = instance.subscribe((next) => {
+			if (!watchers || watchers.size === 0) {
+				prev = next
 
-			const nextVal =
-				next !== null && typeof next === 'object'
-					? (next as Record<PropertyKey, unknown>)[watchKey]
-					: undefined
+				return
+			}
 
-			if (!Object.is(prevVal, nextVal)) {
-				for (const listener of listeners) {
-					listener(nextVal)
+			for (const [watchKey, listeners] of watchers) {
+				const prevVal =
+					prev !== null && typeof prev === 'object'
+						? (prev as Record<PropertyKey, unknown>)[watchKey]
+						: undefined
+
+				const nextVal =
+					next !== null && typeof next === 'object'
+						? (next as Record<PropertyKey, unknown>)[watchKey]
+						: undefined
+
+				if (!Object.is(prevVal, nextVal)) {
+					for (const listener of listeners) {
+						listener(nextVal)
+					}
 				}
 			}
-		}
 
-		prev = next
-	})
-
-	const originalDestroy = instance.destroy.bind(instance)
+			prev = next
+		})
+	}
 
 	// Object.create delegates to instance via prototype, preserving getters
 	// (ready, settled, isDestroyed, etc.) without evaluating them eagerly.
@@ -60,6 +82,10 @@ export function withWatch<TIn extends BaseInstance<any>>(
 	const result = Object.create(instance) as TOut
 
 	result.watch = (watchKey: PropertyKey, listener: Listener<unknown>) => {
+		if (!watchers) watchers = new Map()
+
+		ensureSubscription()
+
 		let listeners = watchers.get(watchKey)
 
 		if (!listeners) {
@@ -73,15 +99,15 @@ export function withWatch<TIn extends BaseInstance<any>>(
 			listeners.delete(listener)
 
 			if (listeners.size === 0) {
-				watchers.delete(watchKey)
+				watchers?.delete(watchKey)
 			}
 		}
 	}
 
 	result.destroy = () => {
-		watchers.clear()
-		unsubscribe()
-		originalDestroy()
+		watchers?.clear()
+		unsubscribe?.()
+		instance.destroy()
 	}
 
 	return result
