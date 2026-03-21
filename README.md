@@ -16,13 +16,17 @@ Sets global defaults for all state instances.
 Call once at app entry point.
 
 ```ts
+import { configure, state } from 'gjendje'
+
 configure({ scope: 'local' })
 
 const theme = state('theme', { default: 'light' })
 
 theme.scope // 'local'
 
-// Per-instance scope always takes precedence
+/*
+  Per-instance scope always takes precedence
+*/
 const temp = state('temp', { default: 0, scope: 'render' })
 
 temp.scope // 'render'
