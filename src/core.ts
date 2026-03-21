@@ -21,10 +21,14 @@ const SYNCABLE_SCOPES = new Set<Scope>(['local', 'bucket'])
 // Key prefixing
 // ---------------------------------------------------------------------------
 
-function resolveStorageKey<T>(key: string, options: StateOptions<T>): string {
+function resolveStorageKey<T>(
+	key: string,
+	options: StateOptions<T>,
+	configPrefix?: string,
+): string {
 	if (options.prefix === false) return key
 
-	const prefix = options.prefix ?? getConfig().prefix
+	const prefix = options.prefix ?? configPrefix
 
 	return prefix ? `${prefix}:${key}` : key
 }
@@ -33,9 +37,7 @@ function resolveStorageKey<T>(key: string, options: StateOptions<T>): string {
 // Adapter resolution
 // ---------------------------------------------------------------------------
 
-function resolveAdapter<T>(key: string, scope: Scope, options: StateOptions<T>): Adapter<T> {
-	const storageKey = resolveStorageKey(key, options)
-
+function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptions<T>): Adapter<T> {
 	switch (scope) {
 		case 'render':
 			return createRenderAdapter(options.default)
@@ -130,11 +132,11 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 
 	const useRenderFallback = isSsrMode && isServer()
 
-	const storageKey = resolveStorageKey(key, options)
+	const storageKey = resolveStorageKey(key, options, config.prefix)
 
 	const baseAdapter = useRenderFallback
 		? createRenderAdapter(defaultValue)
-		: resolveAdapter(key, scope, options)
+		: resolveAdapter(storageKey, scope, options)
 
 	const effectiveSync = options.sync ?? (config.sync && SYNCABLE_SCOPES.has(scope))
 
@@ -174,7 +176,7 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 	if (isSsrMode && !isServer()) {
 		_hydrated = afterHydration(() => {
 			try {
-				const realAdapter = resolveAdapter(key, scope, options)
+				const realAdapter = resolveAdapter(storageKey, scope, options)
 
 				const storedValue = realAdapter.get()
 

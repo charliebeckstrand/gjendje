@@ -82,6 +82,17 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 	let prevItems = base.get()
 
+	function keyChanged(prev: unknown, next: unknown, watchKey: PropertyKey): boolean {
+		if (!prev || !next || typeof prev !== 'object' || typeof next !== 'object') {
+			return false
+		}
+
+		const p = prev as Record<PropertyKey, unknown>
+		const n = next as Record<PropertyKey, unknown>
+
+		return !Object.is(p[watchKey], n[watchKey])
+	}
+
 	const unsubscribe = base.subscribe((next) => {
 		if (watchers.size === 0) {
 			prevItems = next
@@ -90,21 +101,9 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 		}
 
 		for (const [watchKey, listeners] of watchers) {
-			// Check if any item's value for this key actually changed
-			const keyChanged = (prev: unknown, next: unknown): boolean => {
-				if (!prev || !next || typeof prev !== 'object' || typeof next !== 'object') {
-					return false
-				}
-
-				const p = prev as Record<PropertyKey, unknown>
-				const n = next as Record<PropertyKey, unknown>
-
-				return !Object.is(p[watchKey], n[watchKey])
-			}
-
 			const changed =
 				next.length !== prevItems.length ||
-				next.some((item, i) => i < prevItems.length && keyChanged(prevItems[i], item))
+				next.some((item, i) => i < prevItems.length && keyChanged(prevItems[i], item, watchKey))
 
 			if (changed) {
 				for (const listener of listeners) {

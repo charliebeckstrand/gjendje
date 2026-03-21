@@ -15,6 +15,9 @@ export function createUrlAdapter<T>(
 
 	const listeners = createListeners<T>()
 
+	// Cache serialized default once — avoids re-serializing on every write()
+	const defaultSerialized = serializer.stringify(defaultValue)
+
 	function read(): T {
 		try {
 			const params = new URLSearchParams(window.location.search)
@@ -36,7 +39,7 @@ export function createUrlAdapter<T>(
 
 		const stringified = serializer.stringify(toStore)
 
-		const isDefault = stringified === serializer.stringify(defaultValue)
+		const isDefault = stringified === defaultSerialized
 
 		if (isDefault) {
 			params.delete(key)

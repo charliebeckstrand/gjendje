@@ -48,8 +48,15 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 
 	let isStopped = false
 
+	// Reuse a single array to avoid allocation on every run
+	const depValues = new Array(deps.length) as DepValues<TDeps>
+
 	function getDepValues(): DepValues<TDeps> {
-		return deps.map((dep) => dep.get()) as DepValues<TDeps>
+		for (let i = 0; i < deps.length; i++) {
+			;(depValues as unknown[])[i] = deps[i]?.get()
+		}
+
+		return depValues
 	}
 
 	function run(): void {
