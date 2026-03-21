@@ -45,8 +45,6 @@ theme.scope // 'local' — derived from configure
 
 ## API
 
-Every `state()` instance exposes the same interface regardless of scope.
-
 #### `get()`
 Returns the current value. Reactive — triggers tracking in `computed` and `effect`.
 
@@ -65,8 +63,6 @@ Like `subscribe`, but scoped to a single key within an object value. Only fires 
 [Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
 
 ## Derived state
-
-Primitives that build on top of `state` to handle computed values, collections, and side effects.
 
 #### `computed(deps, fn)`
 Derives a reactive, read-only value from one or more state dependencies. Recomputes only when a dependency changes and caches the result between changes. Returns a `ReadonlyInstance` — no `set()` or `reset()`.
