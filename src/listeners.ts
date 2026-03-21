@@ -6,7 +6,8 @@ import type { Listener, Unsubscribe } from './types.js'
  * the same Set + iterate + add/delete boilerplate.
  *
  * Listener exceptions are caught so that one faulty subscriber
- * cannot silence the rest.
+ * cannot silence the rest. Errors are reported via console.error
+ * so they remain visible during development.
  */
 export function createListeners<T>() {
 	const set = new Set<Listener<T>>()
@@ -16,9 +17,10 @@ export function createListeners<T>() {
 			for (const listener of set) {
 				try {
 					listener(value)
-				} catch {
-					// Swallow — a single listener should never break others.
-					// The consumer's own error handling applies.
+				} catch (err) {
+					// A single listener should never break others, but the
+					// error must remain visible for debugging.
+					console.error('[gjendje] Listener threw:', err)
 				}
 			}
 		},

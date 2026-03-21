@@ -1,6 +1,12 @@
 import { getConfig, log } from './config.js'
 import type { Scope, StateOptions, VersionedValue } from './types.js'
 
+function isVersionedValue(value: unknown): value is VersionedValue<unknown> {
+	const hasShape = value !== null && typeof value === 'object' && 'v' in value && 'data' in value
+
+	return hasShape && typeof (value as VersionedValue<unknown>).v === 'number'
+}
+
 /**
  * Given a raw string from storage, run the full pipeline:
  * 1. JSON parse
@@ -26,13 +32,6 @@ export function readAndMigrate<T>(
 		let storedVersion = 1
 
 		let data: unknown
-
-		function isVersionedValue(value: unknown): value is VersionedValue<unknown> {
-			const hasShape =
-				value !== null && typeof value === 'object' && 'v' in value && 'data' in value
-
-			return hasShape && typeof (value as VersionedValue<unknown>).v === 'number'
-		}
 
 		if (isVersionedValue(parsed)) {
 			storedVersion = parsed.v

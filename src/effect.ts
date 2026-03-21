@@ -48,16 +48,29 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 
 	let isStopped = false
 
+	// Reuse a single array to avoid allocation on every run
+	const depValues = new Array(deps.length) as DepValues<TDeps>
+
 	function getDepValues(): DepValues<TDeps> {
-		return deps.map((dep) => dep.get()) as DepValues<TDeps>
+		for (let i = 0; i < deps.length; i++) {
+			;(depValues as unknown[])[i] = deps[i]?.get()
+		}
+
+		return depValues
 	}
 
 	function run(): void {
 		if (isStopped) return
 
-		// Run previous cleanup before re-executing
+		// Run previous cleanup before re-executing.
+		// Errors in cleanup must not prevent the next effect from running.
 		if (cleanup) {
-			cleanup()
+			try {
+				cleanup()
+			} catch (err) {
+				console.error('[gjendje] Effect cleanup threw:', err)
+			}
+
 			cleanup = undefined
 		}
 
@@ -81,7 +94,12 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 			}
 
 			if (cleanup) {
-				cleanup()
+				try {
+					cleanup()
+				} catch (err) {
+					console.error('[gjendje] Effect cleanup threw:', err)
+				}
+
 				cleanup = undefined
 			}
 		},

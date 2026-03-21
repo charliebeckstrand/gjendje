@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { notify } from '../batch.js'
-import type { Adapter, Listener, Unsubscribe } from '../types.js'
+import { createListeners } from '../listeners.js'
+import type { Adapter } from '../types.js'
 
 const als = new AsyncLocalStorage<Map<string, unknown>>()
 
@@ -11,7 +12,7 @@ export async function withServerSession<T>(fn: () => T): Promise<T> {
 }
 
 export function createServerAdapter<T>(key: string, defaultValue: T): Adapter<T> {
-	const listeners = new Set<Listener<T>>()
+	const listeners = createListeners<T>()
 
 	function getStore(): Map<string, unknown> | undefined {
 		return als.getStore()
@@ -19,11 +20,7 @@ export function createServerAdapter<T>(key: string, defaultValue: T): Adapter<T>
 
 	let lastNotifiedValue: T = defaultValue
 
-	const notifyListeners = () => {
-		for (const listener of listeners) {
-			listener(lastNotifiedValue)
-		}
-	}
+	const notifyListeners = () => listeners.notify(lastNotifiedValue)
 
 	return {
 		ready: Promise.resolve(),
@@ -53,13 +50,7 @@ export function createServerAdapter<T>(key: string, defaultValue: T): Adapter<T>
 			notify(notifyListeners)
 		},
 
-		subscribe(listener: Listener<T>): Unsubscribe {
-			listeners.add(listener)
-
-			return () => {
-				listeners.delete(listener)
-			}
-		},
+		subscribe: listeners.subscribe,
 
 		destroy() {
 			listeners.clear()

@@ -65,117 +65,72 @@ export function withHistory<T>(
 		return next
 	})
 
-	return {
-		get(): T {
-			return instance.get()
-		},
+	// Delegate to instance via prototype to inherit all BaseInstance methods
+	// and getters without manual forwarding. Only history-specific methods
+	// are defined as own properties.
+	const result = Object.create(instance) as WithHistoryInstance<T>
 
-		peek(): T {
-			return instance.peek()
-		},
+	result.undo = (): void => {
+		if (past.length === 0) return
 
-		set(valueOrUpdater: T | ((prev: T) => T)): void {
-			instance.set(valueOrUpdater)
-		},
+		const current = instance.get()
+		const prev = past.pop() as T
 
-		subscribe(listener) {
-			return instance.subscribe(listener)
-		},
+		future.push(current)
 
-		reset(): void {
-			instance.reset()
-		},
+		isNavigating = true
 
-		intercept(fn) {
-			return instance.intercept(fn)
-		},
+		try {
+			instance.set(prev)
+		} finally {
+			isNavigating = false
+		}
+	}
 
-		use(fn) {
-			return instance.use(fn)
-		},
+	result.redo = (): void => {
+		if (future.length === 0) return
 
-		get scope() {
-			return instance.scope
-		},
+		const current = instance.get()
+		const next = future.pop() as T
 
-		get key() {
-			return instance.key
-		},
+		past.push(current)
 
-		get isDestroyed() {
-			return instance.isDestroyed
-		},
+		isNavigating = true
 
-		get ready() {
-			return instance.ready
-		},
+		try {
+			instance.set(next)
+		} finally {
+			isNavigating = false
+		}
+	}
 
-		get settled() {
-			return instance.settled
-		},
-
-		get hydrated() {
-			return instance.hydrated
-		},
-
-		get destroyed() {
-			return instance.destroyed
-		},
-
-		undo(): void {
-			if (past.length === 0) return
-
-			const current = instance.get()
-			const prev = past.pop() as T
-
-			future.push(current)
-
-			isNavigating = true
-
-			try {
-				instance.set(prev)
-			} finally {
-				isNavigating = false
-			}
-		},
-
-		redo(): void {
-			if (future.length === 0) return
-
-			const current = instance.get()
-			const next = future.pop() as T
-
-			past.push(current)
-
-			isNavigating = true
-
-			try {
-				instance.set(next)
-			} finally {
-				isNavigating = false
-			}
-		},
-
-		get canUndo(): boolean {
+	Object.defineProperty(result, 'canUndo', {
+		get(): boolean {
 			return past.length > 0
 		},
+		enumerable: true,
+	})
 
-		get canRedo(): boolean {
+	Object.defineProperty(result, 'canRedo', {
+		get(): boolean {
 			return future.length > 0
 		},
+		enumerable: true,
+	})
 
-		clearHistory(): void {
-			past.length = 0
-			future.length = 0
-		},
-
-		destroy(): void {
-			unintercept()
-
-			past.length = 0
-			future.length = 0
-
-			instance.destroy()
-		},
+	result.clearHistory = (): void => {
+		past.length = 0
+		future.length = 0
 	}
+
+	result.destroy = (): void => {
+		unintercept()
+
+		past.length = 0
+		future.length = 0
+
+		instance.destroy()
+	}
+
+	return result
 }

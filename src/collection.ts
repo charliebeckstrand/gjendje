@@ -82,6 +82,17 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 	let prevItems = base.get()
 
+	function keyChanged(prev: unknown, next: unknown, watchKey: PropertyKey): boolean {
+		if (!prev || !next || typeof prev !== 'object' || typeof next !== 'object') {
+			return false
+		}
+
+		const p = prev as Record<PropertyKey, unknown>
+		const n = next as Record<PropertyKey, unknown>
+
+		return !Object.is(p[watchKey], n[watchKey])
+	}
+
 	const unsubscribe = base.subscribe((next) => {
 		if (watchers.size === 0) {
 			prevItems = next
@@ -90,21 +101,9 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 		}
 
 		for (const [watchKey, listeners] of watchers) {
-			// Check if any item's value for this key actually changed
-			const keyChanged = (prev: unknown, next: unknown): boolean => {
-				if (!prev || !next || typeof prev !== 'object' || typeof next !== 'object') {
-					return false
-				}
-
-				const p = prev as Record<PropertyKey, unknown>
-				const n = next as Record<PropertyKey, unknown>
-
-				return !Object.is(p[watchKey], n[watchKey])
-			}
-
 			const changed =
 				next.length !== prevItems.length ||
-				next.some((item, i) => i < prevItems.length && keyChanged(prevItems[i], item))
+				next.some((item, i) => i < prevItems.length && keyChanged(prevItems[i], item, watchKey))
 
 			if (changed) {
 				for (const listener of listeners) {
@@ -118,160 +117,111 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 	const originalDestroy = base.destroy.bind(base)
 
-	return {
-		get(): T[] {
-			return base.get()
-		},
+	// Delegate to base via prototype to inherit all BaseInstance methods and
+	// getters (ready, settled, isDestroyed, etc.) without manual forwarding.
+	// Only collection-specific methods are defined as own properties.
+	const col = Object.create(base) as CollectionInstance<T>
 
-		peek(): T[] {
-			return base.peek()
-		},
+	col.watch = (watchKey: PropertyKey, listener: Listener<T[]>) => {
+		let listeners = watchers.get(watchKey)
 
-		set(valueOrUpdater) {
-			base.set(valueOrUpdater)
-		},
+		if (!listeners) {
+			listeners = new Set()
 
-		subscribe(listener: Listener<T[]>): Unsubscribe {
-			return base.subscribe(listener)
-		},
+			watchers.set(watchKey, listeners)
+		}
 
-		reset() {
-			base.reset()
-		},
+		listeners.add(listener)
 
-		watch(watchKey, listener) {
-			let listeners = watchers.get(watchKey)
+		return () => {
+			listeners.delete(listener)
 
-			if (!listeners) {
-				listeners = new Set()
-
-				watchers.set(watchKey, listeners)
+			if (listeners.size === 0) {
+				watchers.delete(watchKey)
 			}
+		}
+	}
 
-			listeners.add(listener as Listener<T[]>)
+	col.add = (...items: T[]) => {
+		base.set((prev) => [...prev, ...items])
+	}
 
-			return () => {
-				listeners.delete(listener as Listener<T[]>)
+	col.remove = (predicate: (item: T) => boolean, options?: { one?: boolean }) => {
+		if (options?.one) {
+			let removed = false
 
-				if (listeners.size === 0) {
-					watchers.delete(watchKey)
-				}
-			}
-		},
+			base.set((prev) =>
+				prev.filter((item) => {
+					if (!removed && predicate(item)) {
+						removed = true
 
-		add(...items: T[]) {
-			base.set((prev) => [...prev, ...items])
-		},
+						return false
+					}
 
-		remove(predicate: (item: T) => boolean, options?: { one?: boolean }) {
-			if (options?.one) {
-				let removed = false
+					return true
+				}),
+			)
+		} else {
+			base.set((prev) => prev.filter((item) => !predicate(item)))
+		}
+	}
 
-				base.set((prev) =>
-					prev.filter((item) => {
-						if (!removed && predicate(item)) {
-							removed = true
+	col.update = (
+		predicate: (item: T) => boolean,
+		patch: Partial<T> | ((item: T) => T),
+		options?: { one?: boolean },
+	) => {
+		const applyPatch = typeof patch === 'function' ? patch : (item: T): T => ({ ...item, ...patch })
 
-							return false
-						}
+		if (options?.one) {
+			let updated = false
 
-						return true
-					}),
-				)
-			} else {
-				base.set((prev) => prev.filter((item) => !predicate(item)))
-			}
-		},
+			base.set((prev) =>
+				prev.map((item) => {
+					if (!updated && predicate(item)) {
+						updated = true
 
-		update(
-			predicate: (item: T) => boolean,
-			patch: Partial<T> | ((item: T) => T),
-			options?: { one?: boolean },
-		) {
-			const applyPatch =
-				typeof patch === 'function' ? patch : (item: T): T => ({ ...item, ...patch })
+						return applyPatch(item)
+					}
 
-			if (options?.one) {
-				let updated = false
+					return item
+				}),
+			)
+		} else {
+			base.set((prev) => prev.map((item) => (predicate(item) ? applyPatch(item) : item)))
+		}
+	}
 
-				base.set((prev) =>
-					prev.map((item) => {
-						if (!updated && predicate(item)) {
-							updated = true
+	col.find = (predicate: (item: T) => boolean): T | undefined => {
+		return base.get().find(predicate)
+	}
 
-							return applyPatch(item)
-						}
+	col.findAll = (predicate: (item: T) => boolean): T[] => {
+		return base.get().filter(predicate)
+	}
 
-						return item
-					}),
-				)
-			} else {
-				base.set((prev) => prev.map((item) => (predicate(item) ? applyPatch(item) : item)))
-			}
-		},
+	col.has = (predicate: (item: T) => boolean): boolean => {
+		return base.get().some(predicate)
+	}
 
-		find(predicate: (item: T) => boolean): T | undefined {
-			return base.get().find(predicate)
-		},
+	col.clear = () => {
+		base.set([])
+	}
 
-		findAll(predicate: (item: T) => boolean): T[] {
-			return base.get().filter(predicate)
-		},
-
-		has(predicate: (item: T) => boolean): boolean {
-			return base.get().some(predicate)
-		},
-
-		get size() {
+	Object.defineProperty(col, 'size', {
+		get() {
 			return base.get().length
 		},
+		enumerable: true,
+	})
 
-		clear() {
-			base.set([])
-		},
+	col.destroy = () => {
+		watchers.clear()
 
-		intercept(fn) {
-			return base.intercept(fn)
-		},
+		unsubscribe()
 
-		use(fn) {
-			return base.use(fn)
-		},
-
-		get scope() {
-			return base.scope
-		},
-
-		get key() {
-			return base.key
-		},
-
-		get isDestroyed() {
-			return base.isDestroyed
-		},
-
-		get ready() {
-			return base.ready
-		},
-
-		get settled() {
-			return base.settled
-		},
-
-		get hydrated() {
-			return base.hydrated
-		},
-
-		get destroyed() {
-			return base.destroyed
-		},
-
-		destroy() {
-			watchers.clear()
-
-			unsubscribe()
-
-			originalDestroy()
-		},
+		originalDestroy()
 	}
+
+	return col
 }
