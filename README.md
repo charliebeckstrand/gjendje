@@ -122,10 +122,6 @@ Reactive array with first-class mutation methods — `add`, `remove`, `update`, 
 #### `effect(deps, fn)`
 Runs a side effect immediately and re-runs whenever any dependency changes. The callback can return a cleanup function that runs before the next execution and on `stop()`. Returns an `EffectHandle` with a `stop()` method.
 
-## React
-
-[Full React API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/react.md)
-
 ## License
 
 MIT
