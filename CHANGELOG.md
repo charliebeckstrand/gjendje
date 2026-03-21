@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Add extended internal benchmarks: `select()` vs `computed()`, `readonly()` overhead, registry lookup at scale, and persistence round-trip (`wrapForStorage`/`readAndMigrate` with migrations and validation). Run via `pnpm bench:extended`.
+
 - a17f18f: Security audit hardening: fix URL adapter double-encoding, prevent migration infinite loops from corrupted version numbers, harden BroadcastChannel message validation, use Object.hasOwn in pickKeys, reject non-safe-integer version envelopes.
 
 ## 0.4.1
