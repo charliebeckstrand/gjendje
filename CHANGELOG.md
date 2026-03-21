@@ -1,5 +1,64 @@
 # gjendje
 
+## 0.3.7
+
+### Docs & Testing
+
+- Add changeset workflow instructions to `CLAUDE.md`
+- Add regression tests targeting coverage gaps across 9 modules
+- Improve registry coverage to 100% with direct `registerByKey` tests
+- Cover SSR server-side early return in `afterHydration` for 100% coverage
+- Update scopes and examples documentation
+
+## 0.3.6
+
+### Features & Performance
+
+- Add `select`, `readonly`, and `previous` derived state primitives
+- Add shorthand syntax for `state()` default values
+- Add render-scope fast path: bypass `createBase` for in-memory state
+- Optimize hot paths: computed, effect, subscribe, watch, collection, batch flush, `shallowEqual`
+- Lazy destroyed promise in `computed` — allocate only if awaited
+- Add CLAUDE.md with biome linting rules and agent behavior guidelines
+- Add internal and edge-case benchmarks (gjendje vs Zustand vs Valtio)
+- Fix lint warnings: replace non-null assertions, reorder module-level state
+- Improve docs: quick start, scopes guide, examples, persistence, and missing API coverage
+
+## 0.3.5
+
+### Docs
+
+- Update README.md
+
+## 0.3.4
+
+### Docs
+
+- Update README.md
+
+## 0.3.3
+
+### Performance & Refactoring
+
+- Convert state instances to class-based implementation (3.4x faster creation)
+- Rename configure `defaultScope` to `scope`
+- Remove unused `BaseInstance` import from core
+- Normalize code style and remove biome-ignore directives
+- Add and refactor state management benchmarks
+
+## 0.3.2
+
+### Docs & Fixes
+
+- Fix theme retrieval by awaiting `theme.ready`
+- Clarify README descriptions and Storage Buckets API section
+
+## 0.2.0
+
+### Initial publish
+
+- First published version
+
 ## 0.1.0
 
 ### Initial release

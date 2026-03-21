@@ -24,9 +24,14 @@ This project uses **Biome** for linting and formatting. Run `pnpm lint` to check
 After completing a major change, addition, or feature:
 
 1. Run `pnpm changeset` and describe what changed
-2. Select the appropriate changeset type (see `.changeset/README.md` for types: `patch`, `minor`, `major`)
+2. Select the appropriate changeset type (see `.changeset/README.md` for types)
 3. Commit the generated changeset file alongside the code changes
 4. Update `CHANGELOG.md` with a summary of the change
+
+### Versioning
+
+- **Minor changes** (bug fixes, docs, refactors) bump by `0.0.x` — use changeset type `patch`
+- **Major changes** (new features, new exports, breaking changes) bump by `0.x` — use changeset type `minor` or `major`
 
 ## Agent Behavior
 
