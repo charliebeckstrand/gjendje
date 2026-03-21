@@ -399,9 +399,10 @@ interface RenderMutableState<T> extends MutableState<T> {
 }
 
 class RenderStateImpl<T> extends StateImpl<T> {
-	private get _rs(): RenderMutableState<T> {
-		return this._s as RenderMutableState<T>
-	}
+	// Direct reference — avoids a getter cast on every get()/set() call
+	private _r: RenderMutableState<T>
+
+	private _hasIsEqual: boolean
 
 	constructor(
 		key: string,
@@ -423,23 +424,25 @@ class RenderStateImpl<T> extends StateImpl<T> {
 
 		// Extend the mutable state with render-specific fields
 		const rs = this._s as RenderMutableState<T>
+
 		rs.current = options.default
 		rs.renderListeners = undefined
 		rs.notifyFn = undefined
+
+		this._r = rs
+		this._hasIsEqual = options.isEqual !== undefined
 	}
 
 	override get(): T {
-		const s = this._rs
-		return s.isDestroyed ? s.lastValue : s.current
+		return this._r.current
 	}
 
 	override peek(): T {
-		const s = this._rs
-		return s.isDestroyed ? s.lastValue : s.current
+		return this._r.current
 	}
 
 	override set(valueOrUpdater: T | ((prev: T) => T)): void {
-		const s = this._rs
+		const s = this._r
 
 		if (s.isDestroyed) return
 
@@ -456,16 +459,13 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			}
 		}
 
-		if (this._options.isEqual?.(next, prev)) return
+		if (this._hasIsEqual && this._options.isEqual!(next, prev)) return
 
-		s.lastValue = next
 		s.current = next
 
-		if (s.notifyFn !== undefined && s.renderListeners !== undefined && s.renderListeners.size > 0) {
+		if (s.notifyFn !== undefined) {
 			notify(s.notifyFn)
 		}
-
-		s.settled = RESOLVED
 
 		if (s.hooks !== undefined && s.hooks.size > 0) {
 			for (const hook of s.hooks) {
@@ -475,7 +475,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 	}
 
 	override subscribe(listener: Listener<T>): Unsubscribe {
-		const s = this._rs
+		const s = this._r
 
 		if (!s.renderListeners) {
 			const listeners = new Set<Listener<T>>()
@@ -500,7 +500,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 	}
 
 	override reset(): void {
-		const s = this._rs
+		const s = this._r
 
 		if (s.isDestroyed) return
 
@@ -514,16 +514,13 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			}
 		}
 
-		if (this._options.isEqual?.(next, prev)) return
+		if (this._hasIsEqual && this._options.isEqual!(next, prev)) return
 
-		s.lastValue = next
 		s.current = next
 
-		if (s.notifyFn !== undefined && s.renderListeners !== undefined && s.renderListeners.size > 0) {
+		if (s.notifyFn !== undefined) {
 			notify(s.notifyFn)
 		}
-
-		s.settled = RESOLVED
 
 		if (s.hooks !== undefined && s.hooks.size > 0) {
 			for (const hook of s.hooks) {
@@ -537,7 +534,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 	}
 
 	protected override _ensureWatchSubscription(): void {
-		const s = this._rs
+		const s = this._r
 
 		if (s.watchUnsub) return
 
@@ -573,7 +570,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 	}
 
 	override destroy(): void {
-		const s = this._rs
+		const s = this._r
 
 		if (s.isDestroyed) return
 
