@@ -1,7 +1,7 @@
 import { Bench } from 'tinybench'
 import { proxy, subscribe as valtioSubscribe, snapshot as valtioSnapshot } from 'valtio/vanilla'
 import { createStore as createZustandStore } from 'zustand/vanilla'
-import { state, computed, batch } from '../src/index.js'
+import { batch, computed, state } from '../src/index.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -18,6 +18,7 @@ function printResults(bench: Bench) {
 		const r = t.result as Record<string, unknown> | undefined
 		const throughput = r?.throughput as Record<string, number> | undefined
 		const latency = r?.latency as Record<string, number> | undefined
+
 		return {
 			name: t.name,
 			hz: throughput?.mean ?? 0,
@@ -26,27 +27,30 @@ function printResults(bench: Bench) {
 		}
 	})
 
-	// Sort by throughput descending
 	tasks.sort((a, b) => b.hz - a.hz)
 
 	const fastest = tasks[0]
 
 	console.log('')
+
 	for (const t of tasks) {
 		const ratio = fastest && t.hz > 0 ? (fastest.hz / t.hz).toFixed(2) : '-'
 		const marker = t === fastest ? ' ⇐ fastest' : ''
+
 		console.log(
 			`  ${t.name.padEnd(20)} ${formatOps(t.hz).padStart(16)}   (avg ${t.mean.toFixed(4)}ms, p99 ${t.p99.toFixed(4)}ms)  ${ratio === '1.00' ? '' : `${ratio}x slower`}${marker}`,
 		)
 	}
+
 	console.log('')
 }
 
 // ---------------------------------------------------------------------------
-// Unique key counter to avoid gjendje instance caching between benchmarks
+// Unique key counter — avoids gjendje instance caching between benchmarks
 // ---------------------------------------------------------------------------
 
 let keyId = 0
+
 function uniqueKey(prefix: string): string {
 	return `${prefix}-${keyId++}`
 }
@@ -83,9 +87,7 @@ async function benchRead() {
 	const bench = new Bench({ time: 1000, warmupTime: 200 })
 
 	const gj = state(uniqueKey('read'), { default: 42 })
-
 	const vp = proxy({ value: 42 })
-
 	const zStore = createZustandStore(() => ({ value: 42 }))
 
 	bench
@@ -113,9 +115,7 @@ async function benchWrite() {
 	const bench = new Bench({ time: 1000, warmupTime: 200 })
 
 	const gj = state(uniqueKey('write'), { default: 0 })
-
 	const vp = proxy({ value: 0 })
-
 	const zStore = createZustandStore<{ value: number }>(() => ({ value: 0 }))
 
 	let i = 0
@@ -144,15 +144,12 @@ async function benchWrite() {
 async function benchSubscribeWrite() {
 	const bench = new Bench({ time: 1000, warmupTime: 200 })
 
-	// gjendje
 	const gj = state(uniqueKey('sub'), { default: 0 })
 	gj.subscribe(() => {})
 
-	// valtio
 	const vp = proxy({ value: 0 })
 	valtioSubscribe(vp, () => {}, true)
 
-	// zustand
 	const zStore = createZustandStore<{ value: number }>(() => ({ value: 0 }))
 	zStore.subscribe(() => {})
 
@@ -183,20 +180,20 @@ async function benchManyListeners() {
 	const bench = new Bench({ time: 1000, warmupTime: 200 })
 	const LISTENER_COUNT = 100
 
-	// gjendje
 	const gj = state(uniqueKey('many'), { default: 0 })
+
 	for (let j = 0; j < LISTENER_COUNT; j++) {
 		gj.subscribe(() => {})
 	}
 
-	// valtio
 	const vp = proxy({ value: 0 })
+
 	for (let j = 0; j < LISTENER_COUNT; j++) {
 		valtioSubscribe(vp, () => {}, true)
 	}
 
-	// zustand
 	const zStore = createZustandStore<{ value: number }>(() => ({ value: 0 }))
+
 	for (let j = 0; j < LISTENER_COUNT; j++) {
 		zStore.subscribe(() => {})
 	}
@@ -228,28 +225,30 @@ async function benchBatch() {
 	const bench = new Bench({ time: 1000, warmupTime: 200 })
 	const UPDATE_COUNT = 100
 
-	// gjendje
 	const gjItems = Array.from({ length: UPDATE_COUNT }, (_, i) =>
 		state(uniqueKey('batch'), { default: i }),
 	)
+
 	for (const item of gjItems) {
 		item.subscribe(() => {})
 	}
 
-	// valtio (single proxy with many keys - idiomatic)
 	const vpState: Record<string, number> = {}
+
 	for (let i = 0; i < UPDATE_COUNT; i++) {
 		vpState[`key${i}`] = i
 	}
+
 	const vp = proxy(vpState)
 	valtioSubscribe(vp, () => {}, true)
 
-	// zustand (single store with many keys - idiomatic)
-	const initialState: Record<string, number> = {}
+	const zInitial: Record<string, number> = {}
+
 	for (let i = 0; i < UPDATE_COUNT; i++) {
-		initialState[`key${i}`] = i
+		zInitial[`key${i}`] = i
 	}
-	const zStore = createZustandStore<Record<string, number>>(() => initialState)
+
+	const zStore = createZustandStore<Record<string, number>>(() => zInitial)
 	zStore.subscribe(() => {})
 
 	let iter = 0
@@ -257,24 +256,31 @@ async function benchBatch() {
 	bench
 		.add('gjendje', () => {
 			iter++
+
 			batch(() => {
 				for (let i = 0; i < UPDATE_COUNT; i++) {
-					gjItems[i]!.set(iter + i)
+					const item = gjItems[i]
+
+					if (item) item.set(iter + i)
 				}
 			})
 		})
 		.add('valtio', () => {
 			iter++
+
 			for (let i = 0; i < UPDATE_COUNT; i++) {
 				vp[`key${i}`] = iter + i
 			}
 		})
 		.add('zustand', () => {
 			iter++
+
 			const partial: Record<string, number> = {}
+
 			for (let i = 0; i < UPDATE_COUNT; i++) {
 				partial[`key${i}`] = iter + i
 			}
+
 			zStore.setState(partial)
 		})
 
@@ -291,22 +297,21 @@ async function benchBatch() {
 async function benchComputed() {
 	const bench = new Bench({ time: 1000, warmupTime: 200 })
 
-	// gjendje
 	const gjA = state(uniqueKey('compA'), { default: 1 })
 	const gjB = state(uniqueKey('compB'), { default: 2 })
 	const gjC = computed([gjA, gjB], ([a, b]) => a + b)
 
-	// valtio - derive via snapshot
 	const vpA = proxy({ value: 1 })
 	const vpB = proxy({ value: 2 })
 
-	// zustand - derive via subscribe (idiomatic vanilla pattern)
 	const zA = createZustandStore<{ value: number }>(() => ({ value: 1 }))
 	const zB = createZustandStore<{ value: number }>(() => ({ value: 2 }))
 	let zDerived = zA.getState().value + zB.getState().value
+
 	zA.subscribe((s) => {
 		zDerived = s.value + zB.getState().value
 	})
+
 	zB.subscribe((s) => {
 		zDerived = zA.getState().value + s.value
 	})
@@ -324,7 +329,7 @@ async function benchComputed() {
 		})
 		.add('zustand', () => {
 			zA.setState({ value: ++i })
-			void zDerived
+			zDerived
 		})
 
 	await bench.run()
