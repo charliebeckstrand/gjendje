@@ -3,6 +3,14 @@ import { createBase, createRenderState } from './core.js'
 import { getRegistered, registerByKey, scopedKey } from './registry.js'
 import type { StateInstance, StateOptions } from './types.js'
 
+type Widen<T> = T extends string
+	? string
+	: T extends number
+		? number
+		: T extends boolean
+			? boolean
+			: T
+
 /**
  * Create a stateful value.
  *
@@ -13,9 +21,25 @@ import type { StateInstance, StateOptions } from './types.js'
  * const theme = state('theme', { default: 'light', scope: 'local' })
  * const filters = state('filters', { default: {}, scope: 'url' })
  * const user = state('user', { default: null, scope: 'server' })
+ *
+ * // Shorthand — pass a default value directly
+ * const counter = state('counter', 0)
+ * const name = state('name', 'guest')
  * ```
  */
-export function state<T>(key: string, options: StateOptions<T>): StateInstance<T> {
+export function state<T>(key: string, options: StateOptions<T>): StateInstance<T>
+export function state<T extends string | number | boolean | null | undefined>(
+	key: string,
+	defaultValue: T,
+): StateInstance<Widen<T>>
+export function state<T>(key: string, optionsOrDefault: T | StateOptions<T>): StateInstance<T> {
+	const options: StateOptions<T> =
+		optionsOrDefault !== null &&
+		typeof optionsOrDefault === 'object' &&
+		'default' in optionsOrDefault
+			? optionsOrDefault
+			: ({ default: optionsOrDefault } as StateOptions<T>)
+
 	if (!key) {
 		throw new Error('[state] key must be a non-empty string.')
 	}
