@@ -12,7 +12,9 @@ npm install gjendje
 
 ## Configure
 
-Sets global defaults for all state instances. Call once at your app entry point.
+Sets global defaults for all state instances.
+
+Call once at your app entry point.
 
 ```ts
 import { configure, state } from 'gjendje'
