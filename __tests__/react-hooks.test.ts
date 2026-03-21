@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { useSelector, useStoreValue } from '../src/react/index.js'
-
-// These hooks rely on React internals (useSyncExternalStore, useCallback).
-// Full rendering tests would require a .tsx setup with @testing-library/react.
-// Here we verify the hooks are properly exported and the module loads cleanly.
+import { useSelector, useSharedState, useStore } from '../src/react/index.js'
 
 describe('React hook exports', () => {
-	it('useSelector is exported as a function', () => {
-		expect(typeof useSelector).toBe('function')
+	it('useStore is exported as a function', () => {
+		expect(typeof useStore).toBe('function')
 	})
 
-	it('useStoreValue is exported as a function', () => {
-		expect(typeof useStoreValue).toBe('function')
+	it('useSharedState is exported as a function', () => {
+		expect(typeof useSharedState).toBe('function')
+	})
+
+	it('useSelector is exported as a function', () => {
+		expect(typeof useSelector).toBe('function')
 	})
 })

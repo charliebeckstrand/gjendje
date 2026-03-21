@@ -16,8 +16,8 @@
 	{
 		"name": "gjendje/react",
 		"path": "dist/react/index.js",
-		"limit": "4.1 kB",
-		"import": "{ useStore, useSharedState, useBucket, useSelector, useStoreValue }",
+		"limit": "4 kB",
+		"import": "{ useStore, useSharedState, useSelector }",
 		"ignore": ["async_hooks"]
 	}
 ]
