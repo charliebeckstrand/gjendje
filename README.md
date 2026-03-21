@@ -2,7 +2,7 @@
 
 # gjendje
 
-Every app juggles `localStorage`, `sessionStorage`, URL params, and in-memory state — each with its own API and its own bugs. **gjendje** replaces it all with a single primitive. Choose where state lives. The rest is handled.
+Every app juggles `localStorage`, `sessionStorage`, URL params, and in-memory state — each with its own API. **gjendje** replaces it all with a single primitive. Choose where state lives. The rest is handled.
 
 ## Install
 
