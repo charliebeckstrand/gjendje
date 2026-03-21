@@ -22,6 +22,8 @@ import { configure } from 'gjendje'
 configure({ scope: 'local' })
 ```
 
+## Usage
+
 ```ts
 import { state } from 'gjendje'
 
