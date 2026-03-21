@@ -53,13 +53,20 @@ Runs **after** a value is stored.
 
 Three features control how persistent scopes (`local`, `tab`, `bucket`) read and write stored values.
 
-### Validation
+### Custom serializer
 
 ```ts
-validate?: (value: unknown) => value is T
+serialize?: Serializer<T>
 ```
 
-Type-guard that runs on every read from storage. Falls back to `default` on failure. Runs after migration.
+```ts
+interface Serializer<T> {
+  stringify(value: T): string
+  parse(raw: string): T
+}
+```
+
+For types that don't round-trip through JSON (e.g., `Set`, `Map`, `Date`). When a custom serializer is provided, migration and validation are skipped.
 
 ### Migration
 
@@ -83,21 +90,6 @@ Stored format:
 { "v": 3, "data": { "theme": "light", "fontSize": 14, "compact": false } }
 ```
 
-### Custom serializer
-
-```ts
-serialize?: Serializer<T>
-```
-
-```ts
-interface Serializer<T> {
-  stringify(value: T): string
-  parse(raw: string): T
-}
-```
-
-For types that don't round-trip through JSON (e.g., `Set`, `Map`, `Date`). When a custom serializer is provided, migration and validation are skipped.
-
 ### Selective persistence
 
 ```ts
@@ -105,3 +97,11 @@ persist?: Array<keyof T & string>
 ```
 
 Only persist the listed keys of an object value. Non-listed keys remain in memory but are excluded from storage writes. On read, persisted keys are merged with the default value.
+
+### Validation
+
+```ts
+validate?: (value: unknown) => value is T
+```
+
+Type-guard that runs on every read from storage. Falls back to `default` on failure. Runs after migration.

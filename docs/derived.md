@@ -4,6 +4,41 @@ Primitives that build on top of `state` to handle computed values, collections, 
 
 ---
 
+## `computed(deps, fn)`
+
+```ts
+function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TResult>(
+  deps: TDeps,
+  fn: (values: DepValues<TDeps>) => TResult,
+): ComputedInstance<TResult>
+```
+
+Derives a reactive, read-only value from one or more state dependencies.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `deps` | `ReadonlyArray<BaseInstance>` | State instances to depend on |
+| `fn` | `(values) => TResult` | Compute function — receives current dependency values as a tuple |
+
+**Returns** `ComputedInstance<TResult>` — extends `ReadonlyInstance` (no `set` or `reset`).
+
+### Instance methods
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `get()` | `() => T` | Current computed value |
+| `peek()` | `() => T` | Same as `get()` |
+| `subscribe(fn)` | `(fn: (value: T) => void) => Unsubscribe` | Listen for recomputations |
+| `destroy()` | `() => void` | Stop listening to dependencies; last cached value remains accessible |
+
+### Behavior
+- **Lazy caching** — the compute function only runs when a dependency changes. Repeated `get()` calls return the cached value.
+- **Composition** — computed values can depend on other computed values.
+- **Batching** — participates in `batch()`. Notifications are deferred like any other state.
+- **Eager initialization** — the first value is computed synchronously at creation time.
+
+---
+
 ## `select(source, fn)`
 
 ```ts
@@ -42,36 +77,6 @@ Derives a reactive, read-only value from a **single** source instance. A lightwe
 
 ---
 
-## `readonly(instance)`
-
-```ts
-function readonly<T>(instance: ReadonlyInstance<T>): ReadonlyInstance<T>
-```
-
-Creates a read-only view of any state or computed instance. The returned instance exposes `get`, `peek`, `subscribe`, and lifecycle properties — but no `set`, `reset`, `intercept`, or `use`. Zero runtime cost.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `instance` | `ReadonlyInstance<T>` | The source instance to wrap |
-
-**Returns** `ReadonlyInstance<T>` — a view with no write methods.
-
-### Instance methods
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `get()` | `() => T` | Current value (delegates to source) |
-| `peek()` | `() => T` | Snapshot without reactive tracking |
-| `subscribe(fn)` | `(fn: (value: T) => void) => Unsubscribe` | Listen for changes |
-| `destroy()` | `() => void` | Delegates to source |
-
-### Behavior
-- **Pure delegation** — all reads and subscriptions go through to the source.
-- **Type safety** — write methods (`set`, `reset`, `intercept`, `use`) are stripped from the type.
-- **Lifecycle** — `key`, `scope`, `isDestroyed`, `ready`, `settled`, `hydrated`, `destroyed` all delegate to the source.
-
----
-
 ## `previous(source)`
 
 ```ts
@@ -106,38 +111,33 @@ Tracks the previous value of a source instance. Returns `undefined` until the so
 
 ---
 
-## `computed(deps, fn)`
+## `readonly(instance)`
 
 ```ts
-function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TResult>(
-  deps: TDeps,
-  fn: (values: DepValues<TDeps>) => TResult,
-): ComputedInstance<TResult>
+function readonly<T>(instance: ReadonlyInstance<T>): ReadonlyInstance<T>
 ```
 
-Derives a reactive, read-only value from one or more state dependencies.
+Creates a read-only view of any state or computed instance. The returned instance exposes `get`, `peek`, `subscribe`, and lifecycle properties — but no `set`, `reset`, `intercept`, or `use`. Zero runtime cost.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `deps` | `ReadonlyArray<BaseInstance>` | State instances to depend on |
-| `fn` | `(values) => TResult` | Compute function — receives current dependency values as a tuple |
+| `instance` | `ReadonlyInstance<T>` | The source instance to wrap |
 
-**Returns** `ComputedInstance<TResult>` — extends `ReadonlyInstance` (no `set` or `reset`).
+**Returns** `ReadonlyInstance<T>` — a view with no write methods.
 
 ### Instance methods
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `get()` | `() => T` | Current computed value |
-| `peek()` | `() => T` | Same as `get()` |
-| `subscribe(fn)` | `(fn: (value: T) => void) => Unsubscribe` | Listen for recomputations |
-| `destroy()` | `() => void` | Stop listening to dependencies; last cached value remains accessible |
+| `get()` | `() => T` | Current value (delegates to source) |
+| `peek()` | `() => T` | Snapshot without reactive tracking |
+| `subscribe(fn)` | `(fn: (value: T) => void) => Unsubscribe` | Listen for changes |
+| `destroy()` | `() => void` | Delegates to source |
 
 ### Behavior
-- **Lazy caching** — the compute function only runs when a dependency changes. Repeated `get()` calls return the cached value.
-- **Composition** — computed values can depend on other computed values.
-- **Batching** — participates in `batch()`. Notifications are deferred like any other state.
-- **Eager initialization** — the first value is computed synchronously at creation time.
+- **Pure delegation** — all reads and subscriptions go through to the source.
+- **Type safety** — write methods (`set`, `reset`, `intercept`, `use`) are stripped from the type.
+- **Lifecycle** — `key`, `scope`, `isDestroyed`, `ready`, `settled`, `hydrated`, `destroyed` all delegate to the source.
 
 ---
 
