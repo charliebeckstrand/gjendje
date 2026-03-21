@@ -492,10 +492,12 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			}
 		}
 
-		s.renderListeners.add(listener)
+		const set = s.renderListeners
+
+		set.add(listener)
 
 		return () => {
-			s.renderListeners?.delete(listener)
+			set.delete(listener)
 		}
 	}
 
