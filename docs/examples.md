@@ -57,6 +57,7 @@ const isValid = select(form, (f) =>
 // Reject empty names
 form.intercept((next, prev) => {
   if (next.name.trim() === '' && prev.name.trim() !== '') return prev
+
   return { ...next, isDirty: true }
 })
 ```
