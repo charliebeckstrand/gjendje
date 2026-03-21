@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRenderAdapter } from '../src/adapters/render.js'
 import { createStorageAdapter } from '../src/adapters/storage.js'
 import { withSync } from '../src/adapters/sync.js'
+import { getConfig } from '../src/config.js'
 import { configure, previous, readonly, select, state, withWatch } from '../src/index.js'
-import { getRegistry, register, scopedKey, unregister } from '../src/registry.js'
+import { getRegistry, register, registerByKey, scopedKey, unregister } from '../src/registry.js'
 import { afterHydration } from '../src/ssr.js'
 import { makeStorage } from './helpers.js'
 
@@ -267,27 +268,78 @@ describe('select lifecycle', () => {
 // ---------------------------------------------------------------------------
 
 describe('registry', () => {
-	it('re-registering a destroyed key replaces it', () => {
-		const a = state('reg-replace', { default: 1, scope: 'render' })
+	beforeEach(() => {
+		configure({
+			maxKeys: undefined,
+			warnOnDuplicate: undefined,
+			logLevel: undefined,
+			onRegister: undefined,
+		})
+	})
+
+	it('re-registering over a destroyed entry via registerByKey replaces it', () => {
+		const a = state('reg-replace-direct', { default: 1, scope: 'render' })
+		const rKey = scopedKey('reg-replace-direct', 'render')
+
+		// Mark destroyed but don't unregister (simulate the internal state)
+		// We need to manually put a destroyed instance back in the registry
 		a.destroy()
+		// destroy() already unregisters, so re-register the destroyed instance manually
+		getRegistry().set(rKey, a)
 
-		const b = state('reg-replace', { default: 2, scope: 'render' })
+		const b = state('reg-replace-direct-src', { default: 2, scope: 'render' })
 
-		expect(b.get()).toBe(2)
-		expect(b.isDestroyed).toBe(false)
+		// Now call registerByKey with the same rKey — should replace destroyed entry
+		registerByKey(rKey, 'reg-replace-direct', 'render', b, getConfig())
+
+		expect(getRegistry().get(rKey)).toBe(b)
+	})
+
+	it('registerByKey with existing non-destroyed entry and warnOnDuplicate logs warning', () => {
+		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		const a = state('reg-bykey-dup', { default: 1, scope: 'render' })
+		const rKey = scopedKey('reg-bykey-dup', 'render')
+
+		// Call registerByKey again with the same key — hits line 31-32
+		registerByKey(rKey, 'reg-bykey-dup', 'render', a, {
+			...getConfig(),
+			warnOnDuplicate: true,
+			logLevel: 'warn',
+		})
+
+		expect(spy).toHaveBeenCalledWith(expect.stringContaining('Duplicate state'))
+
+		spy.mockRestore()
+	})
+
+	it('registerByKey with existing non-destroyed entry without warnOnDuplicate is silent', () => {
+		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		const a = state('reg-bykey-silent', { default: 1, scope: 'render' })
+		const rKey = scopedKey('reg-bykey-silent', 'render')
+
+		// Call registerByKey again — hits line 28 but not 31
+		registerByKey(rKey, 'reg-bykey-silent', 'render', a, {
+			...getConfig(),
+			warnOnDuplicate: false,
+		})
+
+		expect(spy).not.toHaveBeenCalled()
+
+		spy.mockRestore()
 	})
 
 	it('maxKeys limit throws when exceeded', () => {
-		configure({ maxKeys: 1 })
+		// Set maxKeys to current registry size + 1 so the first state succeeds
+		const currentSize = getRegistry().size
+		configure({ maxKeys: currentSize + 1 })
 
 		state('reg-max-1', { default: 0, scope: 'render' })
 
 		expect(() => {
 			state('reg-max-2', { default: 0, scope: 'render' })
 		}).toThrow(/maxKeys limit/)
-
-		// Clean up config
-		configure({ maxKeys: undefined })
 	})
 
 	it('onRegister callback fires on registration', () => {
@@ -315,7 +367,7 @@ describe('registry', () => {
 		expect(getRegistry().has(rKey)).toBe(false)
 	})
 
-	it('warnOnDuplicate logs a warning for duplicate keys', () => {
+	it('warnOnDuplicate via state() API logs a warning for duplicate keys', () => {
 		configure({ warnOnDuplicate: true, logLevel: 'warn' })
 
 		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
