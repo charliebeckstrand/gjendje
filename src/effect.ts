@@ -62,9 +62,15 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 	function run(): void {
 		if (isStopped) return
 
-		// Run previous cleanup before re-executing
+		// Run previous cleanup before re-executing.
+		// Errors in cleanup must not prevent the next effect from running.
 		if (cleanup) {
-			cleanup()
+			try {
+				cleanup()
+			} catch (err) {
+				console.error('[gjendje] Effect cleanup threw:', err)
+			}
+
 			cleanup = undefined
 		}
 
@@ -88,7 +94,12 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 			}
 
 			if (cleanup) {
-				cleanup()
+				try {
+					cleanup()
+				} catch (err) {
+					console.error('[gjendje] Effect cleanup threw:', err)
+				}
+
 				cleanup = undefined
 			}
 		},

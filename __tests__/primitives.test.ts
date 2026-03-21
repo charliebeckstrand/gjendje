@@ -536,6 +536,7 @@ describe('edge cases', () => {
 	})
 
 	it('effect cleanup throwing does not prevent stop', () => {
+		const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 		const x = state('edge-eff-cleanup-throw', { default: 0 })
 		const handle = effect([x], () => {
 			return () => {
@@ -543,8 +544,10 @@ describe('edge cases', () => {
 			}
 		})
 
-		// stop() should call cleanup which throws, but stop itself should complete
-		expect(() => handle.stop()).toThrow('cleanup boom')
+		// stop() calls cleanup which throws, but the error is caught and logged
+		handle.stop()
+		expect(consoleSpy).toHaveBeenCalled()
+		consoleSpy.mockRestore()
 		// After stop, no further re-runs
 		const fn = vi.fn()
 		const handle2 = effect([x], fn)
