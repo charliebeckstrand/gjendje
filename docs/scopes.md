@@ -9,7 +9,6 @@ Every `state()` call targets a scope — the storage backend that holds the valu
 **Does this value need to survive a page reload?**
 
 - **No** → `render`
-- **Yes** → keep reading
 
 **Should it be visible in the URL (bookmarkable, shareable)?**
 
@@ -18,7 +17,6 @@ Every `state()` call targets a scope — the storage backend that holds the valu
 **Should it survive after the tab closes?**
 
 - **No** → `tab`
-- **Yes** → keep reading
 
 **Do you need fine-grained storage control (quota, expiry, isolation)?**
 
