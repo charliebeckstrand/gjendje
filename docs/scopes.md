@@ -51,7 +51,7 @@ In-memory only. Lost on refresh. The default scope.
 Use for UI state that doesn't need persistence — modal open/closed, form input while typing, drag position.
 
 ```ts
-const isOpen = state('modal', { default: false })
+const isOpen = state('modal', false)
 ```
 
 ---

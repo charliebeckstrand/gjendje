@@ -99,7 +99,7 @@ const remaining = select(todos, (items) => items.filter((t) => !t.done).length)
 ```ts
 import { state, withHistory } from 'gjendje'
 
-const doc = state('doc', { default: '' })
+const doc = state('doc', '')
 const h = withHistory(doc, { maxSize: 100 })
 
 h.set('Hello')
@@ -118,7 +118,7 @@ h.redo()   // 'Hello, world'
 ```ts
 import { state, previous, effect } from 'gjendje'
 
-const route = state('route', { default: '/home' })
+const route = state('route', '/home')
 const prevRoute = previous(route)
 
 effect([route], ([current]) => {
@@ -161,7 +161,7 @@ user.set({ name: 'John', age: 31, role: 'admin' })  // logs 'John'
 // store.ts
 import { state, readonly } from 'gjendje'
 
-const _count = state('count', { default: 0 })
+const _count = state('count', 0)
 
 // Consumers can read and subscribe, but can't call set() or reset()
 export const count = readonly(_count)
@@ -217,8 +217,8 @@ Users on v1 migrate through both steps. Users on v2 run only the second. Users o
 ```ts
 import { state, computed, batch } from 'gjendje'
 
-const firstName = state('first', { default: 'Jane' })
-const lastName = state('last', { default: 'Doe' })
+const firstName = state('first', 'Jane')
+const lastName = state('last', 'Doe')
 const fullName = computed([firstName, lastName], ([f, l]) => `${f} ${l}`)
 
 fullName.subscribe((name) => console.log(name))
