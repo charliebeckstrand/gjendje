@@ -33,27 +33,32 @@ export function createUrlAdapter<T>(
 	}
 
 	function write(value: T): void {
-		const params = new URLSearchParams(window.location.search)
+		try {
+			const params = new URLSearchParams(window.location.search)
 
-		const toStore = pickKeys(value, persist)
+			const toStore = pickKeys(value, persist)
 
-		const stringified = serializer.stringify(toStore)
+			const stringified = serializer.stringify(toStore)
 
-		const isDefault = stringified === defaultSerialized
+			const isDefault = stringified === defaultSerialized
 
-		if (isDefault) {
-			params.delete(key)
-		} else {
-			params.set(key, encodeURIComponent(stringified))
+			if (isDefault) {
+				params.delete(key)
+			} else {
+				params.set(key, encodeURIComponent(stringified))
+			}
+
+			const search = params.toString()
+
+			const newUrl = search
+				? `${window.location.pathname}?${search}${window.location.hash}`
+				: `${window.location.pathname}${window.location.hash}`
+
+			window.history.pushState(null, '', newUrl)
+		} catch {
+			// Serialization or pushState can fail (e.g. sandboxed iframes,
+			// SecurityError). The in-memory value is still updated via set().
 		}
-
-		const search = params.toString()
-
-		const newUrl = search
-			? `${window.location.pathname}?${search}${window.location.hash}`
-			: `${window.location.pathname}${window.location.hash}`
-
-		window.history.pushState(null, '', newUrl)
 	}
 
 	let lastNotifiedValue: T = defaultValue

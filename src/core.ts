@@ -188,6 +188,9 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 				}
 
 				config.onHydrate?.({ key, scope, serverValue, clientValue })
+
+				// Clean up the temporary adapter to avoid leaking event listeners
+				realAdapter.destroy?.()
 			} catch (err) {
 				log('debug', `Hydration adapter unavailable for state("${key}") — using render fallback.`)
 				reportError(key, scope, err)
