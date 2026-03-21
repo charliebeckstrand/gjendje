@@ -322,11 +322,13 @@ class StateImpl<T> implements StateInstance<T> {
 
 		listeners.add(listener as Listener<unknown>)
 
+		const watcherMap = s.watchers
+
 		return () => {
 			listeners.delete(listener as Listener<unknown>)
 
 			if (listeners.size === 0) {
-				s.watchers?.delete(watchKey as PropertyKey)
+				watcherMap.delete(watchKey as PropertyKey)
 			}
 		}
 	}
