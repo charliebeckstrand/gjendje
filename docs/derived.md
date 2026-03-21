@@ -51,6 +51,20 @@ function select<TSource, TResult>(
 
 Derives a reactive, read-only value from a **single** source instance. A lightweight alternative to `computed` — no array allocation, no dependency loop.
 
+### `select` vs `computed`
+
+Use `select` when deriving from **one** source. Use `computed` when combining **multiple** sources.
+
+```ts
+// select — one source, one transformation
+const userName = select(user, (u) => u.name)
+
+// computed — multiple sources combined
+const greeting = computed([user, locale], ([u, l]) => localize(l, u.name))
+```
+
+`select` skips the array allocation and dependency loop that `computed` needs for multi-dep tracking. For a single source, `select` is the simpler and faster choice. For two or more sources, `computed` is the only option.
+
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `source` | `ReadonlyInstance<TSource>` | The single source to derive from |

@@ -2,12 +2,43 @@
 
 # gjendje
 
-Unifies state management across storage backends.
+Every app juggles `localStorage`, `sessionStorage`, URL params, and in-memory state — each with its own API and its own bugs. **gjendje** replaces it all with a single primitive. Choose where state lives. The rest is handled.
 
 ## Install
 
 ```sh
 npm install gjendje
+```
+
+## Quick start
+
+```ts
+import { state } from 'gjendje'
+
+// 1. Create state
+const counter = state('counter', { default: 0 })
+
+// 2. Read
+counter.get() // 0
+
+// 3. Write
+counter.set(1)
+counter.set((prev) => prev + 1)
+
+// 4. Subscribe
+counter.subscribe((value) => console.log(value))
+
+// 5. Reset
+counter.reset() // back to 0
+```
+
+To persist across page reloads, add a scope:
+
+```ts
+const theme = state('theme', { default: 'light', scope: 'local' })
+
+theme.set('dark')
+// Survives refresh — stored in localStorage
 ```
 
 ## Configure
@@ -44,6 +75,8 @@ theme.scope // 'local' — derived from configure
 |`bucket`   | `Storage Buckets API ` |
 |`url`      |`URLSearchParams` |
 |`tab`      |`sessionStorage` |
+
+[Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 
 ## API
 
@@ -82,6 +115,12 @@ Runs a side effect immediately and re-runs whenever any dependency changes. The 
 Creates a read-only view of any state or computed instance. Exposes `get`, `peek`, `subscribe`, and lifecycle — but no `set`, `reset`, `intercept`, or `use`. Zero runtime cost.
 
 [Full derived state reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/derived.md)
+
+## Examples
+
+Real-world patterns and recipes — persistence with migration, cross-tab sync, derived state, collections, and more.
+
+[Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
 
 ## License
 
