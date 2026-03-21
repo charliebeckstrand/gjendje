@@ -19,9 +19,13 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 
 	if (channel) {
 		channel.onmessage = (event: MessageEvent) => {
-			if (event.data == null || typeof event.data !== 'object' || !('value' in event.data)) return
+			// Validate message shape. BroadcastChannel is same-origin only,
+			// but a compromised tab could still send malformed data.
+			const msg = event.data
+			if (msg == null || typeof msg !== 'object' || !('value' in msg)) return
+			if (Object.keys(msg as object).length !== 1) return
 
-			const value = event.data.value as T
+			const value = msg.value as T
 
 			try {
 				// Write through the underlying adapter so versioning and custom
