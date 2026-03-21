@@ -106,6 +106,8 @@ export function getConfig(): Readonly<GjendjeConfig> {
 	return globalConfig
 }
 
+const LOG_PRIORITY = { debug: 0, warn: 1, error: 2 } as const
+
 /**
  * Internal logger that respects the configured log level.
  */
@@ -114,9 +116,7 @@ export function log(level: 'warn' | 'error' | 'debug', message: string): void {
 
 	if (configLevel === 'silent') return
 
-	const priority = { debug: 0, warn: 1, error: 2 }
-
-	if (priority[level] >= priority[configLevel]) {
+	if (LOG_PRIORITY[level] >= LOG_PRIORITY[configLevel]) {
 		console[level](`[gjendje] ${message}`)
 	}
 }

@@ -76,7 +76,7 @@ export function createStorageAdapter<T>(
 	}
 
 	return {
-		ready: Promise.resolve() as Promise<void>,
+		ready: Promise.resolve(),
 
 		get() {
 			return read()

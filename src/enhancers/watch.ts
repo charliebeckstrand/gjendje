@@ -54,6 +54,9 @@ export function withWatch<TIn extends BaseInstance<any>>(
 
 	const originalDestroy = instance.destroy.bind(instance)
 
+	// Object.create delegates to instance via prototype, preserving getters
+	// (ready, settled, isDestroyed, etc.) without evaluating them eagerly.
+	// A spread would snapshot getter values at creation time, breaking reactivity.
 	const result = Object.create(instance) as TOut
 
 	result.watch = (watchKey: PropertyKey, listener: Listener<unknown>) => {

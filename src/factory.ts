@@ -8,6 +8,10 @@ interface CachedInstance {
 	readonly isDestroyed: boolean
 }
 
+// Caches the withWatch-enhanced StateInstance returned to consumers.
+// The registry in core.ts caches the underlying BaseInstance (shared by
+// both state() and collection()), while this cache stores the final
+// enhanced wrapper so withWatch isn't re-applied on duplicate calls.
 const instanceCache = new Map<string, CachedInstance>()
 
 /**

@@ -10,7 +10,7 @@ export function createRenderAdapter<T>(defaultValue: T): Adapter<T> {
 	const notifyListeners = () => listeners.notify(current)
 
 	return {
-		ready: Promise.resolve() as Promise<void>,
+		ready: Promise.resolve(),
 
 		get() {
 			return current

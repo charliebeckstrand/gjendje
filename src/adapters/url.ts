@@ -66,7 +66,7 @@ export function createUrlAdapter<T>(
 	window.addEventListener('popstate', onPopState)
 
 	return {
-		ready: Promise.resolve() as Promise<void>,
+		ready: Promise.resolve(),
 
 		get() {
 			return read()
