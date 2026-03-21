@@ -13,6 +13,7 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 
 	if (Array.isArray(a)) {
 		if (!Array.isArray(b)) return false
+
 		if (a.length !== b.length) return false
 
 		for (let i = 0; i < a.length; i++) {
@@ -25,9 +26,11 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 	if (Array.isArray(b)) return false
 
 	const objA = a as Record<string, unknown>
+
 	const objB = b as Record<string, unknown>
 
 	const keysA = Object.keys(objA)
+
 	const keysB = Object.keys(objB)
 
 	// Fast bail-out on different key counts

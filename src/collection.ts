@@ -105,6 +105,7 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 			for (let i = 0; i < len; i++) {
 				const prev = prevItems[i]
+
 				const curr = next[i]
 
 				if (prev === curr) continue
@@ -122,6 +123,7 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 				}
 
 				const p = prev as Record<PropertyKey, unknown>
+
 				const n = curr as Record<PropertyKey, unknown>
 
 				for (const watchKey of watchers.keys()) {
