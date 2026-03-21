@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- a17f18f: Security audit hardening: fix URL adapter double-encoding, prevent migration infinite loops from corrupted version numbers, harden BroadcastChannel message validation, use Object.hasOwn in pickKeys, reject non-safe-integer version envelopes.
+
+## 0.4.1
+
+### Patch Changes
+
 - Security audit hardening:
   - Fix URL adapter double-encoding: remove redundant `encodeURIComponent`/`decodeURIComponent` since `URLSearchParams` handles encoding automatically
   - Prevent migration infinite loops: reject non-safe-integer version envelopes in `isVersionedValue` and cap migration steps at 1,000 in `runMigrations`
