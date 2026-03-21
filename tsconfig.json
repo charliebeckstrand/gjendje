@@ -12,7 +12,6 @@
 		"sourceMap": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
-		"jsx": "react-jsx",
 		"rootDir": "src",
 		"outDir": "dist"
 	},
