@@ -106,6 +106,7 @@ Bucket scope is async — `await instance.ready` before reading:
 
 ```ts
 await cache.ready
+
 cache.get()
 ```
 
