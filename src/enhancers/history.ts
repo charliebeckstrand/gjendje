@@ -131,8 +131,12 @@ export function withHistory<T>(
 			future.push(current)
 
 			isNavigating = true
-			instance.set(prev)
-			isNavigating = false
+
+			try {
+				instance.set(prev)
+			} finally {
+				isNavigating = false
+			}
 		},
 
 		redo(): void {
@@ -144,8 +148,12 @@ export function withHistory<T>(
 			past.push(current)
 
 			isNavigating = true
-			instance.set(next)
-			isNavigating = false
+
+			try {
+				instance.set(next)
+			} finally {
+				isNavigating = false
+			}
 		},
 
 		get canUndo(): boolean {

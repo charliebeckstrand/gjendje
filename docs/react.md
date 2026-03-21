@@ -6,6 +6,8 @@ import {
   useSharedState,
   useStateInstance,
   useWatch,
+  useSelector,
+  useStoreValue,
   useCollection,
   useReady,
   useBucket,
@@ -130,6 +132,53 @@ Combines `useStore` + `useReady`.
 | `options` | `BucketOptions<T>` | Optional. `default`, `bucket` config, and any other state options |
 
 **Returns** `[value, setter, isReady]` — reactive value, setter, and hydration status.
+
+---
+
+## `useSelector`
+
+```ts
+useSelector<T, S>(
+  instance: StateInstance<T>,
+  selector: (value: T) => S,
+  isEqual?: (a: S, b: S) => boolean,
+): S
+```
+
+Derives a value from state and only re-renders when the selected slice changes. Accepts an optional equality function (defaults to `Object.is`).
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `instance` | `StateInstance<T>` | The state instance to select from |
+| `selector` | `(value: T) => S` | Function that extracts a slice of state |
+| `isEqual` | `(a: S, b: S) => boolean` | Optional. Controls re-render sensitivity. Defaults to `Object.is` |
+
+**Returns** `S` — the selected value. Only triggers re-render when `isEqual` reports a change.
+
+```tsx
+const theme = useSelector(prefsState, (p) => p.theme)
+// re-renders only when prefs.theme changes
+```
+
+---
+
+## `useStoreValue`
+
+```ts
+useStoreValue<T>(instance: StateInstance<T>): T
+```
+
+Read-only hook. Lighter alternative to `useSharedState` when you only need the value without a setter.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `instance` | `StateInstance<T>` | The state instance to observe |
+
+**Returns** `T` — the current value. Re-renders on changes.
+
+```tsx
+const theme = useStoreValue(themeState)
+```
 
 ---
 

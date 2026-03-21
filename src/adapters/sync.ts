@@ -1,4 +1,4 @@
-import { getConfig } from '../config.js'
+import { getConfig, log, reportError } from '../config.js'
 import { createListeners } from '../listeners.js'
 import type { Adapter, Scope, Unsubscribe } from '../types.js'
 
@@ -23,13 +23,24 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 
 			const value = event.data.value as T
 
-			// Write through the underlying adapter so versioning and custom
-			// serializers are applied consistently. The adapter subscription
-			// (above) already notifies our listeners.
-			adapter.set(value)
+			try {
+				// Write through the underlying adapter so versioning and custom
+				// serializers are applied consistently. The adapter subscription
+				// (above) already notifies our listeners.
+				adapter.set(value)
 
-			if (scope) {
-				getConfig().onSync?.({ key, scope, value, source: 'remote' })
+				if (scope) {
+					getConfig().onSync?.({ key, scope, value, source: 'remote' })
+				}
+			} catch (err) {
+				log(
+					'error',
+					`Sync failed for key "${key}": ${err instanceof Error ? err.message : String(err)}`,
+				)
+
+				if (scope) {
+					reportError(key, scope, err)
+				}
 			}
 		}
 	}

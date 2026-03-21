@@ -128,7 +128,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		peek() {
-			return recompute()
+			return cached
 		},
 
 		subscribe: listeners.subscribe,

@@ -31,19 +31,16 @@ export function withWatch<TIn extends BaseInstance<any>>(
 			return
 		}
 
-		if (next === null || typeof next !== 'object') {
-			prev = next
-
-			return
-		}
-
 		for (const [watchKey, listeners] of watchers) {
 			const prevVal =
 				prev !== null && typeof prev === 'object'
 					? (prev as Record<PropertyKey, unknown>)[watchKey]
 					: undefined
 
-			const nextVal = (next as Record<PropertyKey, unknown>)[watchKey]
+			const nextVal =
+				next !== null && typeof next === 'object'
+					? (next as Record<PropertyKey, unknown>)[watchKey]
+					: undefined
 
 			if (!Object.is(prevVal, nextVal)) {
 				for (const listener of listeners) {

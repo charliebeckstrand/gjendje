@@ -534,7 +534,7 @@ describe('edge cases', () => {
 		bool.destroy()
 	})
 
-	it('computed propagates errors from compute function', () => {
+	it('computed handles errors from compute function gracefully', () => {
 		const count = state('edge-cmp-throw', { default: 0 })
 		const risky = computed([count], ([n]) => {
 			if ((n as number) > 0) throw new Error('boom')
@@ -545,8 +545,11 @@ describe('edge cases', () => {
 		expect(risky.get()).toBe(0)
 
 		// Setting count to 1 will cause the compute function to throw.
-		// The error propagates through the notification chain.
-		expect(() => count.set(1)).toThrow('boom')
+		// Listener errors are caught so one faulty subscriber doesn't break others.
+		count.set(1)
+
+		// The computed throws when accessed directly
+		expect(() => risky.get()).toThrow('boom')
 
 		count.destroy()
 		risky.destroy()

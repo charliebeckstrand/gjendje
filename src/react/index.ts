@@ -368,19 +368,26 @@ export function useStoreValue<T>(instance: StateInstance<T>): T {
 // ---------------------------------------------------------------------------
 
 export type {
+	BaseInstance,
 	BucketOptions,
+	ComputedInstance,
+	Listener,
 	ReadonlyInstance,
 	Scope,
 	StateInstance,
 	StateOptions,
+	Unsubscribe,
 } from '../index.js'
 export {
 	batch,
 	collection,
 	computed,
+	configure,
 	effect,
+	shallowEqual,
 	snapshot,
 	state,
 	withHistory,
 	withServerSession,
+	withWatch,
 } from '../index.js'
