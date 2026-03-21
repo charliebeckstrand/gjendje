@@ -6,7 +6,8 @@
 
 ## Configure
 
-Sets global defaults for all state instances.
+Sets global defaults for all state instances.   
+Call once at app entry point.
 
 ```ts
 configure({ scope: 'local' })
