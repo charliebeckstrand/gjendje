@@ -17,13 +17,17 @@ Sets global defaults for all state instances.
 Call once at your app entry point.
 
 ```ts
-import { configure, state } from 'gjendje'
+import { configure } from 'gjendje'
 
 configure({ scope: 'local' })
+```
+
+```ts
+import { state } from 'gjendje'
 
 const theme = state('theme', { default: 'light' })
 
-theme.scope // 'local'
+theme.scope // 'local' — derived from configure
 ```
 
 [Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
@@ -33,8 +37,8 @@ theme.scope // 'local'
 |Scope      |Description                                             |
 |-----------|--------------------------------------------------------|
 |`render`   | `memory` |
-|`local`    |`localStorage`                      |
-|`server`   |`AsyncLocalStorage`                            |
+|`local`    |`localStorage` |                   
+|`server`   |`AsyncLocalStorage` |
 |`bucket`   | `Storage Buckets API ` |
 |`url`      |`URLSearchParams` |
 |`tab`      |`sessionStorage` |
