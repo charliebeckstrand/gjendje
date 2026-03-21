@@ -1,7 +1,7 @@
 {
 	"name": "gjendje",
 	"version": "0.3.5",
-	"description": "TypeScript State management library",
+	"description": "TypeScript State management",
 	"keywords": [
 		"state",
 		"storage",
