@@ -49,7 +49,7 @@ export function notify(fn: Notification): void {
 
 function flush(): void {
 	while (queue.size > 0) {
-		const pending = new Set(queue)
+		const pending = Array.from(queue)
 
 		queue.clear()
 

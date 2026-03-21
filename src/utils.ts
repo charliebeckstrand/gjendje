@@ -24,19 +24,24 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 
 	if (Array.isArray(b)) return false
 
-	const keysA = Object.keys(a as Record<string, unknown>)
-	const keysB = Object.keys(b as Record<string, unknown>)
-
-	if (keysA.length !== keysB.length) return false
-
 	const objA = a as Record<string, unknown>
 	const objB = b as Record<string, unknown>
 
-	for (const key of keysA) {
-		if (!Object.hasOwn(objB, key)) return false
+	// Count keys in A while checking B has them with equal values
+	let keyCount = 0
 
-		if (!Object.is(objA[key], objB[key])) return false
+	for (const key in objA) {
+		if (Object.hasOwn(objA, key)) {
+			if (!Object.hasOwn(objB, key) || !Object.is(objA[key], objB[key])) return false
+
+			keyCount++
+		}
 	}
 
-	return true
+	// Ensure B has no extra own keys
+	for (const key in objB) {
+		if (Object.hasOwn(objB, key)) keyCount--
+	}
+
+	return keyCount === 0
 }

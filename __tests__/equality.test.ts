@@ -1,27 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { state } from '../src/index.js'
 import { shallowEqual } from '../src/utils.js'
-
-function makeStorage(): Storage {
-	const store = new Map<string, string>()
-
-	return {
-		getItem: (k) => store.get(k) ?? null,
-		setItem: (k, v) => {
-			store.set(k, v)
-		},
-		removeItem: (k) => {
-			store.delete(k)
-		},
-		clear: () => {
-			store.clear()
-		},
-		get length() {
-			return store.size
-		},
-		key: (i) => [...store.keys()][i] ?? null,
-	}
-}
+import { makeStorage } from './helpers.js'
 
 beforeEach(() => {
 	Object.defineProperty(globalThis, 'localStorage', {

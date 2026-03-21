@@ -63,8 +63,15 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	let isDirty = true
 	let isDestroyed = false
 
+	// Reuse a single array to avoid allocation on every recomputation
+	const depValues = new Array(deps.length) as DepValues<TDeps>
+
 	function getDepValues(): DepValues<TDeps> {
-		return deps.map((dep) => dep.get()) as DepValues<TDeps>
+		for (let i = 0; i < deps.length; i++) {
+			;(depValues as unknown[])[i] = deps[i]?.get()
+		}
+
+		return depValues
 	}
 
 	function recompute(): TResult {
@@ -99,12 +106,16 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		resolveDestroyed = resolve
 	})
 
+	// Cache promise properties — deps don't change after creation
+	const readyPromise = Promise.all(deps.map((d) => d.ready)).then(() => undefined)
+	const hydratedPromise = Promise.all(deps.map((d) => d.hydrated)).then(() => undefined)
+
 	return {
 		key: instanceKey,
 		scope: 'render' as const,
 
 		get ready(): Promise<void> {
-			return Promise.all(deps.map((d) => d.ready)).then(() => undefined)
+			return readyPromise
 		},
 
 		get settled(): Promise<void> {
@@ -112,7 +123,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		get hydrated(): Promise<void> {
-			return Promise.all(deps.map((d) => d.hydrated)).then(() => undefined)
+			return hydratedPromise
 		},
 
 		get destroyed(): Promise<void> {
