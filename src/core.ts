@@ -7,15 +7,7 @@ import { createUrlAdapter } from './adapters/url.js'
 import { getConfig, log, reportError } from './config.js'
 import { getRegistered, registerByKey, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
-import type {
-	Adapter,
-	BaseInstance,
-	Listener,
-	Scope,
-	StateInstance,
-	StateOptions,
-	Unsubscribe,
-} from './types.js'
+import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
 import { shallowEqual } from './utils.js'
 
 // ---------------------------------------------------------------------------
