@@ -5,7 +5,7 @@ import { withSync } from '../src/adapters/sync.js'
 import { getConfig } from '../src/config.js'
 import { configure, previous, readonly, select, state, withWatch } from '../src/index.js'
 import { getRegistry, register, registerByKey, scopedKey, unregister } from '../src/registry.js'
-import { afterHydration } from '../src/ssr.js'
+import { afterHydration, isServer } from '../src/ssr.js'
 import { makeStorage } from './helpers.js'
 
 // ---------------------------------------------------------------------------
@@ -475,6 +475,27 @@ describe('afterHydration', () => {
 
 		// Restore
 		globalThis.requestAnimationFrame = originalRAF
+	})
+
+	it('returns resolved promise immediately on server (no window)', async () => {
+		const originalWindow = globalThis.window
+
+		// Remove window to simulate server environment
+		// @ts-expect-error — intentionally removing for test
+		delete globalThis.window
+
+		expect(isServer()).toBe(true)
+
+		const fn = vi.fn()
+		const promise = afterHydration(fn)
+
+		await promise
+
+		// On server, fn is never called — it's a no-op
+		expect(fn).not.toHaveBeenCalled()
+
+		// Restore
+		globalThis.window = originalWindow
 	})
 
 	it('uses requestAnimationFrame when available', async () => {
