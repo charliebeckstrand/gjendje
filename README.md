@@ -37,10 +37,6 @@ settings.set(prev => ({ ...prev, notifications: false }))
 
 ## Configure
 
-```ts
-configure(config: GjendjeConfig): void
-```
-
 Sets global defaults for all state instances. Call once at app startup before creating any state.
 
 ```ts
