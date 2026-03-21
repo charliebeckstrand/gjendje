@@ -9,7 +9,8 @@ import type { ReadonlyInstance } from './types.js'
  * The returned instance exposes `get`, `peek`, `subscribe`, and lifecycle
  * properties — but no `set`, `reset`, `intercept`, or `use`.
  *
- * Zero runtime cost — delegates to the source via prototype chain.
+ * Near-zero runtime cost — hot-path methods are bound directly to the source
+ * instance, avoiding an extra wrapper function call on every access.
  *
  * ```ts
  * const theme = state('theme', { default: 'light' })
@@ -50,20 +51,9 @@ export function readonly<T>(instance: ReadonlyInstance<T>): ReadonlyInstance<T> 
 			return instance.destroyed
 		},
 
-		get() {
-			return instance.get()
-		},
-
-		peek() {
-			return instance.peek()
-		},
-
-		subscribe(listener) {
-			return instance.subscribe(listener)
-		},
-
-		destroy() {
-			instance.destroy()
-		},
+		get: instance.get.bind(instance),
+		peek: instance.peek.bind(instance),
+		subscribe: instance.subscribe.bind(instance),
+		destroy: instance.destroy.bind(instance),
 	}
 }
