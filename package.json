@@ -60,7 +60,8 @@
 		"test:coverage": "vitest run --coverage",
 		"test:watch": "vitest",
 		"typecheck": "tsc --project tsconfig.test.json --skipLibCheck",
-		"bench": "tsx benchmarks/state-management.bench.ts"
+		"bench": "tsx benchmarks/state-management.bench.ts",
+		"bench:internal": "tsx benchmarks/internal.bench.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.6",
