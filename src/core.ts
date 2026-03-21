@@ -126,8 +126,7 @@ interface MutableState<T> {
 // Class-based StateInstance — methods on prototype, not per-instance closures
 // ---------------------------------------------------------------------------
 
-// biome-ignore lint/suspicious/noExplicitAny: generic class needs any for internal storage
-class StateImpl<T = any> implements StateInstance<T> {
+class StateImpl<T> implements StateInstance<T> {
 	readonly key: string
 	readonly scope: Scope
 
@@ -399,8 +398,7 @@ interface RenderMutableState<T> extends MutableState<T> {
 	notifyFn: (() => void) | undefined
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: generic class needs any for internal storage
-class RenderStateImpl<T = any> extends StateImpl<T> {
+class RenderStateImpl<T> extends StateImpl<T> {
 	private get _rs(): RenderMutableState<T> {
 		return this._s as RenderMutableState<T>
 	}
@@ -463,9 +461,8 @@ class RenderStateImpl<T = any> extends StateImpl<T> {
 		s.lastValue = next
 		s.current = next
 
-		if (s.renderListeners !== undefined && s.renderListeners.size > 0) {
-			// biome-ignore lint/style/noNonNullAssertion: guaranteed by lazy init
-			notify(s.notifyFn!)
+		if (s.notifyFn !== undefined && s.renderListeners !== undefined && s.renderListeners.size > 0) {
+			notify(s.notifyFn)
 		}
 
 		s.settled = RESOLVED
@@ -481,10 +478,11 @@ class RenderStateImpl<T = any> extends StateImpl<T> {
 		const s = this._rs
 
 		if (!s.renderListeners) {
-			s.renderListeners = new Set()
+			const listeners = new Set<Listener<T>>()
+
+			s.renderListeners = listeners
 			s.notifyFn = () => {
-				// biome-ignore lint/style/noNonNullAssertion: guaranteed by lazy init
-				for (const l of s.renderListeners!) {
+				for (const l of listeners) {
 					try {
 						l(s.current)
 					} catch (err) {
@@ -521,9 +519,8 @@ class RenderStateImpl<T = any> extends StateImpl<T> {
 		s.lastValue = next
 		s.current = next
 
-		if (s.renderListeners !== undefined && s.renderListeners.size > 0) {
-			// biome-ignore lint/style/noNonNullAssertion: guaranteed by lazy init
-			notify(s.notifyFn!)
+		if (s.notifyFn !== undefined && s.renderListeners !== undefined && s.renderListeners.size > 0) {
+			notify(s.notifyFn)
 		}
 
 		s.settled = RESOLVED

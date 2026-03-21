@@ -5,7 +5,7 @@ export function scopedKey(key: string, scope: Scope): string {
 	return `${scope}:${key}`
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: registry stores heterogeneous instances
+// biome-ignore lint/suspicious/noExplicitAny: BaseInstance is invariant — any is required for heterogeneous storage
 const registry = new Map<string, BaseInstance<any>>()
 
 export function getRegistered<T>(rKey: string): BaseInstance<T> | undefined {

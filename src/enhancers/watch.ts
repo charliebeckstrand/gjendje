@@ -27,7 +27,7 @@ export interface WithWatch<T> {
  * w.watch('name', (name) => console.log(name))
  * ```
  */
-// biome-ignore lint/suspicious/noExplicitAny: constraint must use any for invariant BaseInstance
+// biome-ignore lint/suspicious/noExplicitAny: BaseInstance is invariant — any is required for generic constraint
 export function withWatch<TIn extends BaseInstance<any>>(
 	instance: TIn,
 ): TIn & WithWatch<TIn extends BaseInstance<infer T> ? T : unknown> {
