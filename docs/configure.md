@@ -39,10 +39,12 @@ Sets the default scope when `scope` is omitted from `state()`. Without this, the
 configure({ defaultScope: 'local' })
 
 const theme = state('theme', { default: 'light' })
+
 theme.scope // 'local'
 
 // Per-instance scope always takes precedence
 const temp = state('temp', { default: 0, scope: 'render' })
+
 temp.scope // 'render'
 ```
 
