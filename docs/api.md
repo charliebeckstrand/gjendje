@@ -274,3 +274,27 @@ h.set(2)
 h.undo()   // counter is now 1
 h.redo()   // counter is now 2
 ```
+
+### `withWatch(instance)`
+
+```ts
+function withWatch<T>(instance: BaseInstance<T>): BaseInstance<T> & WithWatch<T>
+```
+
+Adds per-key change tracking to any instance. The returned instance has all original methods plus a `watch()` method.
+
+`state()` instances include `watch()` by default — use `withWatch` when you need key-level tracking on a `computed` or `collection` result that doesn't have it built in.
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `watch(key, fn)` | `(key: keyof T, fn: (value: T[K]) => void) => Unsubscribe` | Listen for changes to a single property. Uses `Object.is` for comparison. |
+
+```ts
+const user = state('user', { default: { name: 'Jane', age: 30 } })
+const w = withWatch(user)
+
+w.watch('name', (name) => console.log(name))
+
+w.set({ name: 'John', age: 30 })  // logs 'John'
+w.set({ name: 'John', age: 31 })  // nothing — name didn't change
+```
