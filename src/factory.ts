@@ -1,6 +1,5 @@
 import { getConfig, log } from './config.js'
 import { createBase } from './core.js'
-import { withWatch } from './enhancers/watch.js'
 import { scopedKey } from './registry.js'
 import type { StateInstance, StateOptions } from './types.js'
 
@@ -8,10 +7,10 @@ interface CachedInstance {
 	readonly isDestroyed: boolean
 }
 
-// Caches the withWatch-enhanced StateInstance returned to consumers.
-// The registry in core.ts caches the underlying BaseInstance (shared by
-// both state() and collection()), while this cache stores the final
-// enhanced wrapper so withWatch isn't re-applied on duplicate calls.
+// Caches the StateInstance returned to consumers.
+// The registry in core.ts caches the same instance (shared by
+// both state() and collection()), while this cache ensures
+// duplicate state() calls return the same reference.
 const instanceCache = new Map<string, CachedInstance>()
 
 /**
@@ -27,25 +26,21 @@ const instanceCache = new Map<string, CachedInstance>()
  * ```
  */
 export function state<T>(key: string, options: StateOptions<T>): StateInstance<T> {
-	const config = getConfig()
-
-	const scope = options.scope ?? config.defaultScope ?? 'render'
+	const scope = options.scope ?? getConfig().defaultScope ?? 'render'
 
 	const ck = scopedKey(key, scope)
 
 	const cached = instanceCache.get(ck) as StateInstance<T> | undefined
 
 	if (cached && !cached.isDestroyed) {
-		if (config.warnOnDuplicate) {
+		if (getConfig().warnOnDuplicate) {
 			log('warn', `Duplicate state("${key}") with scope "${scope}". Returning cached instance.`)
 		}
 
 		return cached
 	}
 
-	const base = createBase(key, options)
-
-	const instance = withWatch(base) as StateInstance<T>
+	const instance = createBase(key, options)
 
 	instanceCache.set(ck, instance)
 
