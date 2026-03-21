@@ -22,6 +22,8 @@ import { configure } from 'gjendje'
 configure({ scope: 'local' })
 ```
 
+[Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
+
 ## Usage
 
 ```ts
@@ -31,8 +33,6 @@ const theme = state('theme', { default: 'light' })
 
 theme.scope // 'local' — derived from configure
 ```
-
-[Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
 ## Scopes
 
