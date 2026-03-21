@@ -24,37 +24,6 @@ temp.scope // 'render'
 
 [Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md) — all options, validation, error handling, and examples.
 
-## Usage Examples
-
-#### localStorage
-```ts
-import { state } from 'gjendje'
-
-const theme = state('theme', {
-  default: 'light',
-  scope: 'local',
-})
-
-theme.get()
-```
-
-#### Storage Buckets API
-```ts
-import { state } from 'gjendje'
-
-const settings = state('settings', {
-  default: { notifications: true, theme: 'light' },
-  scope: 'bucket',
-  bucket: {
-    name: 'app-settings',
-  },
-})
-
-await settings.ready
-
-settings.set(prev => ({ ...prev, notifications: false }))
-```
-
 ## Scopes
 
 |Scope      |Description                                             |
