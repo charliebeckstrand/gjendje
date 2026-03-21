@@ -18,13 +18,13 @@ describe('withWatch', () => {
 			default: { name: 'Jane', age: 30 },
 			scope: 'render',
 		})
-		
+
 		const w = withWatch(user)
-		
+
 		const listener = vi.fn()
 
 		w.watch('name', listener)
-		
+
 		user.set({ name: 'John', age: 30 })
 
 		expect(listener).toHaveBeenCalledWith('John')
@@ -36,13 +36,13 @@ describe('withWatch', () => {
 			default: { name: 'Jane', age: 30 },
 			scope: 'render',
 		})
-		
+
 		const w = withWatch(user)
-		
+
 		const listener = vi.fn()
 
 		w.watch('name', listener)
-		
+
 		user.set({ name: 'Jane', age: 31 }) // only age changed
 
 		expect(listener).not.toHaveBeenCalled()
@@ -53,9 +53,9 @@ describe('withWatch', () => {
 			default: { name: 'Jane', age: 30 },
 			scope: 'render',
 		})
-		
+
 		const w = withWatch(user)
-		
+
 		const nameFn = vi.fn()
 		const ageFn = vi.fn()
 
@@ -73,13 +73,13 @@ describe('withWatch', () => {
 			default: { name: 'Jane', age: 30 },
 			scope: 'render',
 		})
-		
+
 		const w = withWatch(user)
-		
+
 		const listener = vi.fn()
 
 		const unsub = w.watch('name', listener)
-		
+
 		unsub()
 
 		user.set({ name: 'John', age: 30 })
@@ -89,14 +89,14 @@ describe('withWatch', () => {
 
 	it('handles watch on non-object values gracefully', () => {
 		const counter = state('watch-non-obj', { default: 0, scope: 'render' })
-		
+
 		const w = withWatch(counter)
-		
+
 		const listener = vi.fn()
 
 		// Watching a key on a primitive — prevVal and nextVal will be undefined
 		w.watch('toString' as never, listener)
-		
+
 		counter.set(1)
 
 		expect(listener).not.toHaveBeenCalled()
@@ -107,13 +107,13 @@ describe('withWatch', () => {
 			default: { name: 'Jane', age: 30 },
 			scope: 'render',
 		})
-		
+
 		const w = withWatch(user)
-		
+
 		const listener = vi.fn()
 
 		w.watch('name', listener)
-		
+
 		w.destroy()
 
 		// The underlying instance is also destroyed
@@ -122,13 +122,13 @@ describe('withWatch', () => {
 
 	it('delegates get/set to the underlying instance', () => {
 		const counter = state('watch-delegate', { default: 5, scope: 'render' })
-		
+
 		const w = withWatch(counter)
 
 		expect(w.get()).toBe(5)
-		
+
 		w.set(10)
-		
+
 		expect(w.get()).toBe(10)
 	})
 })
@@ -140,7 +140,7 @@ describe('withWatch', () => {
 describe('readonly lifecycle getters', () => {
 	it('ready delegates to source', async () => {
 		const base = state('ro-ready', { default: 0, scope: 'render' })
-		
+
 		const ro = readonly(base)
 
 		await expect(ro.ready).resolves.toBeUndefined()
@@ -148,7 +148,7 @@ describe('readonly lifecycle getters', () => {
 
 	it('settled delegates to source', async () => {
 		const base = state('ro-settled', { default: 0, scope: 'render' })
-		
+
 		const ro = readonly(base)
 
 		await expect(ro.settled).resolves.toBeUndefined()
@@ -156,7 +156,7 @@ describe('readonly lifecycle getters', () => {
 
 	it('hydrated delegates to source', async () => {
 		const base = state('ro-hydrated', { default: 0, scope: 'render' })
-		
+
 		const ro = readonly(base)
 
 		await expect(ro.hydrated).resolves.toBeUndefined()
@@ -164,11 +164,11 @@ describe('readonly lifecycle getters', () => {
 
 	it('destroyed delegates to source', async () => {
 		const base = state('ro-destroyed-promise', { default: 0, scope: 'render' })
-		
+
 		const ro = readonly(base)
 
 		const destroyedPromise = ro.destroyed
-		
+
 		ro.destroy()
 
 		await expect(destroyedPromise).resolves.toBeUndefined()
@@ -182,7 +182,7 @@ describe('readonly lifecycle getters', () => {
 describe('previous lifecycle', () => {
 	it('ready delegates to source', async () => {
 		const counter = state('prev-ready', { default: 0, scope: 'render' })
-		
+
 		const prev = previous(counter)
 
 		await expect(prev.ready).resolves.toBeUndefined()
@@ -190,7 +190,7 @@ describe('previous lifecycle', () => {
 
 	it('settled delegates to source', async () => {
 		const counter = state('prev-settled', { default: 0, scope: 'render' })
-		
+
 		const prev = previous(counter)
 
 		await expect(prev.settled).resolves.toBeUndefined()
@@ -198,7 +198,7 @@ describe('previous lifecycle', () => {
 
 	it('hydrated delegates to source', async () => {
 		const counter = state('prev-hydrated', { default: 0, scope: 'render' })
-		
+
 		const prev = previous(counter)
 
 		await expect(prev.hydrated).resolves.toBeUndefined()
@@ -206,11 +206,11 @@ describe('previous lifecycle', () => {
 
 	it('destroyed promise resolves on destroy', async () => {
 		const counter = state('prev-destroyed-p', { default: 0, scope: 'render' })
-		
+
 		const prev = previous(counter)
 
 		const destroyedPromise = prev.destroyed
-		
+
 		prev.destroy()
 
 		await expect(destroyedPromise).resolves.toBeUndefined()
@@ -218,7 +218,7 @@ describe('previous lifecycle', () => {
 
 	it('destroy without prior destroyed access allocates resolved promise', async () => {
 		const counter = state('prev-destroy-no-access', { default: 0, scope: 'render' })
-		
+
 		const prev = previous(counter)
 
 		prev.destroy()
@@ -229,7 +229,7 @@ describe('previous lifecycle', () => {
 
 	it('double destroy is idempotent', () => {
 		const counter = state('prev-double-destroy', { default: 0, scope: 'render' })
-		
+
 		const prev = previous(counter)
 
 		prev.destroy()
@@ -246,7 +246,7 @@ describe('previous lifecycle', () => {
 describe('select lifecycle', () => {
 	it('ready delegates to source', async () => {
 		const s = state('sel-ready', { default: 0, scope: 'render' })
-		
+
 		const derived = select(s, (n) => n)
 
 		await expect(derived.ready).resolves.toBeUndefined()
@@ -254,7 +254,7 @@ describe('select lifecycle', () => {
 
 	it('settled delegates to source', async () => {
 		const s = state('sel-settled', { default: 0, scope: 'render' })
-		
+
 		const derived = select(s, (n) => n)
 
 		await expect(derived.settled).resolves.toBeUndefined()
@@ -262,7 +262,7 @@ describe('select lifecycle', () => {
 
 	it('hydrated delegates to source', async () => {
 		const s = state('sel-hydrated', { default: 0, scope: 'render' })
-		
+
 		const derived = select(s, (n) => n)
 
 		await expect(derived.hydrated).resolves.toBeUndefined()
@@ -270,11 +270,11 @@ describe('select lifecycle', () => {
 
 	it('destroyed promise resolves on destroy', async () => {
 		const s = state('sel-destroyed-p', { default: 0, scope: 'render' })
-		
+
 		const derived = select(s, (n) => n)
 
 		const destroyedPromise = derived.destroyed
-		
+
 		derived.destroy()
 
 		await expect(destroyedPromise).resolves.toBeUndefined()
@@ -282,7 +282,7 @@ describe('select lifecycle', () => {
 
 	it('destroy without prior destroyed access allocates resolved promise', async () => {
 		const s = state('sel-destroy-no-access', { default: 0, scope: 'render' })
-		
+
 		const derived = select(s, (n) => n)
 
 		derived.destroy()
@@ -292,7 +292,7 @@ describe('select lifecycle', () => {
 
 	it('double destroy is idempotent', () => {
 		const s = state('sel-double-destroy', { default: 0, scope: 'render' })
-		
+
 		const derived = select(s, (n) => n)
 
 		derived.destroy()
@@ -318,13 +318,13 @@ describe('registry', () => {
 
 	it('re-registering over a destroyed entry via registerByKey replaces it', () => {
 		const a = state('reg-replace-direct', { default: 1, scope: 'render' })
-		
+
 		const rKey = scopedKey('reg-replace-direct', 'render')
 
 		// Mark destroyed but don't unregister (simulate the internal state)
 		// We need to manually put a destroyed instance back in the registry
 		a.destroy()
-		
+
 		// destroy() already unregisters, so re-register the destroyed instance manually
 		getRegistry().set(rKey, a)
 
@@ -340,7 +340,7 @@ describe('registry', () => {
 		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
 		const a = state('reg-bykey-dup', { default: 1, scope: 'render' })
-		
+
 		const rKey = scopedKey('reg-bykey-dup', 'render')
 
 		// Call registerByKey again with the same key — hits line 31-32
@@ -359,7 +359,7 @@ describe('registry', () => {
 		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
 		const a = state('reg-bykey-silent', { default: 1, scope: 'render' })
-		
+
 		const rKey = scopedKey('reg-bykey-silent', 'render')
 
 		// Call registerByKey again — hits line 28 but not 31
@@ -376,7 +376,7 @@ describe('registry', () => {
 	it('maxKeys limit throws when exceeded', () => {
 		// Set maxKeys to current registry size + 1 so the first state succeeds
 		const currentSize = getRegistry().size
-		
+
 		configure({ maxKeys: currentSize + 1 })
 
 		state('reg-max-1', { default: 0, scope: 'render' })
@@ -408,7 +408,7 @@ describe('registry', () => {
 		expect(getRegistry().has(rKey)).toBe(true)
 
 		unregister('reg-legacy', 'render')
-		
+
 		expect(getRegistry().has(rKey)).toBe(false)
 	})
 
@@ -423,7 +423,7 @@ describe('registry', () => {
 		expect(spy).toHaveBeenCalledWith(expect.stringContaining('Duplicate state'))
 
 		spy.mockRestore()
-		
+
 		configure({ warnOnDuplicate: undefined, logLevel: undefined })
 	})
 })
@@ -435,7 +435,7 @@ describe('registry', () => {
 describe('createRenderAdapter', () => {
 	it('set notifies subscribed listeners', () => {
 		const adapter = createRenderAdapter(0)
-		
+
 		const listener = vi.fn()
 
 		adapter.subscribe(listener)
@@ -447,7 +447,7 @@ describe('createRenderAdapter', () => {
 
 	it('listener error is caught and does not break other listeners', () => {
 		const adapter = createRenderAdapter(0)
-		
+
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 		const bad = () => {
@@ -471,11 +471,11 @@ describe('createRenderAdapter', () => {
 
 	it('unsubscribe removes listener', () => {
 		const adapter = createRenderAdapter(0)
-		
+
 		const listener = vi.fn()
 
 		const unsub = adapter.subscribe(listener)
-		
+
 		unsub()
 
 		adapter.set(1)
@@ -486,15 +486,15 @@ describe('createRenderAdapter', () => {
 
 	it('destroy clears all listeners', () => {
 		const adapter = createRenderAdapter(0)
-		
+
 		const listener = vi.fn()
 
 		adapter.subscribe(listener)
-		
+
 		adapter.destroy?.()
 
 		adapter.set(1)
-		
+
 		expect(adapter.get()).toBe(1)
 	})
 
@@ -518,12 +518,12 @@ describe('afterHydration', () => {
 		globalThis.requestAnimationFrame = undefined
 
 		const fn = vi.fn()
-		
+
 		const promise = afterHydration(fn)
 
 		// Wait for microtask + setTimeout to complete
 		await new Promise((resolve) => setTimeout(resolve, 10))
-		
+
 		await promise
 
 		expect(fn).toHaveBeenCalledTimes(1)
@@ -542,7 +542,7 @@ describe('afterHydration', () => {
 		expect(isServer()).toBe(true)
 
 		const fn = vi.fn()
-		
+
 		const promise = afterHydration(fn)
 
 		await promise
@@ -556,12 +556,12 @@ describe('afterHydration', () => {
 
 	it('uses requestAnimationFrame when available', async () => {
 		const fn = vi.fn()
-		
+
 		const promise = afterHydration(fn)
 
 		// Wait for microtask + rAF
 		await new Promise((resolve) => setTimeout(resolve, 50))
-		
+
 		await promise
 
 		expect(fn).toHaveBeenCalledTimes(1)
@@ -575,45 +575,45 @@ describe('afterHydration', () => {
 describe('withSync error handling', () => {
 	it('ignores messages without value property', () => {
 		const storage = makeStorage()
-		
+
 		const base = createStorageAdapter(storage, 'sync-invalid', {
 			default: 'hello',
 			scope: 'local',
 		})
-		
+
 		const synced = withSync(base, 'sync-invalid', 'local')
 
 		// Simulate a BroadcastChannel message with invalid data
 		const channel = new BroadcastChannel('state:sync-invalid')
-		
+
 		channel.postMessage({ notValue: true })
 
 		// Value should remain unchanged
 		expect(synced.get()).toBe('hello')
 
 		channel.close()
-		
+
 		synced.destroy?.()
 	})
 
 	it('handles null message data gracefully', () => {
 		const storage = makeStorage()
-		
+
 		const base = createStorageAdapter(storage, 'sync-null', {
 			default: 'hello',
 			scope: 'local',
 		})
-		
+
 		const synced = withSync(base, 'sync-null', 'local')
 
 		const channel = new BroadcastChannel('state:sync-null')
-		
+
 		channel.postMessage(null)
 
 		expect(synced.get()).toBe('hello')
 
 		channel.close()
-		
+
 		synced.destroy?.()
 	})
 
@@ -621,7 +621,7 @@ describe('withSync error handling', () => {
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 		const onError = vi.fn()
-		
+
 		configure({ onError, logLevel: 'error' })
 
 		const failAdapter = {
@@ -638,17 +638,17 @@ describe('withSync error handling', () => {
 
 		// Simulate incoming sync message
 		const channel = new BroadcastChannel('state:sync-fail')
-		
+
 		channel.postMessage({ value: 'new' })
 
 		// Allow message to propagate
 		// The error should be logged
 		channel.close()
-		
+
 		synced.destroy?.()
 
 		spy.mockRestore()
-		
+
 		configure({ onError: undefined, logLevel: undefined })
 	})
 })
@@ -660,7 +660,7 @@ describe('withSync error handling', () => {
 describe('createStorageAdapter branches', () => {
 	it('QuotaExceeded error triggers onQuotaExceeded callback', () => {
 		const onQuotaExceeded = vi.fn()
-		
+
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 		configure({ onQuotaExceeded, logLevel: 'error' })
@@ -669,7 +669,7 @@ describe('createStorageAdapter branches', () => {
 
 		// Override setItem to throw QuotaExceededError
 		const quotaError = new DOMException('quota exceeded', 'QuotaExceededError')
-		
+
 		storage.setItem = () => {
 			throw quotaError
 		}
@@ -688,18 +688,18 @@ describe('createStorageAdapter branches', () => {
 		})
 
 		spy.mockRestore()
-		
+
 		configure({ onQuotaExceeded: undefined, logLevel: undefined })
 	})
 
 	it('storage event from different key is ignored', () => {
 		const storage = makeStorage()
-		
+
 		const adapter = createStorageAdapter(storage, 'storage-key-filter', {
 			default: 'hello',
 			scope: 'local',
 		})
-		
+
 		const listener = vi.fn()
 
 		adapter.subscribe(listener)
@@ -709,7 +709,7 @@ describe('createStorageAdapter branches', () => {
 			key: 'other-key',
 			storageArea: storage as unknown as Storage,
 		})
-		
+
 		window.dispatchEvent(event)
 
 		expect(listener).not.toHaveBeenCalled()
@@ -720,12 +720,12 @@ describe('createStorageAdapter branches', () => {
 	it('storage event from different storage area is ignored', () => {
 		const storage = makeStorage()
 		const otherStorage = makeStorage()
-		
+
 		const adapter = createStorageAdapter(storage, 'storage-area-filter', {
 			default: 'hello',
 			scope: 'local',
 		})
-		
+
 		const listener = vi.fn()
 
 		adapter.subscribe(listener)
@@ -735,7 +735,7 @@ describe('createStorageAdapter branches', () => {
 			key: 'storage-area-filter',
 			storageArea: otherStorage as unknown as Storage,
 		})
-		
+
 		window.dispatchEvent(event)
 
 		expect(listener).not.toHaveBeenCalled()
@@ -745,7 +745,7 @@ describe('createStorageAdapter branches', () => {
 
 	it('read falls back to default when storage throws', () => {
 		const storage = makeStorage()
-		
+
 		storage.getItem = () => {
 			throw new Error('storage unavailable')
 		}
