@@ -26,7 +26,7 @@ const instanceCache = new Map<string, CachedInstance>()
  * ```
  */
 export function state<T>(key: string, options: StateOptions<T>): StateInstance<T> {
-	const scope = options.scope ?? getConfig().defaultScope ?? 'render'
+	const scope = options.scope ?? getConfig().scope ?? 'render'
 
 	const ck = scopedKey(key, scope)
 

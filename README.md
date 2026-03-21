@@ -40,7 +40,7 @@ settings.set(prev => ({ ...prev, notifications: false }))
 Sets global defaults for all state instances. Call once at app startup before creating any state.
 
 ```ts
-configure({ defaultScope: 'local' })
+configure({ scope: 'local' })
 
 const theme = state('theme', { default: 'light' })
 

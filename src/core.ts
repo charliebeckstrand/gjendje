@@ -624,7 +624,7 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 	}
 
 	// Apply global defaults — per-instance options take precedence
-	const scope = options.scope ?? config.defaultScope ?? 'render'
+	const scope = options.scope ?? config.scope ?? 'render'
 
 	const rKey = scopedKey(key, scope)
 

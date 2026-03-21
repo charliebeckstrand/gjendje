@@ -723,23 +723,23 @@ describe('url adapter edge cases', () => {
 // ---------------------------------------------------------------------------
 
 describe('configuration cascading', () => {
-	it('defaultScope: "local" applies to new instances', () => {
-		configure({ defaultScope: 'local' })
+	it('scope: "local" applies to new instances', () => {
+		configure({ scope: 'local' })
 
 		const s = state('config-default-scope', { default: 0 })
 		expect(s.scope).toBe('local')
 
 		// Reset
-		configure({ defaultScope: undefined })
+		configure({ scope: undefined })
 	})
 
-	it('per-instance scope overrides defaultScope', () => {
-		configure({ defaultScope: 'local' })
+	it('per-instance scope overrides scope', () => {
+		configure({ scope: 'local' })
 
 		const s = state('config-override', { default: 0, scope: 'render' })
 		expect(s.scope).toBe('render')
 
-		configure({ defaultScope: undefined })
+		configure({ scope: undefined })
 	})
 
 	it('requireValidation does not affect render scope', () => {

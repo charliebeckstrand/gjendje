@@ -12,7 +12,7 @@ Sets global defaults for all state instances. Call once at app startup before cr
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `defaultScope` | `Scope` | `'render'` | Default scope for all state instances |
+| `scope` | `Scope` | `'render'` | Default scope for all state instances |
 | `keyPattern` | `RegExp` | `undefined` | Enforce a naming pattern for state keys |
 | `logLevel` | `LogLevel` | `'warn'` | Control log verbosity |
 | `maxKeys` | `number` | `undefined` | Cap the total number of registered state instances |
@@ -31,12 +31,12 @@ Sets global defaults for all state instances. Call once at app startup before cr
 
 ---
 
-## `defaultScope`
+## `scope`
 
 Sets the default scope when `scope` is omitted from `state()`. Without this, the default is `'render'`.
 
 ```ts
-configure({ defaultScope: 'local' })
+configure({ scope: 'local' })
 
 const theme = state('theme', { default: 'light' })
 

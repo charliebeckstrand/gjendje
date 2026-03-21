@@ -5,7 +5,7 @@ import { makeStorage } from './helpers.js'
 beforeEach(() => {
 	configure({
 		prefix: undefined,
-		defaultScope: undefined,
+		scope: undefined,
 		ssr: undefined,
 		warnOnDuplicate: undefined,
 		requireValidation: undefined,
@@ -40,11 +40,11 @@ beforeEach(() => {
 })
 
 // ---------------------------------------------------------------------------
-// defaultScope
+// scope
 // ---------------------------------------------------------------------------
 
-describe('defaultScope', () => {
-	it('uses render scope when no defaultScope is set', () => {
+describe('scope', () => {
+	it('uses render scope when no scope is set', () => {
 		const x = state('cfg-default-render', { default: 0 })
 
 		expect(x.scope).toBe('render')
@@ -52,8 +52,8 @@ describe('defaultScope', () => {
 		x.destroy()
 	})
 
-	it('applies global defaultScope when instance omits scope', () => {
-		configure({ defaultScope: 'local' })
+	it('applies global scope when instance omits scope', () => {
+		configure({ scope: 'local' })
 
 		const x = state('cfg-default-local', { default: 'hello' })
 
@@ -62,8 +62,8 @@ describe('defaultScope', () => {
 		x.destroy()
 	})
 
-	it('per-instance scope overrides defaultScope', () => {
-		configure({ defaultScope: 'local' })
+	it('per-instance scope overrides scope', () => {
+		configure({ scope: 'local' })
 
 		const x = state('cfg-override-scope', { default: 0, scope: 'render' })
 
