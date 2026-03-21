@@ -69,11 +69,19 @@ Like `subscribe`, but scoped to a single key within an object value. Only fires 
 #### `computed(deps, fn)`
 Derives a reactive, read-only value from one or more state dependencies. Recomputes only when a dependency changes and caches the result between changes. Returns a `ReadonlyInstance` — no `set()` or `reset()`.
 
+#### `select(source, fn)`
+Lightweight single-dependency alternative to `computed`. No array allocation or dependency loop — just `source.get()` → `fn(value)`. Ideal for projecting a single field or transformation.
+
 #### `collection(key, options)`
 Reactive array with first-class mutation methods — `add`, `remove`, `update`, `find`, `findAll`, `has`, `clear`. Supports all the same scopes, persistence, validation, and migration as `state`.
 
 #### `effect(deps, fn)`
 Runs a side effect immediately and re-runs whenever any dependency changes. The callback can return a cleanup function that runs before the next execution and on `stop()`. Returns an `EffectHandle` with a `stop()` method.
+
+#### `readonly(instance)`
+Creates a read-only view of any state or computed instance. Exposes `get`, `peek`, `subscribe`, and lifecycle — but no `set`, `reset`, `intercept`, or `use`. Zero runtime cost.
+
+[Full derived state reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/derived.md)
 
 ## License
 
