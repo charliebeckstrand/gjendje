@@ -22,6 +22,14 @@ const SYNCABLE_SCOPES = new Set<Scope>(['local', 'bucket'])
 // Shared resolved promise — avoids allocating a new one per instance
 const RESOLVED = Promise.resolve()
 
+// Shared no-op adapter shim for RenderStateImpl — allocated once, never per-instance
+const RENDER_SHIM: Adapter<unknown> = {
+	ready: RESOLVED,
+	get: () => undefined,
+	set: () => {},
+	subscribe: () => () => {},
+}
+
 // ---------------------------------------------------------------------------
 // Key prefixing
 // ---------------------------------------------------------------------------
@@ -314,11 +322,13 @@ class StateImpl<T> implements StateInstance<T> {
 
 		listeners.add(listener as Listener<unknown>)
 
+		const watcherMap = s.watchers
+
 		return () => {
 			listeners.delete(listener as Listener<unknown>)
 
 			if (listeners.size === 0) {
-				s.watchers?.delete(watchKey as PropertyKey)
+				watcherMap.delete(watchKey as PropertyKey)
 			}
 		}
 	}
@@ -399,9 +409,10 @@ interface RenderMutableState<T> extends MutableState<T> {
 }
 
 class RenderStateImpl<T> extends StateImpl<T> {
-	private get _rs(): RenderMutableState<T> {
-		return this._s as RenderMutableState<T>
-	}
+	// Direct reference — avoids a getter cast on every get()/set() call
+	private _r: RenderMutableState<T>
+
+	private _hasIsEqual: boolean
 
 	constructor(
 		key: string,
@@ -409,37 +420,29 @@ class RenderStateImpl<T> extends StateImpl<T> {
 		options: StateOptions<T>,
 		config: Readonly<GjendjeConfig>,
 	) {
-		// Pass a minimal adapter shim — prototype methods that access _adapter
-		// are overridden below, so this is only used by the base constructor's
-		// adapter.get() call for _s.lastValue initialization.
-		const shim: Adapter<T> = {
-			ready: RESOLVED,
-			get: () => options.default,
-			set: () => {},
-			subscribe: () => () => {},
-		}
-
-		super(key, 'render', rKey, shim, options, config)
+		super(key, 'render', rKey, RENDER_SHIM as Adapter<T>, options, config)
 
 		// Extend the mutable state with render-specific fields
 		const rs = this._s as RenderMutableState<T>
+
 		rs.current = options.default
 		rs.renderListeners = undefined
 		rs.notifyFn = undefined
+
+		this._r = rs
+		this._hasIsEqual = options.isEqual !== undefined
 	}
 
 	override get(): T {
-		const s = this._rs
-		return s.isDestroyed ? s.lastValue : s.current
+		return this._r.current
 	}
 
 	override peek(): T {
-		const s = this._rs
-		return s.isDestroyed ? s.lastValue : s.current
+		return this._r.current
 	}
 
 	override set(valueOrUpdater: T | ((prev: T) => T)): void {
-		const s = this._rs
+		const s = this._r
 
 		if (s.isDestroyed) return
 
@@ -456,16 +459,13 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			}
 		}
 
-		if (this._options.isEqual?.(next, prev)) return
+		if (this._hasIsEqual && this._options.isEqual!(next, prev)) return
 
-		s.lastValue = next
 		s.current = next
 
-		if (s.notifyFn !== undefined && s.renderListeners !== undefined && s.renderListeners.size > 0) {
+		if (s.notifyFn !== undefined) {
 			notify(s.notifyFn)
 		}
-
-		s.settled = RESOLVED
 
 		if (s.hooks !== undefined && s.hooks.size > 0) {
 			for (const hook of s.hooks) {
@@ -475,7 +475,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 	}
 
 	override subscribe(listener: Listener<T>): Unsubscribe {
-		const s = this._rs
+		const s = this._r
 
 		if (!s.renderListeners) {
 			const listeners = new Set<Listener<T>>()
@@ -492,15 +492,17 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			}
 		}
 
-		s.renderListeners.add(listener)
+		const set = s.renderListeners
+
+		set.add(listener)
 
 		return () => {
-			s.renderListeners?.delete(listener)
+			set.delete(listener)
 		}
 	}
 
 	override reset(): void {
-		const s = this._rs
+		const s = this._r
 
 		if (s.isDestroyed) return
 
@@ -514,16 +516,13 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			}
 		}
 
-		if (this._options.isEqual?.(next, prev)) return
+		if (this._hasIsEqual && this._options.isEqual!(next, prev)) return
 
-		s.lastValue = next
 		s.current = next
 
-		if (s.notifyFn !== undefined && s.renderListeners !== undefined && s.renderListeners.size > 0) {
+		if (s.notifyFn !== undefined) {
 			notify(s.notifyFn)
 		}
-
-		s.settled = RESOLVED
 
 		if (s.hooks !== undefined && s.hooks.size > 0) {
 			for (const hook of s.hooks) {
@@ -537,7 +536,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 	}
 
 	protected override _ensureWatchSubscription(): void {
-		const s = this._rs
+		const s = this._r
 
 		if (s.watchUnsub) return
 
@@ -573,7 +572,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 	}
 
 	override destroy(): void {
-		const s = this._rs
+		const s = this._r
 
 		if (s.isDestroyed) return
 
@@ -609,6 +608,19 @@ class RenderStateImpl<T> extends StateImpl<T> {
  * Same key + same scope always returns the same instance.
  * This is the low-level factory used by both `state()` and `collection()`.
  */
+/**
+ * Fast path for render-scope instances. Called directly from factory.ts
+ * to skip redundant config/registry lookups and adapter setup.
+ */
+export function createRenderState<T>(
+	key: string,
+	rKey: string,
+	options: StateOptions<T>,
+	config: Readonly<GjendjeConfig>,
+): StateInstance<T> {
+	return new RenderStateImpl(key, rKey, options, config)
+}
+
 export function createBase<T>(key: string, options: StateOptions<T>): StateInstance<T> {
 	if (!key) {
 		throw new Error('[state] key must be a non-empty string.')

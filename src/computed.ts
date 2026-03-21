@@ -61,53 +61,63 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	let cached: TResult
 
 	let isDirty = true
+
 	let isDestroyed = false
 
 	// Reuse a single array to avoid allocation on every recomputation
 	const depValues = new Array(deps.length) as DepValues<TDeps>
 
-	function getDepValues(): DepValues<TDeps> {
-		for (let i = 0; i < deps.length; i++) {
-			;(depValues as unknown[])[i] = deps[i]?.get()
-		}
-
-		return depValues
-	}
+	const depLen = deps.length
 
 	function recompute(): TResult {
 		if (!isDirty) return cached
 
-		cached = fn(getDepValues())
+		for (let i = 0; i < depLen; i++) {
+			;(depValues as unknown[])[i] = deps[i]!.get()
+		}
+
+		cached = fn(depValues)
+
 		isDirty = false
 
 		return cached
 	}
 
 	const notifyListeners = () => {
+		const prev = cached
 		const value = recompute()
+
+		// In diamond dependency graphs (A → [B, C] → D), D gets notified
+		// once per intermediate. Skip redundant notifications when the
+		// recomputed value is identical to the previous cached value.
+		if (value === prev) return
 
 		listeners.notify(value)
 	}
 
-	const unsubscribers = deps.map((dep) =>
-		dep.subscribe(() => {
-			isDirty = true
+	const markDirty = () => {
+		isDirty = true
 
-			notify(notifyListeners)
-		}),
-	)
+		notify(notifyListeners)
+	}
+
+	const unsubscribers = new Array(depLen)
+
+	for (let i = 0; i < depLen; i++) {
+		unsubscribers[i] = deps[i]!.subscribe(markDirty)
+	}
 
 	// Compute initial value eagerly so first get() is synchronous
 	recompute()
 
-	let resolveDestroyed: () => void
+	// Lazy destroyed promise — only allocated if someone awaits it
+	let destroyedPromise: Promise<void> | undefined
 
-	const destroyedPromise = new Promise<void>((resolve) => {
-		resolveDestroyed = resolve
-	})
+	let resolveDestroyed: (() => void) | undefined
 
 	// Cache promise properties — deps don't change after creation
 	const readyPromise = Promise.all(deps.map((d) => d.ready)).then(() => undefined)
+
 	const hydratedPromise = Promise.all(deps.map((d) => d.hydrated)).then(() => undefined)
 
 	return {
@@ -127,6 +137,12 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		get destroyed(): Promise<void> {
+			if (!destroyedPromise) {
+				destroyedPromise = new Promise<void>((resolve) => {
+					resolveDestroyed = resolve
+				})
+			}
+
 			return destroyedPromise
 		},
 
@@ -155,7 +171,11 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 			listeners.clear()
 
-			resolveDestroyed()
+			if (resolveDestroyed) {
+				resolveDestroyed()
+			} else {
+				destroyedPromise = Promise.resolve()
+			}
 		},
 	}
 }

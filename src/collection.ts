@@ -82,17 +82,6 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 	let prevItems = base.get()
 
-	function keyChanged(prev: unknown, next: unknown, watchKey: PropertyKey): boolean {
-		if (!prev || !next || typeof prev !== 'object' || typeof next !== 'object') {
-			return false
-		}
-
-		const p = prev as Record<PropertyKey, unknown>
-		const n = next as Record<PropertyKey, unknown>
-
-		return !Object.is(p[watchKey], n[watchKey])
-	}
-
 	const unsubscribe = base.subscribe((next) => {
 		if (watchers.size === 0) {
 			prevItems = next
@@ -100,12 +89,58 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 			return
 		}
 
-		for (const [watchKey, listeners] of watchers) {
-			const changed =
-				next.length !== prevItems.length ||
-				next.some((item, i) => i < prevItems.length && keyChanged(prevItems[i], item, watchKey))
+		// Single pass: iterate items once, checking all watched keys per item.
+		// This is O(items + keys) instead of the previous O(items × keys).
+		const changedKeys = new Set<PropertyKey>()
 
-			if (changed) {
+		const lengthChanged = next.length !== prevItems.length
+
+		if (lengthChanged) {
+			// Length change means all keys are potentially affected
+			for (const watchKey of watchers.keys()) {
+				changedKeys.add(watchKey)
+			}
+		} else {
+			const len = next.length
+
+			for (let i = 0; i < len; i++) {
+				const prev = prevItems[i]
+
+				const curr = next[i]
+
+				if (prev === curr) continue
+
+				const isObj =
+					prev !== null && curr !== null && typeof prev === 'object' && typeof curr === 'object'
+
+				if (!isObj) {
+					// Non-object items changed — flag all watched keys
+					for (const watchKey of watchers.keys()) {
+						changedKeys.add(watchKey)
+					}
+
+					break
+				}
+
+				const p = prev as Record<PropertyKey, unknown>
+
+				const n = curr as Record<PropertyKey, unknown>
+
+				for (const watchKey of watchers.keys()) {
+					if (!changedKeys.has(watchKey) && !Object.is(p[watchKey], n[watchKey])) {
+						changedKeys.add(watchKey)
+					}
+				}
+
+				// Early exit when all keys are flagged
+				if (changedKeys.size === watchers.size) break
+			}
+		}
+
+		for (const watchKey of changedKeys) {
+			const listeners = watchers.get(watchKey)
+
+			if (listeners) {
 				for (const listener of listeners) {
 					listener(next)
 				}

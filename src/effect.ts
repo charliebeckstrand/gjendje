@@ -49,15 +49,9 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 	let isStopped = false
 
 	// Reuse a single array to avoid allocation on every run
-	const depValues = new Array(deps.length) as DepValues<TDeps>
+	const depLen = deps.length
 
-	function getDepValues(): DepValues<TDeps> {
-		for (let i = 0; i < deps.length; i++) {
-			;(depValues as unknown[])[i] = deps[i]?.get()
-		}
-
-		return depValues
-	}
+	const depValues = new Array(depLen) as DepValues<TDeps>
 
 	function run(): void {
 		if (isStopped) return
@@ -74,11 +68,19 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 			cleanup = undefined
 		}
 
-		cleanup = fn(getDepValues())
+		for (let i = 0; i < depLen; i++) {
+			;(depValues as unknown[])[i] = deps[i]!.get()
+		}
+
+		cleanup = fn(depValues)
 	}
 
-	// Subscribe to all dependencies
-	const unsubscribers = deps.map((dep) => dep.subscribe(() => run()))
+	// Subscribe to all dependencies — single shared callback avoids per-dep closures
+	const unsubscribers = new Array(depLen)
+
+	for (let i = 0; i < depLen; i++) {
+		unsubscribers[i] = deps[i]!.subscribe(run)
+	}
 
 	// Run immediately with current values
 	run()
@@ -89,8 +91,8 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 
 			isStopped = true
 
-			for (const unsub of unsubscribers) {
-				unsub()
+			for (let i = 0; i < depLen; i++) {
+				unsubscribers[i]()
 			}
 
 			if (cleanup) {
