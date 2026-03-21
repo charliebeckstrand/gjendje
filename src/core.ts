@@ -317,6 +317,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		if (!listeners) {
 			listeners = new Set()
+
 			s.watchers.set(watchKey as PropertyKey, listeners)
 		}
 
@@ -345,6 +346,7 @@ class StateImpl<T> implements StateInstance<T> {
 		s.interceptors?.clear()
 		s.hooks?.clear()
 		s.watchers?.clear()
+
 		s.watchUnsub?.()
 
 		this._adapter.destroy?.()
@@ -427,9 +429,11 @@ class RenderStateImpl<T> extends StateImpl<T> {
 
 		rs.current = options.default
 		rs.renderListeners = undefined
+
 		rs.notifyFn = undefined
 
 		this._r = rs
+
 		this._hasIsEqual = options.isEqual !== undefined
 	}
 
@@ -481,6 +485,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			const listeners = new Set<Listener<T>>()
 
 			s.renderListeners = listeners
+
 			s.notifyFn = () => {
 				for (const l of listeners) {
 					try {
@@ -695,6 +700,7 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 					const storedValue = realAdapter.get()
 
 					const serverValue = options.default
+
 					const clientValue = storedValue
 
 					if (!shallowEqual(storedValue, options.default)) {

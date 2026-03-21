@@ -22,7 +22,9 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 			// Validate message shape. BroadcastChannel is same-origin only,
 			// but a compromised tab could still send malformed data.
 			const msg = event.data
+
 			if (msg == null || typeof msg !== 'object' || !('value' in msg)) return
+
 			if (Object.keys(msg as object).length !== 1) return
 
 			const value = msg.value as T

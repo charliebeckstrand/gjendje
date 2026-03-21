@@ -67,6 +67,7 @@ export function readAndMigrate<T>(
 		return data as T
 	} catch {
 		log('debug', `Failed to read/migrate stored value — falling back to default.`)
+
 		return defaultValue
 	}
 }
@@ -136,6 +137,7 @@ function runMigrations(
 ): unknown {
 	if (fromVersion < 0 || toVersion - fromVersion > MAX_MIGRATION_STEPS) {
 		log('warn', `Migration range v${fromVersion}→v${toVersion} is out of bounds — skipping.`)
+
 		return data
 	}
 
@@ -149,6 +151,7 @@ function runMigrations(
 				current = migrateFn(current)
 			} catch {
 				log('warn', `Migration from v${v} failed — returning partially migrated value.`)
+
 				return current
 			}
 		}

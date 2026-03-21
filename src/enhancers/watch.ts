@@ -34,8 +34,11 @@ export function withWatch<TIn extends BaseInstance<any>>(
 	type TOut = TIn & WithWatch<TIn extends BaseInstance<infer T> ? T : unknown>
 
 	let watchers: Map<PropertyKey, Set<Listener<unknown>>> | undefined
+
 	let unsubscribe: Unsubscribe | undefined
+
 	let prev: unknown
+
 	let initialized = false
 
 	// Lazily subscribe to the base instance only when the first watcher is added
@@ -44,6 +47,7 @@ export function withWatch<TIn extends BaseInstance<any>>(
 
 		if (!initialized) {
 			prev = instance.get()
+
 			initialized = true
 		}
 
@@ -90,6 +94,7 @@ export function withWatch<TIn extends BaseInstance<any>>(
 
 		if (!listeners) {
 			listeners = new Set()
+
 			watchers.set(watchKey, listeners)
 		}
 
@@ -106,7 +111,9 @@ export function withWatch<TIn extends BaseInstance<any>>(
 
 	result.destroy = () => {
 		watchers?.clear()
+
 		unsubscribe?.()
+
 		instance.destroy()
 	}
 

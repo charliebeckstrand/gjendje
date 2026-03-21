@@ -111,6 +111,7 @@ export function createBucketAdapter<T>(
 
 	// Storage delegate — starts as null, set after ready resolves
 	let delegate: Adapter<T> | null = null
+
 	let isDestroyed = false
 
 	function read(): T {
