@@ -99,16 +99,6 @@ Like `subscribe`, but scoped to a single key within an object value. Only fires 
 
 [Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md) — all methods, promise lifecycle, options, and types.
 
-## Middleware
-
-Primitives that plug into the update pipeline of any state instance.
-
-#### `intercept(fn)`
-Runs **before** a value is stored. Receives `(next, prev)` and returns the value to actually persist. Return `prev` to reject the update. Multiple interceptors run in registration order.
-
-#### `use(fn)`
-Runs **after** a value is stored. Receives `(next, prev)`. Return value is ignored. Useful for logging, analytics, or syncing external systems.
-
 ## Derived state
 
 Primitives that build on top of `state` to handle computed values, collections, and side effects.
