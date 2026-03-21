@@ -4,6 +4,9 @@ let depth = 0
 
 const queue = new Set<Notification>()
 
+// Pre-allocated flush buffer — grows as needed, never shrinks
+let flushBuf: Notification[] = new Array(16)
+
 /**
  * Runs all state updates inside fn as a single batch.
  * Subscribers are notified once after all updates complete,
@@ -69,7 +72,7 @@ function flush(): void {
 
 		try {
 			for (let j = 0; j < size; j++) {
-				flushBuf[j]!()
+				;(flushBuf[j] as Notification)()
 			}
 		} finally {
 			depth--
@@ -81,6 +84,3 @@ function flush(): void {
 		}
 	}
 }
-
-// Pre-allocated flush buffer — grows as needed, never shrinks
-let flushBuf: Notification[] = new Array(16)

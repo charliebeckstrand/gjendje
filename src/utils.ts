@@ -34,7 +34,7 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 	if (keysA.length !== keysB.length) return false
 
 	for (let i = 0; i < keysA.length; i++) {
-		const key = keysA[i]!
+		const key = keysA[i] as string
 
 		if (!Object.hasOwn(objB, key) || !Object.is(objA[key], objB[key])) return false
 	}
