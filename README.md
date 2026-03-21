@@ -43,27 +43,18 @@ configure(config: GjendjeConfig): void
 
 Sets global defaults for all state instances. Call once at app startup before creating any state.
 
-#### Settings
+```ts
+configure({ defaultScope: 'local' })
 
-- `defaultScope` — `'render'`
-- `keyPattern`
-- `logLevel` — `'warn'`
-- `maxKeys`
-- `prefix`
-- `requireValidation`
-- `ssr`
-- `sync`
-- `warnOnDuplicate`
+const theme = state('theme', { default: 'light' })
 
-#### Lifecycle hooks
+theme.scope // 'local'
 
-- `onDestroy`
-- `onError`
-- `onHydrate`
-- `onMigrate`
-- `onQuotaExceeded`
-- `onRegister`
-- `onSync`
+// Per-instance scope always takes precedence
+const temp = state('temp', { default: 0, scope: 'render' })
+
+temp.scope // 'render'
+```
 
 [Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md) — all options, validation, error handling, and examples.
 
