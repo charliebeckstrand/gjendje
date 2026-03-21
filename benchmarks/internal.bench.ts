@@ -99,6 +99,23 @@ async function benchCollectionOperations() {
 		colUpdate.update((item) => item.id === upId++ % 1000, { done: true })
 	})
 
+	// --- update one in large collection ---
+	const colUpdateOne = collection(uniqueKey('col-up1'), { default: [...items] })
+	let upOneId = 0
+
+	bench.add('collection.update one (in 1000 items)', () => {
+		colUpdateOne.update((item) => item.id === upOneId++ % 1000, { done: true }, { one: true })
+	})
+
+	// --- remove one from large collection ---
+	const colRemoveOne = collection(uniqueKey('col-rm1'), { default: [...items] })
+	let rmOneId = 0
+
+	bench.add('collection.remove one (from 1000 items)', () => {
+		colRemoveOne.set([...items])
+		colRemoveOne.remove((item) => item.id === rmOneId++ % 1000, { one: true })
+	})
+
 	// --- find in large collection ---
 	const colFind = collection(uniqueKey('col-find'), { default: [...items] })
 	let findId = 0

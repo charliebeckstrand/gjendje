@@ -148,21 +148,23 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 	col.remove = (predicate: (item: T) => boolean, options?: { one?: boolean }) => {
 		if (options?.one) {
-			let removed = false
+			base.set((prev) => {
+				const idx = prev.findIndex(predicate)
 
-			base.set((prev) =>
-				prev.filter((item) => {
-					if (!removed && predicate(item)) {
-						removed = true
+				if (idx === -1) return prev
 
-						return false
-					}
+				const next = prev.slice()
 
-					return true
-				}),
-			)
+				next.splice(idx, 1)
+
+				return next
+			})
 		} else {
-			base.set((prev) => prev.filter((item) => !predicate(item)))
+			base.set((prev) => {
+				const next = prev.filter((item) => !predicate(item))
+
+				return next.length === prev.length ? prev : next
+			})
 		}
 	}
 
@@ -174,21 +176,33 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 		const applyPatch = typeof patch === 'function' ? patch : (item: T): T => ({ ...item, ...patch })
 
 		if (options?.one) {
-			let updated = false
+			base.set((prev) => {
+				const idx = prev.findIndex(predicate)
 
-			base.set((prev) =>
-				prev.map((item) => {
-					if (!updated && predicate(item)) {
-						updated = true
+				if (idx === -1) return prev
 
-						return applyPatch(item)
-					}
+				const next = prev.slice()
 
-					return item
-				}),
-			)
+				next[idx] = applyPatch(prev[idx] as T)
+
+				return next
+			})
 		} else {
-			base.set((prev) => prev.map((item) => (predicate(item) ? applyPatch(item) : item)))
+			base.set((prev) => {
+				let next: T[] | undefined
+
+				for (let i = 0; i < prev.length; i++) {
+					const item = prev[i] as T
+
+					if (predicate(item)) {
+						if (!next) next = prev.slice()
+
+						next[i] = applyPatch(item)
+					}
+				}
+
+				return next ?? prev
+			})
 		}
 	}
 
