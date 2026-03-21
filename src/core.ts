@@ -459,7 +459,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			}
 		}
 
-		if (this._hasIsEqual && this._options.isEqual!(next, prev)) return
+		if (this._hasIsEqual && this._options.isEqual?.(next, prev)) return
 
 		s.current = next
 
@@ -516,7 +516,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			}
 		}
 
-		if (this._hasIsEqual && this._options.isEqual!(next, prev)) return
+		if (this._hasIsEqual && this._options.isEqual?.(next, prev)) return
 
 		s.current = next
 
@@ -583,7 +583,9 @@ class RenderStateImpl<T> extends StateImpl<T> {
 		s.interceptors?.clear()
 		s.hooks?.clear()
 		s.watchers?.clear()
+
 		s.watchUnsub?.()
+
 		s.renderListeners?.clear()
 
 		unregisterByKey(this._rKey)
@@ -653,6 +655,7 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 	}
 
 	const isSsrMode = (options.ssr ?? config.ssr) && BROWSER_SCOPES.has(scope)
+
 	const useRenderFallback = isSsrMode && isServer()
 
 	// --- Sync warning (must run before the render fast-path) ---
@@ -703,6 +706,7 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 					realAdapter.destroy?.()
 				} catch (err) {
 					log('debug', `Hydration adapter unavailable for state("${key}") — using render fallback.`)
+
 					reportError(key, scope, err)
 				}
 			})
