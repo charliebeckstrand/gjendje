@@ -11,55 +11,7 @@ import {
 	withHistory,
 	withWatch,
 } from '../src/index.js'
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function formatOps(hz: number): string {
-	if (hz >= 1_000_000) return `${(hz / 1_000_000).toFixed(2)}M ops/s`
-	if (hz >= 1_000) return `${(hz / 1_000).toFixed(2)}K ops/s`
-
-	return `${hz.toFixed(2)} ops/s`
-}
-
-function printResults(bench: Bench) {
-	const tasks = bench.tasks.map((t) => {
-		const r = t.result as Record<string, unknown> | undefined
-		const throughput = r?.throughput as Record<string, number> | undefined
-		const latency = r?.latency as Record<string, number> | undefined
-
-		return {
-			name: t.name,
-			hz: throughput?.mean ?? 0,
-			mean: latency?.mean ?? 0,
-			p99: latency?.p99 ?? 0,
-		}
-	})
-
-	tasks.sort((a, b) => b.hz - a.hz)
-
-	const fastest = tasks[0]
-
-	console.log('')
-
-	for (const t of tasks) {
-		const ratio = fastest && t.hz > 0 ? (fastest.hz / t.hz).toFixed(2) : '-'
-		const marker = t === fastest ? ' ⇐ fastest' : ''
-
-		console.log(
-			`  ${t.name.padEnd(44)} ${formatOps(t.hz).padStart(16)}   (avg ${t.mean.toFixed(4)}ms, p99 ${t.p99.toFixed(4)}ms)  ${ratio === '1.00' ? '' : `${ratio}x slower`}${marker}`,
-		)
-	}
-
-	console.log('')
-}
-
-let keyId = 0
-
-function uniqueKey(prefix: string): string {
-	return `${prefix}-${keyId++}`
-}
+import { printResults, runSuites, uniqueKey } from './helpers.js'
 
 // ---------------------------------------------------------------------------
 // 1. Computed: diamond dependency graph
@@ -928,33 +880,23 @@ async function benchComputedStaleness() {
 }
 
 // ---------------------------------------------------------------------------
-// Run all benchmarks
+// Run suites — supports CLI filter: `pnpm tsx edge-cases.bench.ts diamond`
 // ---------------------------------------------------------------------------
 
-async function main() {
-	console.log('='.repeat(70))
-	console.log('  Edge-Case Benchmark: subtle performance pain points')
-	console.log('='.repeat(70))
-
-	await benchComputedDiamond()
-	await benchPeekVsGet()
-	await benchCollectionWatch()
-	await benchSnapshot()
-	await benchCacheHit()
-	await benchEffectLifecycle()
-	await benchBatchWithComputed()
-	await benchReadWriteInterleave()
-	await benchHistoryLargeValues()
-	await benchCollectionChaining()
-	await benchShallowEqual()
-	await benchWatchEnhancer()
-	await benchGCPressure()
-	await benchInterceptorRejection()
-	await benchComputedStaleness()
-
-	console.log('='.repeat(70))
-	console.log('  Done.')
-	console.log('='.repeat(70))
-}
-
-main().catch(console.error)
+runSuites('Edge-Case Benchmark: subtle performance pain points', [
+	{ name: 'diamond', fn: benchComputedDiamond },
+	{ name: 'peek-vs-get', fn: benchPeekVsGet },
+	{ name: 'collection-watch', fn: benchCollectionWatch },
+	{ name: 'snapshot', fn: benchSnapshot },
+	{ name: 'cache-hit', fn: benchCacheHit },
+	{ name: 'effect-lifecycle', fn: benchEffectLifecycle },
+	{ name: 'batch-computed', fn: benchBatchWithComputed },
+	{ name: 'read-write', fn: benchReadWriteInterleave },
+	{ name: 'history-large', fn: benchHistoryLargeValues },
+	{ name: 'collection-chaining', fn: benchCollectionChaining },
+	{ name: 'shallow-equal', fn: benchShallowEqual },
+	{ name: 'watch-enhancer', fn: benchWatchEnhancer },
+	{ name: 'gc-pressure', fn: benchGCPressure },
+	{ name: 'interceptor', fn: benchInterceptorRejection },
+	{ name: 'computed-staleness', fn: benchComputedStaleness },
+]).catch(console.error)

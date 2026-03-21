@@ -2,59 +2,7 @@ import { Bench } from 'tinybench'
 import { proxy, subscribe as valtioSubscribe, snapshot as valtioSnapshot } from 'valtio/vanilla'
 import { createStore as createZustandStore } from 'zustand/vanilla'
 import { batch, computed, state } from '../src/index.js'
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function formatOps(hz: number): string {
-	if (hz >= 1_000_000) return `${(hz / 1_000_000).toFixed(2)}M ops/s`
-	if (hz >= 1_000) return `${(hz / 1_000).toFixed(2)}K ops/s`
-	
-	return `${hz.toFixed(2)} ops/s`
-}
-
-function printResults(bench: Bench) {
-	const tasks = bench.tasks.map((t) => {
-		const r = t.result as Record<string, unknown> | undefined
-		const throughput = r?.throughput as Record<string, number> | undefined
-		const latency = r?.latency as Record<string, number> | undefined
-
-		return {
-			name: t.name,
-			hz: throughput?.mean ?? 0,
-			mean: latency?.mean ?? 0,
-			p99: latency?.p99 ?? 0,
-		}
-	})
-
-	tasks.sort((a, b) => b.hz - a.hz)
-
-	const fastest = tasks[0]
-
-	console.log('')
-
-	for (const t of tasks) {
-		const ratio = fastest && t.hz > 0 ? (fastest.hz / t.hz).toFixed(2) : '-'
-		const marker = t === fastest ? ' ⇐ fastest' : ''
-
-		console.log(
-			`  ${t.name.padEnd(20)} ${formatOps(t.hz).padStart(16)}   (avg ${t.mean.toFixed(4)}ms, p99 ${t.p99.toFixed(4)}ms)  ${ratio === '1.00' ? '' : `${ratio}x slower`}${marker}`,
-		)
-	}
-
-	console.log('')
-}
-
-// ---------------------------------------------------------------------------
-// Unique key counter — avoids gjendje instance caching between benchmarks
-// ---------------------------------------------------------------------------
-
-let keyId = 0
-
-function uniqueKey(prefix: string): string {
-	return `${prefix}-${keyId++}`
-}
+import { printResults, runSuites, uniqueKey } from './helpers.js'
 
 // ---------------------------------------------------------------------------
 // Benchmark: State creation
@@ -354,25 +302,15 @@ async function benchComputed() {
 }
 
 // ---------------------------------------------------------------------------
-// Run all benchmarks
+// Run suites — supports CLI filter: `pnpm tsx state-management.bench.ts read`
 // ---------------------------------------------------------------------------
 
-async function main() {
-	console.log('='.repeat(70))
-	console.log('  State Management Benchmark: gjendje vs Valtio vs Zustand')
-	console.log('='.repeat(70))
-
-	await benchCreate()
-	await benchRead()
-	await benchWrite()
-	await benchSubscribeWrite()
-	await benchManyListeners()
-	await benchBatch()
-	await benchComputed()
-
-	console.log('='.repeat(70))
-	console.log('  Done.')
-	console.log('='.repeat(70))
-}
-
-main().catch(console.error)
+runSuites('State Management Benchmark: gjendje vs Valtio vs Zustand', [
+	{ name: 'create', fn: benchCreate },
+	{ name: 'read', fn: benchRead },
+	{ name: 'write', fn: benchWrite },
+	{ name: 'subscribe-write', fn: benchSubscribeWrite },
+	{ name: 'many-listeners', fn: benchManyListeners },
+	{ name: 'batch', fn: benchBatch },
+	{ name: 'computed', fn: benchComputed },
+]).catch(console.error)
