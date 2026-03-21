@@ -54,7 +54,9 @@ export function unregisterByKey(rKey: string): void {
 	registry.delete(rKey)
 }
 
-// --- Legacy API (used by collection, devtools, etc.) ---
+// ---------------------------------------------------------------------------
+// Legacy API — used by collection, devtools, etc.
+// ---------------------------------------------------------------------------
 
 export function register<T>(key: string, scope: Scope, instance: BaseInstance<T>): void {
 	registerByKey(scopedKey(key, scope), key, scope, instance, getConfig())

@@ -128,19 +128,15 @@ interface MutableState<T> {
 
 // biome-ignore lint/suspicious/noExplicitAny: generic class needs any for internal storage
 class StateImpl<T = any> implements StateInstance<T> {
-	// --- Identity (direct properties — fastest access) ---
 	readonly key: string
 	readonly scope: Scope
 
-	// --- Internal references ---
-	/** @internal */ _adapter: Adapter<T>
-	/** @internal */ _defaultValue: T
-	/** @internal */ _options: StateOptions<T>
-	/** @internal */ _rKey: string
-	/** @internal */ _config: Readonly<GjendjeConfig>
-
-	// --- Shared mutable state (safe across Object.create chains) ---
-	/** @internal */ _s: MutableState<T>
+	_adapter: Adapter<T>
+	_defaultValue: T
+	_options: StateOptions<T>
+	_rKey: string
+	_config: Readonly<GjendjeConfig>
+	_s: MutableState<T>
 
 	constructor(
 		key: string,
@@ -355,7 +351,6 @@ class StateImpl<T = any> implements StateInstance<T> {
 		}
 	}
 
-	/** @internal */
 	protected _ensureWatchSubscription(): void {
 		const s = this._s
 
@@ -611,6 +606,12 @@ class RenderStateImpl<T = any> extends StateImpl<T> {
 // Base instance factory
 // ---------------------------------------------------------------------------
 
+/**
+ * Create a state instance backed by the appropriate adapter for the given scope.
+ *
+ * Same key + same scope always returns the same instance.
+ * This is the low-level factory used by both `state()` and `collection()`.
+ */
 export function createBase<T>(key: string, options: StateOptions<T>): StateInstance<T> {
 	if (!key) {
 		throw new Error('[state] key must be a non-empty string.')

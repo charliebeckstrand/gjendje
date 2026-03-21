@@ -14,6 +14,19 @@ export interface WithWatch<T> {
 	): Unsubscribe
 }
 
+/**
+ * Enhance a state instance with per-key change tracking.
+ *
+ * The `watch()` method only fires when a specific property of an object
+ * value changes, using Object.is for comparison.
+ *
+ * ```ts
+ * const user = state('user', { default: { name: 'Jane', age: 30 } })
+ * const w = withWatch(user)
+ *
+ * w.watch('name', (name) => console.log(name))
+ * ```
+ */
 // biome-ignore lint/suspicious/noExplicitAny: constraint must use any for invariant BaseInstance
 export function withWatch<TIn extends BaseInstance<any>>(
 	instance: TIn,
