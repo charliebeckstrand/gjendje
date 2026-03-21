@@ -110,11 +110,10 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	// Compute initial value eagerly so first get() is synchronous
 	recompute()
 
-	let resolveDestroyed: () => void
+	// Lazy destroyed promise — only allocated if someone awaits it
+	let destroyedPromise: Promise<void> | undefined
 
-	const destroyedPromise = new Promise<void>((resolve) => {
-		resolveDestroyed = resolve
-	})
+	let resolveDestroyed: (() => void) | undefined
 
 	// Cache promise properties — deps don't change after creation
 	const readyPromise = Promise.all(deps.map((d) => d.ready)).then(() => undefined)
@@ -138,6 +137,12 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		get destroyed(): Promise<void> {
+			if (!destroyedPromise) {
+				destroyedPromise = new Promise<void>((resolve) => {
+					resolveDestroyed = resolve
+				})
+			}
+
 			return destroyedPromise
 		},
 
@@ -166,7 +171,11 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 			listeners.clear()
 
-			resolveDestroyed()
+			if (resolveDestroyed) {
+				resolveDestroyed()
+			} else {
+				destroyedPromise = Promise.resolve()
+			}
 		},
 	}
 }
