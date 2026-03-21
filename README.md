@@ -16,7 +16,7 @@ npm install gjendje
 import { state } from 'gjendje'
 
 // 1. Create state
-const counter = state('counter', { default: 0 })
+const counter = state('counter', 0)
 
 // 2. Read
 counter.get() // 0
@@ -56,7 +56,7 @@ configure({ scope: 'local' })
 Now every `state` call inherits that default:
 
 ```ts
-const theme = state('theme', { default: 'light' })
+const theme = state('theme', 'light')
 
 theme.scope // 'local' — derived from configure
 ```

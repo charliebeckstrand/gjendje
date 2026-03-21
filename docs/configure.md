@@ -72,7 +72,7 @@ Limit the total number of registered state instances. Throws when the limit is e
 configure({ maxKeys: 100 })
 
 // After 100 state instances, the next state() call throws
-state('key-101', { default: 0 }) // Error: maxKeys limit (100) reached
+state('key-101', 0) // Error: maxKeys limit (100) reached
 ```
 
 Slots are freed when instances are destroyed.
@@ -133,7 +133,7 @@ Sets a scope when `scope` is omitted from `state()`. Without this, the default i
 ```ts
 configure({ scope: 'local' })
 
-const theme = state('theme', { default: 'light' })
+const theme = state('theme', 'light')
 
 theme.scope // 'local'
 

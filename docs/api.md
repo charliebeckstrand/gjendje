@@ -1,17 +1,29 @@
 # API
 
-## `state(key, options)`
+## `state(key, options)` / `state(key, defaultValue)`
 
 Creates a named, reactive value in a specific scope. Same key + scope always returns the same instance.
 
 ```ts
 function state<T>(key: string, options: StateOptions<T>): StateInstance<T>
+function state<T>(key: string, defaultValue: T): StateInstance<T>
+```
+
+For simple cases, pass a primitive default directly. Use the options object when you need `scope`, `sync`, `validate`, or other settings.
+
+```ts
+// Shorthand — primitive default only
+const counter = state('counter', 0)
+const name = state('name', 'guest')
+
+// Full options — when you need more than a default
+const theme = state('theme', { default: 'light', scope: 'local' })
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `key` | `string` | Unique identifier for this value |
-| `options` | `StateOptions<T>` | Configuration (see [Options](#options)) |
+| `options` | `StateOptions<T>` or `T` | Configuration object, or a primitive default value |
 
 **Returns** `StateInstance<T>`
 
@@ -266,7 +278,7 @@ Options:
 | `maxSize` | `number` | `50` | Maximum number of history entries |
 
 ```ts
-const counter = state('counter', { default: 0 })
+const counter = state('counter', 0)
 const h = withHistory(counter)
 
 h.set(1)
