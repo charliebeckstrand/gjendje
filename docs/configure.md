@@ -31,25 +31,6 @@ Sets global defaults for all state instances. Call once at app startup before cr
 
 ---
 
-## `scope`
-
-Sets a scope when `scope` is omitted from `state()`. Without this, the default is `'render'`.
-
-```ts
-configure({ scope: 'local' })
-
-const theme = state('theme', { default: 'light' })
-
-theme.scope // 'local'
-
-// Per-instance scope always takes precedence
-const temp = state('temp', { default: 0, scope: 'render' })
-
-temp.scope // 'render'
-```
-
----
-
 ## `keyPattern`
 
 Enforce a naming convention for all state keys. Throws on `state()` if the key does not match.
@@ -145,6 +126,25 @@ Non-persistent scopes (`render`, `url`, `server`) are not affected.
 
 ---
 
+## `scope`
+
+Sets a scope when `scope` is omitted from `state()`. Without this, the default is `'render'`.
+
+```ts
+configure({ scope: 'local' })
+
+const theme = state('theme', { default: 'light' })
+
+theme.scope // 'local'
+
+// Per-instance scope always takes precedence
+const temp = state('temp', { default: 0, scope: 'render' })
+
+temp.scope // 'render'
+```
+
+---
+
 ## `ssr`
 
 Enable SSR mode globally. Equivalent to passing `ssr: true` on every `state()` call.
@@ -198,7 +198,32 @@ The duplicate still returns the cached instance — this is purely a development
 
 ---
 
-## `onError`
+## Events
+
+### `onDestroy`
+
+Fires when any state instance is destroyed. Useful for cleanup analytics, debugging memory leaks, or ensuring dependent systems are notified.
+
+```ts
+configure({
+  onDestroy: ({ key, scope }) => {
+    console.log(`State destroyed: ${key} (${scope})`)
+  },
+})
+```
+
+The `DestroyContext` shape:
+
+```ts
+interface DestroyContext {
+  key: string
+  scope: Scope
+}
+```
+
+---
+
+### `onError`
 
 Register a global error handler that fires on storage, migration, and hydration failures. Useful for reporting to error tracking services.
 
@@ -226,30 +251,7 @@ This handler is called in addition to the normal fallback behavior (falling back
 
 ---
 
-## `onDestroy`
-
-Fires when any state instance is destroyed. Useful for cleanup analytics, debugging memory leaks, or ensuring dependent systems are notified.
-
-```ts
-configure({
-  onDestroy: ({ key, scope }) => {
-    console.log(`State destroyed: ${key} (${scope})`)
-  },
-})
-```
-
-The `DestroyContext` shape:
-
-```ts
-interface DestroyContext {
-  key: string
-  scope: Scope
-}
-```
-
----
-
-## `onHydrate`
+### `onHydrate`
 
 Fires after SSR hydration completes for an instance. Receives both the server-rendered value and the client-side storage value. Useful for detecting mismatches and debugging hydration issues.
 
@@ -278,7 +280,7 @@ Only fires for instances with SSR enabled on browser scopes.
 
 ---
 
-## `onMigrate`
+### `onMigrate`
 
 Fires after a migration chain runs during a read from storage. Receives the version range and the final migrated data. Useful for tracking schema migrations in production.
 
@@ -306,7 +308,7 @@ This fires each time a stored value is read that requires migration. If you want
 
 ---
 
-## `onQuotaExceeded`
+### `onQuotaExceeded`
 
 Fires specifically when a storage write fails due to quota limits (`QuotaExceededError`). More targeted than `onError` — lets apps react by evicting old keys or showing a notification.
 
@@ -333,7 +335,7 @@ Only fires for `DOMException` with `name === 'QuotaExceededError'`.
 
 ---
 
-## `onRegister`
+### `onRegister`
 
 Fires when a new state instance is registered in the global registry. Does not fire for duplicate key + scope lookups that return a cached instance.
 
@@ -358,7 +360,7 @@ Fires again if an instance is destroyed and re-created with the same key + scope
 
 ---
 
-## `onSync`
+### `onSync`
 
 Fires when a cross-tab sync event updates a value from another tab. Useful for conflict resolution or showing "updated in another tab" notifications.
 

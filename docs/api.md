@@ -27,6 +27,14 @@ get(): T
 
 Returns the current value. Reactive — tracked by `computed` and `effect`.
 
+### `peek()`
+
+```ts
+peek(): T
+```
+
+Reads the current value without reactive tracking. Useful when you need the value inside a `computed` or `effect` without creating a dependency.
+
 ### `set(value)`
 
 ```ts
@@ -39,13 +47,13 @@ Replaces the current value. Accepts a direct value or an updater function.
 |-----------|------|-------------|
 | `value` | `T \| (prev: T) => T` | New value or updater function |
 
-### `peek()`
+### `reset()`
 
 ```ts
-peek(): T
+reset(): void
 ```
 
-Reads the current value without reactive tracking. Useful when you need the value inside a `computed` or `effect` without creating a dependency.
+Restores the value to the `default` provided at creation.
 
 ### `subscribe(listener)`
 
@@ -79,14 +87,6 @@ use(fn: (next: T, prev: T) => void): Unsubscribe
 
 Registers a post-set hook. Receives `(next, prev)`. Return value is ignored. Multiple hooks run in registration order.
 
-### `reset()`
-
-```ts
-reset(): void
-```
-
-Restores the value to the `default` provided at creation.
-
 ### `destroy()`
 
 ```ts
@@ -112,8 +112,8 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `scope` | `Scope` | Which scope this instance uses |
 | `key` | `string` | The key this instance was created with |
+| `scope` | `Scope` | Which scope this instance uses |
 | `isDestroyed` | `boolean` | Whether `destroy()` has been called |
 
 ---
@@ -126,16 +126,16 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 |--------|------|---------|-------------|
 | `default` | `T` | required | Initial value and reset target |
 | `scope` | `Scope` | `'render'` | Where state lives |
+| `isEqual` | `(a: T, b: T) => boolean` | — | Custom equality function. When provided, `set()` skips the update if `isEqual(next, prev)` returns `true` |
+| `migrate` | `Record<number, (old: unknown) => unknown>` | — | Migration functions keyed by source version |
+| `persist` | `Array<keyof T & string>` | — | Selectively persist only listed keys of an object value |
 | `prefix` | `string \| false` | — | Override or disable the global key prefix |
-| `bucket` | `BucketOptions` | — | Required when scope is `'bucket'` |
 | `serialize` | `Serializer<T>` | JSON | Custom serializer for persistent scopes |
 | `ssr` | `boolean` | `false` | Enable SSR safety |
 | `sync` | `boolean` | `false` | Broadcast changes to other tabs via BroadcastChannel |
-| `version` | `number` | `1` | Schema version for migrations |
 | `validate` | `(v: unknown) => v is T` | — | Validate values read from storage; falls back to default on failure |
-| `migrate` | `Record<number, (old: unknown) => unknown>` | — | Migration functions keyed by source version |
-| `persist` | `Array<keyof T & string>` | — | Selectively persist only listed keys of an object value |
-| `isEqual` | `(a: T, b: T) => boolean` | — | Custom equality function. When provided, `set()` skips the update if `isEqual(next, prev)` returns `true` |
+| `version` | `number` | `1` | Schema version for migrations |
+| `bucket` | `BucketOptions` | — | Required when scope is `'bucket'` |
 
 ---
 
@@ -144,10 +144,10 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `name` | `string` | required | Bucket name. Each name is isolated. |
-| `persisted` | `boolean` | `false` | Persist under storage pressure |
 | `expires` | `string \| number` | — | Expiry duration (`'7d'`, `'24h'`) or Unix timestamp in ms |
-| `quota` | `string \| number` | — | Maximum storage quota (`'10mb'`, `'50mb'`) or byte count |
 | `fallback` | `'local' \| 'tab'` | `'local'` | Scope to use if Storage Buckets API is unavailable |
+| `persisted` | `boolean` | `false` | Persist under storage pressure |
+| `quota` | `string \| number` | — | Maximum storage quota (`'10mb'`, `'50mb'`) or byte count |
 
 ---
 
@@ -165,12 +165,25 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 
 | Scope | Storage | Survives reload | Cross-tab | Server | Async |
 |-------|---------|----------------|-----------|--------|-------|
-| `render` | Memory | no | no | no | no |
-| `local` | localStorage | yes | passive | no | no |
-| `server` | AsyncLocalStorage | per-request | no | yes | no |
 | `bucket` | Storage Buckets API | yes | no | no | yes |
-| `url` | URLSearchParams | yes | via link | no | no |
+| `local` | localStorage | yes | passive | no | no |
+| `render` | Memory | no | no | no | no |
+| `server` | AsyncLocalStorage | per-request | no | yes | no |
 | `tab` | sessionStorage | yes | no | no | no |
+| `url` | URLSearchParams | yes | via link | no | no |
+
+---
+
+## Serializer
+
+```ts
+interface Serializer<T> {
+  stringify(value: T): string
+  parse(raw: string): T
+}
+```
+
+Custom serializer for types that don't round-trip through JSON. When provided, migration and validation are skipped.
 
 ---
 
@@ -192,6 +205,29 @@ function configure(config: { prefix?: string }): void
 
 Sets the global key prefix. All subsequent `state()` calls use this prefix unless overridden per-instance.
 
+### `shallowEqual(a, b)`
+
+```ts
+function shallowEqual(a: unknown, b: unknown): boolean
+```
+
+Shallow equality check for primitives, arrays, and plain objects. Compares one level deep using `Object.is`.
+
+### `snapshot()`
+
+```ts
+function snapshot(): StateSnapshot[]
+```
+
+Returns a read-only snapshot of all registered state instances. Useful for debugging and logging.
+
+```ts
+import { snapshot } from 'gjendje'
+console.table(snapshot())
+```
+
+Each entry contains: `key`, `scope`, `value`, and `isDestroyed`.
+
 ### `withServerSession(fn)`
 
 ```ts
@@ -199,19 +235,6 @@ function withServerSession<T>(fn: () => T | Promise<T>): Promise<T>
 ```
 
 Wraps a callback in an AsyncLocalStorage context for the `server` scope. Required for request-scoped state on the server.
-
----
-
-## Serializer
-
-```ts
-interface Serializer<T> {
-  stringify(value: T): string
-  parse(raw: string): T
-}
-```
-
-Custom serializer for types that don't round-trip through JSON. When provided, migration and validation are skipped.
 
 ---
 
@@ -251,30 +274,3 @@ h.set(2)
 h.undo()   // counter is now 1
 h.redo()   // counter is now 2
 ```
-
----
-
-### `snapshot()`
-
-```ts
-function snapshot(): StateSnapshot[]
-```
-
-Returns a read-only snapshot of all registered state instances. Useful for debugging and logging.
-
-```ts
-import { snapshot } from 'gjendje'
-console.table(snapshot())
-```
-
-Each entry contains: `key`, `scope`, `value`, and `isDestroyed`.
-
----
-
-### `shallowEqual(a, b)`
-
-```ts
-function shallowEqual(a: unknown, b: unknown): boolean
-```
-
-Shallow equality check for primitives, arrays, and plain objects. Compares one level deep using `Object.is`.

@@ -39,6 +39,108 @@ Derives a reactive, read-only value from one or more state dependencies.
 
 ---
 
+## `select(source, fn)`
+
+```ts
+function select<TSource, TResult>(
+  source: ReadonlyInstance<TSource>,
+  fn: (value: TSource) => TResult,
+  options?: SelectOptions,
+): SelectInstance<TResult>
+```
+
+Derives a reactive, read-only value from a **single** source instance. A lightweight alternative to `computed` — no array allocation, no dependency loop.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `source` | `ReadonlyInstance<TSource>` | The single source to derive from |
+| `fn` | `(value: TSource) => TResult` | Transform function — receives the current source value |
+| `options` | `SelectOptions` | Optional — `{ key?: string }` |
+
+**Returns** `SelectInstance<TResult>` — extends `ReadonlyInstance` (no `set` or `reset`).
+
+### Instance methods
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `get()` | `() => T` | Current derived value |
+| `peek()` | `() => T` | Cached value without reactive tracking |
+| `subscribe(fn)` | `(fn: (value: T) => void) => Unsubscribe` | Listen for recomputations |
+| `destroy()` | `() => void` | Stop listening to source |
+
+### Behavior
+- **Lazy caching** — the transform only runs when the source changes. Repeated `get()` calls return the cached value.
+- **Identity check** — skips notification when the derived value is unchanged (`===`).
+- **Batching** — participates in `batch()`. Notifications are deferred like any other state.
+- **Eager initialization** — the first value is computed synchronously at creation time.
+- **Composition** — can derive from `state`, `computed`, or another `select`.
+
+---
+
+## `previous(source)`
+
+```ts
+function previous<T>(
+  source: ReadonlyInstance<T>,
+  options?: PreviousOptions,
+): PreviousInstance<T>
+```
+
+Tracks the previous value of a source instance. Returns `undefined` until the source changes for the first time. Lighter than `withHistory` — stores only the single prior value, no undo/redo stacks.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `source` | `ReadonlyInstance<T>` | The source to track |
+| `options` | `PreviousOptions` | Optional — `{ key?: string }` |
+
+**Returns** `PreviousInstance<T>` — extends `ReadonlyInstance<T | undefined>`.
+
+### Instance methods
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `get()` | `() => T \| undefined` | The value the source had before the last change |
+| `peek()` | `() => T \| undefined` | Same as `get()` |
+| `subscribe(fn)` | `(fn: (value: T \| undefined) => void) => Unsubscribe` | Listen for previous-value changes |
+| `destroy()` | `() => void` | Stop tracking the source |
+
+### Behavior
+- **Undefined initially** — returns `undefined` until the source changes at least once.
+- **Single value** — only stores the immediately preceding value, not a full history.
+- **Batching** — participates in `batch()`. Notifications are deferred like any other state.
+
+---
+
+## `readonly(instance)`
+
+```ts
+function readonly<T>(instance: ReadonlyInstance<T>): ReadonlyInstance<T>
+```
+
+Creates a read-only view of any state or computed instance. The returned instance exposes `get`, `peek`, `subscribe`, and lifecycle properties — but no `set`, `reset`, `intercept`, or `use`. Zero runtime cost.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `instance` | `ReadonlyInstance<T>` | The source instance to wrap |
+
+**Returns** `ReadonlyInstance<T>` — a view with no write methods.
+
+### Instance methods
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `get()` | `() => T` | Current value (delegates to source) |
+| `peek()` | `() => T` | Snapshot without reactive tracking |
+| `subscribe(fn)` | `(fn: (value: T) => void) => Unsubscribe` | Listen for changes |
+| `destroy()` | `() => void` | Delegates to source |
+
+### Behavior
+- **Pure delegation** — all reads and subscriptions go through to the source.
+- **Type safety** — write methods (`set`, `reset`, `intercept`, `use`) are stripped from the type.
+- **Lifecycle** — `key`, `scope`, `isDestroyed`, `ready`, `settled`, `hydrated`, `destroyed` all delegate to the source.
+
+---
+
 ## `collection(key, options)`
 
 ```ts
