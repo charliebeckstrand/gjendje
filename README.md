@@ -88,14 +88,14 @@ Returns the current value. Reactive — triggers tracking in `computed` and `eff
 #### `set(value)` / `set(prev => next)`
 Replaces the current value. Accepts a direct value or an updater function that receives the previous value.
 
+#### `intercept(fn)`
+Receives `(next, prev)` before each update. Return the value to store, or return `prev` to reject the change. Returns an `unsubscribe` function.
+
 #### `subscribe(fn)`
 Calls `fn` on every change. Returns an `unsubscribe` function.
 
 #### `watch(key, fn)`
 Like `subscribe`, but scoped to a single key within an object value. Only fires when that key changes.
-
-#### `intercept(fn)`
-Receives `(next, prev)` before each update. Return the value to store, or return `prev` to reject the change. Returns an `unsubscribe` function.
 
 [Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md) — all methods, promise lifecycle, options, and types.
 
