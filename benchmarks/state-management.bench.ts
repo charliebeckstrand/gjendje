@@ -10,6 +10,7 @@ import { batch, computed, state } from '../src/index.js'
 function formatOps(hz: number): string {
 	if (hz >= 1_000_000) return `${(hz / 1_000_000).toFixed(2)}M ops/s`
 	if (hz >= 1_000) return `${(hz / 1_000).toFixed(2)}K ops/s`
+	
 	return `${hz.toFixed(2)} ops/s`
 }
 
@@ -76,6 +77,7 @@ async function benchCreate() {
 	await bench.run()
 
 	console.log('── State Creation ──')
+	
 	printResults(bench)
 }
 
@@ -104,6 +106,7 @@ async function benchRead() {
 	await bench.run()
 
 	console.log('── State Read ──')
+	
 	printResults(bench)
 }
 
@@ -134,6 +137,7 @@ async function benchWrite() {
 	await bench.run()
 
 	console.log('── State Write ──')
+	
 	printResults(bench)
 }
 
@@ -145,12 +149,15 @@ async function benchSubscribeWrite() {
 	const bench = new Bench({ time: 1000, warmupTime: 200 })
 
 	const gj = state(uniqueKey('sub'), { default: 0 })
+	
 	gj.subscribe(() => {})
 
 	const vp = proxy({ value: 0 })
+	
 	valtioSubscribe(vp, () => {}, true)
 
 	const zStore = createZustandStore<{ value: number }>(() => ({ value: 0 }))
+	
 	zStore.subscribe(() => {})
 
 	let i = 0
@@ -169,6 +176,7 @@ async function benchSubscribeWrite() {
 	await bench.run()
 
 	console.log('── Subscribe + Write (1 listener) ──')
+	
 	printResults(bench)
 }
 
@@ -178,6 +186,7 @@ async function benchSubscribeWrite() {
 
 async function benchManyListeners() {
 	const bench = new Bench({ time: 1000, warmupTime: 200 })
+	
 	const LISTENER_COUNT = 100
 
 	const gj = state(uniqueKey('many'), { default: 0 })
@@ -214,6 +223,7 @@ async function benchManyListeners() {
 	await bench.run()
 
 	console.log(`── Subscribe + Write (${LISTENER_COUNT} listeners) ──`)
+	
 	printResults(bench)
 }
 
@@ -223,6 +233,7 @@ async function benchManyListeners() {
 
 async function benchBatch() {
 	const bench = new Bench({ time: 1000, warmupTime: 200 })
+	
 	const UPDATE_COUNT = 100
 
 	const gjItems = Array.from({ length: UPDATE_COUNT }, (_, i) =>
@@ -249,6 +260,7 @@ async function benchBatch() {
 	}
 
 	const zStore = createZustandStore<Record<string, number>>(() => zInitial)
+	
 	zStore.subscribe(() => {})
 
 	let iter = 0
@@ -287,6 +299,7 @@ async function benchBatch() {
 	await bench.run()
 
 	console.log(`── Batch Update (${UPDATE_COUNT} values) ──`)
+	
 	printResults(bench)
 }
 
@@ -306,6 +319,7 @@ async function benchComputed() {
 
 	const zA = createZustandStore<{ value: number }>(() => ({ value: 1 }))
 	const zB = createZustandStore<{ value: number }>(() => ({ value: 2 }))
+	
 	let zDerived = zA.getState().value + zB.getState().value
 
 	zA.subscribe((s) => {
@@ -335,6 +349,7 @@ async function benchComputed() {
 	await bench.run()
 
 	console.log('── Computed / Derived State ──')
+	
 	printResults(bench)
 }
 
