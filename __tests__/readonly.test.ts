@@ -17,14 +17,16 @@ describe('readonly', () => {
 		expect(ro.get()).toBe('b')
 	})
 
-	it('does not expose set, reset, intercept, or use', () => {
+	it('shadows set, reset, intercept, and use as undefined', () => {
 		const base = state('ro-no-write', { default: 0, scope: 'render' })
 		const ro = readonly(base)
 
-		expect('set' in ro).toBe(false)
-		expect('reset' in ro).toBe(false)
-		expect('intercept' in ro).toBe(false)
-		expect('use' in ro).toBe(false)
+		// Write methods are shadowed with undefined on the wrapper —
+		// calling them from untyped JS would throw "not a function".
+		expect((ro as unknown as Record<string, unknown>).set).toBeUndefined()
+		expect((ro as unknown as Record<string, unknown>).reset).toBeUndefined()
+		expect((ro as unknown as Record<string, unknown>).intercept).toBeUndefined()
+		expect((ro as unknown as Record<string, unknown>).use).toBeUndefined()
 	})
 
 	it('supports subscribe', () => {
