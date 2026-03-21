@@ -48,7 +48,7 @@ export interface RegisterContext {
 
 export interface GjendjeConfig {
 	/** Default scope for all state instances. Defaults to `'render'`. */
-	defaultScope?: Scope | undefined
+	scope?: Scope | undefined
 
 	/** Enforce a naming pattern for state keys. */
 	keyPattern?: RegExp | undefined
