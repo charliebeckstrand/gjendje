@@ -1,5 +1,17 @@
 # gjendje
 
+## 0.4.0
+
+### Minor Changes
+
+- d7dcdb2: Initial release of gjendje.
+
+  Six scopes (`render`, `tab`, `local`, `url`, `server`, `bucket`), reactive primitives (`computed`, `effect`, `collection`), persistence with validation and migration, Storage Buckets API support, `sync: true` for cross-tab broadcasting, SSR safety, and React bindings.
+
+### Patch Changes
+
+- 5129bc0: Add retroactive changelog entries for versions 0.2.0–0.3.6, add regression tests for 100% coverage, update CLAUDE.md with versioning guidance and changeset workflow.
+
 ## 0.3.7
 
 ### Docs & Testing
