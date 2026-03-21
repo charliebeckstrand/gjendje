@@ -4,6 +4,12 @@
 
 **gjendje** unifies state management across storage backends.
 
+## Install
+
+```sh
+npm install gjendje
+```
+
 ## Configure
 
 Sets global defaults for all state instances.   
@@ -22,7 +28,7 @@ const temp = state('temp', { default: 0, scope: 'render' })
 temp.scope // 'render'
 ```
 
-[Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md) — all options, validation, error handling, and examples.
+[Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
 ## Scopes
 
@@ -54,7 +60,7 @@ Calls `fn` on every change. Returns an `unsubscribe` function.
 #### `watch(key, fn)`
 Like `subscribe`, but scoped to a single key within an object value. Only fires when that key changes.
 
-[Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md) — all methods, promise lifecycle, options, and types.
+[Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
 
 ## Derived state
 
