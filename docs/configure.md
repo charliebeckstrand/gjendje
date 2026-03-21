@@ -33,7 +33,7 @@ Sets global defaults for all state instances. Call once at app startup before cr
 
 ## `scope`
 
-Sets the default scope when `scope` is omitted from `state()`. Without this, the default is `'render'`.
+Sets a scope when `scope` is omitted from `state()`. Without this, the default is `'render'`.
 
 ```ts
 configure({ scope: 'local' })
