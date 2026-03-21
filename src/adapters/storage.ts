@@ -1,7 +1,8 @@
 import { notify } from '../batch.js'
 import { getConfig, log } from '../config.js'
+import { createListeners } from '../listeners.js'
 import { mergeKeys, pickKeys, readAndMigrate, wrapForStorage } from '../persist.js'
-import type { Adapter, Listener, StateOptions, Unsubscribe } from '../types.js'
+import type { Adapter, StateOptions } from '../types.js'
 
 export function createStorageAdapter<T>(
 	storage: Storage,
@@ -10,7 +11,7 @@ export function createStorageAdapter<T>(
 ): Adapter<T> {
 	const { default: defaultValue, version, serialize, persist } = options
 
-	const listeners = new Set<Listener<T>>()
+	const listeners = createListeners<T>()
 
 	function read(): T {
 		try {
@@ -60,11 +61,7 @@ export function createStorageAdapter<T>(
 
 	let lastNotifiedValue: T = defaultValue
 
-	const notifyListeners = () => {
-		for (const listener of listeners) {
-			listener(lastNotifiedValue)
-		}
-	}
+	const notifyListeners = () => listeners.notify(lastNotifiedValue)
 
 	function onStorageEvent(event: StorageEvent): void {
 		if (event.storageArea !== storage || event.key !== key) return
@@ -93,13 +90,7 @@ export function createStorageAdapter<T>(
 			notify(notifyListeners)
 		},
 
-		subscribe(listener: Listener<T>): Unsubscribe {
-			listeners.add(listener)
-
-			return () => {
-				listeners.delete(listener)
-			}
-		},
+		subscribe: listeners.subscribe,
 
 		destroy() {
 			listeners.clear()

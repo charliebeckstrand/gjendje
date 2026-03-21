@@ -1,14 +1,14 @@
 import { createBucketAdapter } from './adapters/bucket.js'
-import { createLocalAdapter } from './adapters/local.js'
 import { createRenderAdapter } from './adapters/render.js'
 import { createServerAdapter } from './adapters/server.js'
+import { createStorageAdapter } from './adapters/storage.js'
 import { withSync } from './adapters/sync.js'
-import { createTabAdapter } from './adapters/tab.js'
 import { createUrlAdapter } from './adapters/url.js'
 import { getConfig, log, reportError } from './config.js'
 import { getRegistered, register, unregister } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
 import type { Adapter, BaseInstance, Scope, StateOptions } from './types.js'
+import { shallowEqual } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Scope sets (module-level to avoid per-instance allocation)
@@ -41,10 +41,22 @@ function resolveAdapter<T>(key: string, scope: Scope, options: StateOptions<T>):
 			return createRenderAdapter(options.default)
 
 		case 'tab':
-			return createTabAdapter(storageKey, options)
+			if (typeof sessionStorage === 'undefined') {
+				throw new Error(
+					'[state] sessionStorage is not available. Use ssr: true or scope: "render" for server environments.',
+				)
+			}
+
+			return createStorageAdapter(sessionStorage, storageKey, options)
 
 		case 'local':
-			return createLocalAdapter(storageKey, options)
+			if (typeof localStorage === 'undefined') {
+				throw new Error(
+					'[state] localStorage is not available. Use ssr: true or scope: "server" for server environments.',
+				)
+			}
+
+			return createStorageAdapter(localStorage, storageKey, options)
 
 		case 'url':
 			return createUrlAdapter(
@@ -169,7 +181,7 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 				const serverValue = defaultValue
 				const clientValue = storedValue
 
-				if (JSON.stringify(storedValue) !== JSON.stringify(defaultValue)) {
+				if (!shallowEqual(storedValue, defaultValue)) {
 					instance.set(storedValue)
 				}
 
@@ -202,9 +214,13 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 					? (valueOrUpdater as (prev: T) => T)(prev)
 					: valueOrUpdater
 
-			for (const interceptor of _interceptors) {
-				next = interceptor(next, prev)
+			if (_interceptors.size > 0) {
+				for (const interceptor of _interceptors) {
+					next = interceptor(next, prev)
+				}
 			}
+
+			if (options.isEqual?.(next, prev)) return
 
 			lastValue = next
 
@@ -213,8 +229,10 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 			// settled resolves when the adapter is ready (sync = immediate)
 			_settled = adapter.ready
 
-			for (const hook of _hooks) {
-				hook(next, prev)
+			if (_hooks.size > 0) {
+				for (const hook of _hooks) {
+					hook(next, prev)
+				}
 			}
 		},
 
@@ -229,9 +247,13 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 
 			let next = defaultValue
 
-			for (const interceptor of _interceptors) {
-				next = interceptor(next, prev)
+			if (_interceptors.size > 0) {
+				for (const interceptor of _interceptors) {
+					next = interceptor(next, prev)
+				}
 			}
+
+			if (options.isEqual?.(next, prev)) return
 
 			lastValue = next
 
@@ -239,8 +261,10 @@ export function createBase<T>(key: string, options: StateOptions<T>): BaseInstan
 
 			_settled = adapter.ready
 
-			for (const hook of _hooks) {
-				hook(next, prev)
+			if (_hooks.size > 0) {
+				for (const hook of _hooks) {
+					hook(next, prev)
+				}
 			}
 		},
 

@@ -1,5 +1,6 @@
 import { notify } from './batch.js'
-import type { BaseInstance, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
+import { createListeners } from './listeners.js'
+import type { BaseInstance, ReadonlyInstance } from './types.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -15,6 +16,17 @@ type DepValues<T extends ReadonlyArray<BaseInstance<unknown>>> = {
  * but no set or reset since the value is always determined by its sources.
  */
 export interface ComputedInstance<T> extends ReadonlyInstance<T> {}
+
+export interface ComputedOptions {
+	/** Optional key for debugging and DevTools introspection. */
+	key?: string
+}
+
+// ---------------------------------------------------------------------------
+// Auto-incrementing key counter
+// ---------------------------------------------------------------------------
+
+let computedCounter = 0
 
 // ---------------------------------------------------------------------------
 // computed
@@ -40,16 +52,26 @@ export interface ComputedInstance<T> extends ReadonlyInstance<T> {}
 export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TResult>(
 	deps: TDeps,
 	fn: (values: DepValues<TDeps>) => TResult,
+	options?: ComputedOptions,
 ): ComputedInstance<TResult> {
-	const listeners = new Set<Listener<TResult>>()
+	const listeners = createListeners<TResult>()
+
+	const instanceKey = options?.key ?? `computed:${computedCounter++}`
 
 	let cached: TResult
 
 	let isDirty = true
 	let isDestroyed = false
 
+	// Reuse a single array to avoid allocation on every recomputation
+	const depValues = new Array(deps.length) as DepValues<TDeps>
+
 	function getDepValues(): DepValues<TDeps> {
-		return deps.map((dep) => dep.get()) as DepValues<TDeps>
+		for (let i = 0; i < deps.length; i++) {
+			;(depValues as unknown[])[i] = deps[i]?.get()
+		}
+
+		return depValues
 	}
 
 	function recompute(): TResult {
@@ -64,9 +86,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	const notifyListeners = () => {
 		const value = recompute()
 
-		for (const listener of listeners) {
-			listener(value)
-		}
+		listeners.notify(value)
 	}
 
 	const unsubscribers = deps.map((dep) =>
@@ -86,12 +106,16 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		resolveDestroyed = resolve
 	})
 
+	// Cache promise properties — deps don't change after creation
+	const readyPromise = Promise.all(deps.map((d) => d.ready)).then(() => undefined)
+	const hydratedPromise = Promise.all(deps.map((d) => d.hydrated)).then(() => undefined)
+
 	return {
-		key: '',
+		key: instanceKey,
 		scope: 'render' as const,
 
 		get ready(): Promise<void> {
-			return Promise.all(deps.map((d) => d.ready)).then(() => undefined)
+			return readyPromise
 		},
 
 		get settled(): Promise<void> {
@@ -99,7 +123,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		get hydrated(): Promise<void> {
-			return Promise.all(deps.map((d) => d.hydrated)).then(() => undefined)
+			return hydratedPromise
 		},
 
 		get destroyed(): Promise<void> {
@@ -115,16 +139,10 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		peek() {
-			return recompute()
+			return cached
 		},
 
-		subscribe(listener: Listener<TResult>): Unsubscribe {
-			listeners.add(listener)
-
-			return () => {
-				listeners.delete(listener)
-			}
-		},
+		subscribe: listeners.subscribe,
 
 		destroy() {
 			if (isDestroyed) return

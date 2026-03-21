@@ -1,26 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { configure, state } from '../src/index.js'
-
-function makeStorage(): Storage {
-	const store = new Map<string, string>()
-
-	return {
-		getItem: (k) => store.get(k) ?? null,
-		setItem: (k, v) => {
-			store.set(k, v)
-		},
-		removeItem: (k) => {
-			store.delete(k)
-		},
-		clear: () => {
-			store.clear()
-		},
-		get length() {
-			return store.size
-		},
-		key: (i) => [...store.keys()][i] ?? null,
-	}
-}
+import { makeStorage } from './helpers.js'
 
 beforeEach(() => {
 	configure({ prefix: undefined })

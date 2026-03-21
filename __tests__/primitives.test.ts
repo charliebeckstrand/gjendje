@@ -1,26 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { batch, collection, computed, effect, state } from '../src/index.js'
-
-function makeStorage(): Storage {
-	const store = new Map<string, string>()
-
-	return {
-		getItem: (k) => store.get(k) ?? null,
-		setItem: (k, v) => {
-			store.set(k, v)
-		},
-		removeItem: (k) => {
-			store.delete(k)
-		},
-		clear: () => {
-			store.clear()
-		},
-		get length() {
-			return store.size
-		},
-		key: (i) => [...store.keys()][i] ?? null,
-	}
-}
+import { makeStorage } from './helpers.js'
 
 beforeEach(() => {
 	Object.defineProperty(globalThis, 'localStorage', {
@@ -534,7 +514,7 @@ describe('edge cases', () => {
 		bool.destroy()
 	})
 
-	it('computed propagates errors from compute function', () => {
+	it('computed handles errors from compute function gracefully', () => {
 		const count = state('edge-cmp-throw', { default: 0 })
 		const risky = computed([count], ([n]) => {
 			if ((n as number) > 0) throw new Error('boom')
@@ -545,8 +525,11 @@ describe('edge cases', () => {
 		expect(risky.get()).toBe(0)
 
 		// Setting count to 1 will cause the compute function to throw.
-		// The error propagates through the notification chain.
-		expect(() => count.set(1)).toThrow('boom')
+		// Listener errors are caught so one faulty subscriber doesn't break others.
+		count.set(1)
+
+		// The computed throws when accessed directly
+		expect(() => risky.get()).toThrow('boom')
 
 		count.destroy()
 		risky.destroy()

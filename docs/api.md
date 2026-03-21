@@ -135,6 +135,7 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 | `validate` | `(v: unknown) => v is T` | — | Validate values read from storage; falls back to default on failure |
 | `migrate` | `Record<number, (old: unknown) => unknown>` | — | Migration functions keyed by source version |
 | `persist` | `Array<keyof T & string>` | — | Selectively persist only listed keys of an object value |
+| `isEqual` | `(a: T, b: T) => boolean` | — | Custom equality function. When provided, `set()` skips the update if `isEqual(next, prev)` returns `true` |
 
 ---
 
@@ -211,3 +212,69 @@ interface Serializer<T> {
 ```
 
 Custom serializer for types that don't round-trip through JSON. When provided, migration and validation are skipped.
+
+---
+
+## Enhancers
+
+### `withHistory(instance, options?)`
+
+```ts
+function withHistory<T>(
+  instance: BaseInstance<T>,
+  options?: { maxSize?: number }
+): WithHistoryInstance<T>
+```
+
+Wraps a state instance with undo/redo capabilities.
+
+| Method / Property | Type | Description |
+|-------------------|------|-------------|
+| `undo()` | `void` | Revert to the previous value |
+| `redo()` | `void` | Re-apply the last undone value |
+| `canUndo` | `boolean` | Whether `undo()` will have an effect |
+| `canRedo` | `boolean` | Whether `redo()` will have an effect |
+| `clearHistory()` | `void` | Clear all past and future history |
+
+Options:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `maxSize` | `number` | `50` | Maximum number of history entries |
+
+```ts
+const counter = state('counter', { default: 0 })
+const h = withHistory(counter)
+
+h.set(1)
+h.set(2)
+h.undo()   // counter is now 1
+h.redo()   // counter is now 2
+```
+
+---
+
+### `snapshot()`
+
+```ts
+function snapshot(): StateSnapshot[]
+```
+
+Returns a read-only snapshot of all registered state instances. Useful for debugging and logging.
+
+```ts
+import { snapshot } from 'gjendje'
+console.table(snapshot())
+```
+
+Each entry contains: `key`, `scope`, `value`, and `isDestroyed`.
+
+---
+
+### `shallowEqual(a, b)`
+
+```ts
+function shallowEqual(a: unknown, b: unknown): boolean
+```
+
+Shallow equality check for primitives, arrays, and plain objects. Compares one level deep using `Object.is`.

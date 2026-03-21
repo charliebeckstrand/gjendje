@@ -9,15 +9,15 @@
 	{
 		"name": "gjendje (all)",
 		"path": "dist/index.js",
-		"limit": "8 kB",
-		"import": "{ state, computed, effect, collection, batch, withServerSession }",
+		"limit": "9 kB",
+		"import": "{ state, computed, effect, collection, batch, withServerSession, withHistory, snapshot, shallowEqual, configure }",
 		"ignore": ["async_hooks"]
 	},
 	{
 		"name": "gjendje/react",
 		"path": "dist/react/index.js",
-		"limit": "3 kB",
-		"import": "{ useStore, useSharedState, useBucket }",
+		"limit": "4 kB",
+		"import": "{ useStore, useSharedState, useSelector }",
 		"ignore": ["async_hooks"]
 	}
 ]
