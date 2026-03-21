@@ -84,7 +84,13 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	}
 
 	const notifyListeners = () => {
+		const prev = cached
 		const value = recompute()
+
+		// In diamond dependency graphs (A → [B, C] → D), D gets notified
+		// once per intermediate. Skip redundant notifications when the
+		// recomputed value is identical to the previous cached value.
+		if (value === prev) return
 
 		listeners.notify(value)
 	}

@@ -49,18 +49,38 @@ export function notify(fn: Notification): void {
 
 function flush(): void {
 	while (queue.size > 0) {
-		const pending = Array.from(queue)
+		// Snapshot to a temporary array to avoid iterator invalidation,
+		// using a pre-allocated array to reduce GC pressure.
+		const size = queue.size
+
+		if (size > flushBuf.length) {
+			flushBuf = new Array(size)
+		}
+
+		let i = 0
+
+		for (const notification of queue) {
+			flushBuf[i++] = notification
+		}
 
 		queue.clear()
 
 		depth++
 
 		try {
-			for (const notification of pending) {
-				notification()
+			for (let j = 0; j < size; j++) {
+				flushBuf[j]!()
 			}
 		} finally {
 			depth--
+
+			// Clear references to avoid retaining closures
+			for (let j = 0; j < size; j++) {
+				flushBuf[j] = undefined as unknown as Notification
+			}
 		}
 	}
 }
+
+// Pre-allocated flush buffer — grows as needed, never shrinks
+let flushBuf: Notification[] = new Array(16)
