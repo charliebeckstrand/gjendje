@@ -74,7 +74,7 @@ Sets global defaults for all state instances. Call once at app startup before cr
 |`render`   | `memory` |
 |`local`    |`localStorage`                      |
 |`server`   |`AsyncLocalStorage`                            |
-|`bucket`   | `Storage Buckets` |
+|`bucket`   | `Storage Buckets API ` |
 |`url`      |`URLSearchParams` |
 |`tab`      |`sessionStorage` |
 
