@@ -61,23 +61,23 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	let cached: TResult
 
 	let isDirty = true
+
 	let isDestroyed = false
 
 	// Reuse a single array to avoid allocation on every recomputation
 	const depValues = new Array(deps.length) as DepValues<TDeps>
 
-	function getDepValues(): DepValues<TDeps> {
-		for (let i = 0; i < deps.length; i++) {
-			;(depValues as unknown[])[i] = deps[i]?.get()
-		}
-
-		return depValues
-	}
+	const depLen = deps.length
 
 	function recompute(): TResult {
 		if (!isDirty) return cached
 
-		cached = fn(getDepValues())
+		for (let i = 0; i < depLen; i++) {
+			;(depValues as unknown[])[i] = deps[i]!.get()
+		}
+
+		cached = fn(depValues)
+
 		isDirty = false
 
 		return cached
@@ -95,13 +95,17 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		listeners.notify(value)
 	}
 
-	const unsubscribers = deps.map((dep) =>
-		dep.subscribe(() => {
-			isDirty = true
+	const markDirty = () => {
+		isDirty = true
 
-			notify(notifyListeners)
-		}),
-	)
+		notify(notifyListeners)
+	}
+
+	const unsubscribers = new Array(depLen)
+
+	for (let i = 0; i < depLen; i++) {
+		unsubscribers[i] = deps[i]!.subscribe(markDirty)
+	}
 
 	// Compute initial value eagerly so first get() is synchronous
 	recompute()
@@ -114,6 +118,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 	// Cache promise properties — deps don't change after creation
 	const readyPromise = Promise.all(deps.map((d) => d.ready)).then(() => undefined)
+
 	const hydratedPromise = Promise.all(deps.map((d) => d.hydrated)).then(() => undefined)
 
 	return {
