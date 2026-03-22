@@ -26,7 +26,7 @@ Or use dot notation as a shorthand:
 const theme = state.local({ theme: 'light' })
 ```
 
-For in-memory state that doesn't persist, call `state` without a scope:
+For in-memory state that doesn't persist, use `state` without a scope:
 
 ```ts
 const counter = state({ counter: 0 })
