@@ -29,9 +29,9 @@ Every `state()` call targets a scope — the storage backend that holds the valu
 
 ---
 
-## `render`
+## `memory`
 
-**The default scope.** In-memory only. Lost on refresh.
+**The default scope.** Lost on refresh.
 
 Use for UI state that doesn't need persistence — modal open/closed, form input while typing, drag position.
 
