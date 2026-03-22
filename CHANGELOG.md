@@ -4,6 +4,12 @@
 
 ### Minor Changes
 
+- a400299: Add scope shortcuts (`local`, `session`, `url`, `bucket`), three-argument `state()` overload, and `memory` scope alias to simplify the API surface and reduce the learning curve.
+
+## 0.6.0
+
+### Minor Changes
+
 - Add scope shortcut functions — `local()`, `session()`, `url()`, `bucket()` — for creating state with an implicit key format: `local({ theme: 'light' })`. Eliminates the need to learn the options object pattern for common use cases.
 - Add three-argument `state()` overload: `state('key', defaultValue, options)` separates the default value from options, removing the `{ default: ... }` wrapper.
 - Add `'memory'` as a scope alias for `'render'`. Both work interchangeably; `'memory'` is now the recommended name.
