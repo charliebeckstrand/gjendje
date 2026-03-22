@@ -10,8 +10,8 @@ import type { ReadonlyInstance, StateInstance } from './types.js'
  * Subscribe to any gjendje instance and return its current value.
  * Re-renders the component whenever the value changes.
  *
- * Works with every instance type: state, computed, select, collection,
- * previous, readonly, withHistory, etc.
+ * Works with every instance type: computed, select, collection,
+ * previous, readonly, withHistory, and plain state instances.
  *
  * ```tsx
  * const count = state('count', { default: 0 })
@@ -56,6 +56,7 @@ export function useSelector<T, S>(
 
 		if (prev.current && prev.current.selector === selector) {
 			const equal = isEqual ?? Object.is
+
 			if (equal(prev.current.value, next)) {
 				return prev.current.value
 			}
