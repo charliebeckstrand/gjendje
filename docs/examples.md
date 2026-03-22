@@ -95,6 +95,7 @@ const remaining = select(todos, (items) => items.filter((t) => !t.done).length)
 import { state, withHistory } from 'gjendje'
 
 const doc = state({ doc: '' })
+
 const h = withHistory(doc, { maxSize: 100 })
 
 h.set('Hello')
@@ -114,6 +115,7 @@ h.redo()   // 'Hello, world'
 import { state, previous, effect } from 'gjendje'
 
 const route = state({ route: '/home' })
+
 const prevRoute = previous(route)
 
 effect([route], ([current]) => {
