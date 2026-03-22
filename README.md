@@ -57,7 +57,7 @@ form.patch({ name: 'Bob', age: 30 }) // updates multiple properties at once
 
 ## Configure
 
-Call once at app startup. Sets global defaults for all state instances.
+Call once at app initialization. Sets global defaults for all state instances.
 
 ```ts
 import { configure } from 'gjendje'
