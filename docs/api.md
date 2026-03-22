@@ -179,7 +179,7 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 |--------|------|---------|-------------|
 | `name` | `string` | required | Bucket name. Each name is isolated. |
 | `expires` | `string \| number` | — | Expiry duration (`'7d'`, `'24h'`) or Unix timestamp in ms |
-| `fallback` | `'local' \| 'tab'` | `'local'` | Scope to use if Storage Buckets API is unavailable |
+| `fallback` | `'local' \| 'session'` | `'local'` | Scope to use if Storage Buckets API is unavailable |
 | `persisted` | `boolean` | `false` | Persist under storage pressure |
 | `quota` | `string \| number` | — | Maximum storage quota (`'10mb'`, `'50mb'`) or byte count |
 
@@ -203,7 +203,7 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 | `local` | localStorage | yes | passive | no | no |
 | `render` | Memory | no | no | no | no |
 | `server` | AsyncLocalStorage | per-request | no | yes | no |
-| `tab` | sessionStorage | yes | no | no | no |
+| `session` | sessionStorage | yes | no | no | no |
 | `url` | URLSearchParams | yes | via link | no | no |
 
 ---

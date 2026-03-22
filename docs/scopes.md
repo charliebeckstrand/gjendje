@@ -16,7 +16,7 @@ Every `state()` call targets a scope — the storage backend that holds the valu
 
 **Should it survive after the tab closes?**
 
-- **No** → `tab`
+- **No** → `session`
 
 **Do you need fine-grained storage control (quota, expiry, isolation)?**
 
@@ -41,7 +41,7 @@ const isOpen = state({ modal: false })
 
 ---
 
-## `tab`
+## `session`
 
 Backed by `sessionStorage`. Survives page reloads but is scoped to the tab — opening a new tab starts fresh.
 
@@ -85,7 +85,7 @@ const query = state.url({ q: '' })
 
 ## `bucket`
 
-Backed by the [Storage Buckets API](https://developer.chrome.com/docs/web-platform/storage-buckets). Provides isolated storage with optional quota limits and expiry. Falls back to `local` or `tab` if unavailable.
+Backed by the [Storage Buckets API](https://developer.chrome.com/docs/web-platform/storage-buckets). Provides isolated storage with optional quota limits and expiry. Falls back to `local` or `session` if unavailable.
 
 Use when you need more control than `localStorage` offers — large datasets, cache isolation, or automatic expiry.
 

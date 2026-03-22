@@ -106,7 +106,7 @@ state.local({ 'raw-key': 0 }, { prefix: false })
 
 ## `requireValidation`
 
-When enabled, any `state()` call with a persistent scope (`local`, `tab`, `bucket`) must include a `validate` option. Throws otherwise.
+When enabled, any `state()` call with a persistent scope (`local`, `session`, `bucket`) must include a `validate` option. Throws otherwise.
 
 ```ts
 configure({ requireValidation: true })

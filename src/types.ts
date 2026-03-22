@@ -5,7 +5,8 @@
 export type Scope =
 	| 'memory' // in-memory, ephemeral (preferred name)
 	| 'render' // in-memory, ephemeral (alias for 'memory')
-	| 'tab' // sessionStorage — survives page reloads, gone when tab closes
+	| 'session' // sessionStorage — survives page reloads, gone when tab closes (preferred name)
+	| 'tab' // sessionStorage — survives page reloads, gone when tab closes (deprecated alias for 'session')
 	| 'local' // localStorage — survives across tabs and restarts
 	| 'url' // URLSearchParams — lives in the address bar, shareable
 	| 'server' // AsyncLocalStorage — server-side session scoped
@@ -146,7 +147,7 @@ export interface BucketOptions {
 	 * Scope to use if the Storage Buckets API is not available.
 	 * Defaults to 'local'.
 	 */
-	fallback?: 'local' | 'tab'
+	fallback?: 'local' | 'session' | 'tab'
 }
 
 export interface StateOptions<T> {

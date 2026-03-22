@@ -63,7 +63,7 @@ function _local<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): Stat
 function _session<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
 	const [key, defaultValue] = extractEntry(entry)
 
-	return createState(key, { ...options, default: defaultValue, scope: 'tab' })
+	return createState(key, { ...options, default: defaultValue, scope: 'session' })
 }
 
 function _url<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
