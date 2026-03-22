@@ -1,5 +1,16 @@
 # gjendje
 
+## 0.5.0
+
+### Minor Changes
+
+- Add `gjendje/react` entry point with React hooks for subscribing to gjendje state:
+  - `useValue(instance)` — subscribe to any instance and return its current value
+  - `useSelector(instance, selector, isEqual?)` — derive a slice with re-render gating
+  - `useWatch(instance, key)` — watch a specific object key with granular re-renders
+- All hooks use `useSyncExternalStore` for concurrent-mode safety
+- React 18+ added as an optional peer dependency
+
 ## 0.4.4
 
 ### Patch Changes
