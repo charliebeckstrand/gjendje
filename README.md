@@ -32,6 +32,24 @@ For in-memory state that doesn't persist, use `state` without a scope:
 const store = state({ counter: 0 })
 ```
 
+### Updating values
+
+Replace the entire value with `set`, or use an updater function:
+
+```ts
+store.set({ counter: 1 })
+store.set((prev) => ({ ...prev, counter: prev.counter + 1 }))
+```
+
+For object stores, `patch` lets you update specific properties without spreading:
+
+```ts
+const form = state({ name: '', email: '', age: 0 })
+
+form.patch({ name: 'Alice' }) // only updates name, keeps email and age
+form.patch({ name: 'Bob', age: 30 }) // updates multiple properties at once
+```
+
 [See all scopes and examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 
 ## Configure
