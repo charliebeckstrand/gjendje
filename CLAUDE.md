@@ -33,6 +33,22 @@ After completing a change, addition, or feature:
 - **Minor changes** (bug fixes, docs, refactors) bump by `0.0.x` — use changeset type `patch`
 - **Major changes** (new features, new exports, breaking changes) bump by `0.x` — use changeset type `minor` or `major`
 
+## Deprecations (remove in 1.0.0)
+
+The following exports are deprecated and should be removed when releasing 1.0.0:
+
+- **`local()`** — standalone scope shortcut. Use `state.local()` instead. (deprecated in 0.7.0)
+- **`session()`** — standalone scope shortcut. Use `state.session()` instead. (deprecated in 0.7.0)
+- **`url()`** — standalone scope shortcut. Use `state.url()` instead. (deprecated in 0.7.0)
+- **`bucket()`** — standalone scope shortcut. Use `state.bucket()` instead. (deprecated in 0.7.0)
+- **`server()`** — standalone scope shortcut. Use `state.server()` instead. (deprecated in 0.7.0)
+
+When preparing 1.0.0:
+1. Remove the deprecated standalone functions from `src/shortcuts.ts`
+2. Remove their re-exports from `src/index.ts`
+3. Remove the `_deprecationWarned` set and `warnDeprecated` helper
+4. Update tests that use the standalone imports to use `state.*` instead
+
 ## Agent Behavior
 
 - When busy with a task and the user requests something else, delegate the new task to a sub-agent using the Agent tool rather than interrupting current work.
