@@ -1,6 +1,5 @@
 import { createBucketAdapter } from './adapters/bucket.js'
 import { createRenderAdapter } from './adapters/render.js'
-import { createServerAdapter } from './adapters/server.js'
 import { createStorageAdapter } from './adapters/storage.js'
 import { withSync } from './adapters/sync.js'
 import { createUrlAdapter } from './adapters/url.js'
@@ -11,6 +10,20 @@ import { getRegistered, registerByKey, scopedKey, unregisterByKey } from './regi
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
 import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
 import { shallowEqual } from './utils.js'
+
+// ---------------------------------------------------------------------------
+// Lazy server adapter registration — avoids pulling node:async_hooks into
+// client bundles. The server adapter module self-registers on import.
+// ---------------------------------------------------------------------------
+
+type ServerAdapterFactory = <T>(key: string, defaultValue: T) => Adapter<T>
+
+let _serverAdapterFactory: ServerAdapterFactory | undefined
+
+/** @internal — called by adapters/server.ts on import */
+export function registerServerAdapter(factory: ServerAdapterFactory): void {
+	_serverAdapterFactory = factory
+}
 
 // ---------------------------------------------------------------------------
 // Scope sets (module-level to avoid per-instance allocation)
@@ -85,7 +98,14 @@ function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptio
 			)
 
 		case 'server':
-			return createServerAdapter(storageKey, options.default)
+			if (!_serverAdapterFactory) {
+				throw new Error(
+					'[state] scope: "server" requires the server adapter. ' +
+						'Import { withServerSession } from "gjendje" or "gjendje/server" to enable it.',
+				)
+			}
+
+			return _serverAdapterFactory(storageKey, options.default)
 
 		case 'bucket': {
 			if (!options.bucket) {

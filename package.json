@@ -36,6 +36,16 @@
 				"types": "./dist/index.d.cts",
 				"default": "./dist/index.cjs"
 			}
+		},
+		"./server": {
+			"import": {
+				"types": "./dist/server.d.ts",
+				"default": "./dist/server.js"
+			},
+			"require": {
+				"types": "./dist/server.d.cts",
+				"default": "./dist/server.cjs"
+			}
 		}
 	},
 	"main": "./dist/index.cjs",

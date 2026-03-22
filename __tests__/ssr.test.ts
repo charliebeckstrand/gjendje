@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { state } from '../src/index.js'
+import '../src/server.js'
 import { makeStorage } from './helpers.js'
 
 function simulateServer() {

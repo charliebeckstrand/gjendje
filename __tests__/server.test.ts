@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { state, withServerSession } from '../src/index.js'
+import { state } from '../src/index.js'
+import { withServerSession } from '../src/server.js'
 
 describe('server scope', () => {
 	it('returns default when called outside a session', () => {
