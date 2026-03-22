@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { notify } from '../batch.js'
+import { registerServerAdapter } from '../core.js'
 import { createListeners } from '../listeners.js'
 import type { Adapter } from '../types.js'
 
@@ -57,3 +58,7 @@ export function createServerAdapter<T>(key: string, defaultValue: T): Adapter<T>
 		},
 	}
 }
+
+// Self-register so core.ts doesn't need a static import of this module,
+// which would pull node:async_hooks into client bundles.
+registerServerAdapter(createServerAdapter)

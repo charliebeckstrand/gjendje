@@ -1,4 +1,3 @@
-export { withServerSession } from './adapters/server.js'
 export { batch } from './batch.js'
 export type { CollectionInstance } from './collection.js'
 export { collection } from './collection.js'
