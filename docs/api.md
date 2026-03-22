@@ -81,6 +81,34 @@ Replaces the current value. Accepts a direct value or an updater function.
 |-----------|------|-------------|
 | `value` | `T \| (prev: T) => T` | New value or updater function |
 
+### `patch(partial, options?)`
+
+```ts
+patch(partial: Partial<T>, options?: { strict?: boolean }): void
+```
+
+Merges a partial object into the current value. Only available when `T` is an object type.
+
+```ts
+const user = state({ user: { name: 'Jane', age: 30 } })
+
+// Instead of: user.set(prev => ({ ...prev, name: 'John' }))
+user.patch({ name: 'John' })
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `partial` | `Partial<T>` | Object with keys to merge into the current value |
+| `options` | `{ strict?: boolean }` | Optional. When `strict: true`, unknown keys are ignored and a warning is logged |
+
+**Strict mode** — only merges keys that already exist on the current value:
+
+```ts
+user.patch({ name: 'John', role: 'admin' }, { strict: true })
+// ⚠ warns: patch("user") ignored unknown key "role" (strict mode).
+// Result: { name: 'John', age: 30 } — "role" was not added
+```
+
 ### `reset()`
 
 ```ts
@@ -189,7 +217,7 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 
 - **`ReadonlyInstance<T>`** — `get`, `peek`, `subscribe`, `ready`, identity, `destroy`
 - **`BaseInstance<T>`** — extends `ReadonlyInstance` with `set`, `reset`, `intercept`, `use`
-- **`StateInstance<T>`** — extends `BaseInstance` with `watch`
+- **`StateInstance<T>`** — extends `BaseInstance` with `watch`, `patch`
 
 `computed` returns a `ReadonlyInstance`. `collection` returns a `CollectionInstance` (extends `BaseInstance`).
 
