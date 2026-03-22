@@ -12,13 +12,15 @@ npm install gjendje
 
 ## Quick start
 
+You can pass the scope as an option:
+
 ```ts
 import { state } from 'gjendje'
 
 const theme = state({ theme: 'light' }, { scope: 'local' })
 ```
 
-You can also pass the scope as an option. Or use dot notation for a shorthand:
+Or use dot notation as a shorthand:
 
 ```ts
 import { state } from 'gjendje'
