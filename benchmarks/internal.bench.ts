@@ -363,7 +363,7 @@ async function benchMiddleware() {
 	// 1 use hook
 	const m1h = state(uniqueKey('mw-1h'), { default: 0 })
 
-	m1h.use(() => {})
+	m1h.onChange(() => {})
 
 	let i1h = 0
 
@@ -376,7 +376,7 @@ async function benchMiddleware() {
 
 	for (let j = 0; j < 5; j++) {
 		mAll.intercept((next) => next)
-		mAll.use(() => {})
+		mAll.onChange(() => {})
 	}
 
 	let iAll = 0

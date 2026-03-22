@@ -116,7 +116,7 @@ describe('interceptor chain', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Destroyed instance — subscribe, intercept, use after destroy
+// Destroyed instance — subscribe, intercept, onChange after destroy
 // ---------------------------------------------------------------------------
 
 describe('destroyed instance advanced', () => {
@@ -140,12 +140,12 @@ describe('destroyed instance advanced', () => {
 		unsub()
 	})
 
-	it('use() after destroy still returns an unsubscribe function', () => {
-		const s = state('destroyed-use', { default: 0, scope: 'render' })
+	it('onChange() after destroy still returns an unsubscribe function', () => {
+		const s = state('destroyed-onChange', { default: 0, scope: 'render' })
 
 		s.destroy()
 
-		const unsub = s.use(() => {})
+		const unsub = s.onChange(() => {})
 		expect(typeof unsub).toBe('function')
 		unsub()
 	})
@@ -180,11 +180,11 @@ describe('destroyed instance advanced', () => {
 		await expect(s.ready).resolves.toBeUndefined()
 	})
 
-	it('use() hooks are cleared on destroy and do not fire', () => {
+	it('onChange() handlers are cleared on destroy and do not fire', () => {
 		const s = state('destroyed-hooks-clear', { default: 0, scope: 'render' })
 		const hookFn = vi.fn()
 
-		s.use(hookFn)
+		s.onChange(hookFn)
 		s.set(1)
 		expect(hookFn).toHaveBeenCalledTimes(1)
 
@@ -922,28 +922,28 @@ describe('isEqual advanced', () => {
 })
 
 // ---------------------------------------------------------------------------
-// use() hook edge cases
+// onChange() handler edge cases
 // ---------------------------------------------------------------------------
 
-describe('use() hooks', () => {
-	it('multiple hooks fire in registration order', () => {
+describe('onChange() handlers', () => {
+	it('multiple handlers fire in registration order', () => {
 		const s = state('hooks-order', { default: 0, scope: 'render' })
 		const log: string[] = []
 
-		s.use(() => log.push('A'))
-		s.use(() => log.push('B'))
-		s.use(() => log.push('C'))
+		s.onChange(() => log.push('A'))
+		s.onChange(() => log.push('B'))
+		s.onChange(() => log.push('C'))
 
 		s.set(1)
 
 		expect(log).toEqual(['A', 'B', 'C'])
 	})
 
-	it('hook receives next and prev values', () => {
+	it('handler receives next and prev values', () => {
 		const s = state('hooks-args', { default: 'hello', scope: 'render' })
 		const calls: [string, string][] = []
 
-		s.use((next, prev) => {
+		s.onChange((next, prev) => {
 			calls.push([next, prev])
 		})
 
@@ -952,11 +952,11 @@ describe('use() hooks', () => {
 		expect(calls).toEqual([['world', 'hello']])
 	})
 
-	it('unsubscribing a hook removes it', () => {
+	it('unsubscribing a handler removes it', () => {
 		const s = state('hooks-unsub', { default: 0, scope: 'render' })
 		const hookFn = vi.fn()
 
-		const unsub = s.use(hookFn)
+		const unsub = s.onChange(hookFn)
 
 		s.set(1)
 		expect(hookFn).toHaveBeenCalledTimes(1)
