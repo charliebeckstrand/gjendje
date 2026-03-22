@@ -1,5 +1,11 @@
 # gjendje
 
+## 0.8.0
+
+### Minor Changes
+
+- Add `patch()` method to state instances for ergonomic partial object updates. Instead of `store.set(prev => ({ ...prev, value1: 'new' }))`, use `store.patch({ value1: 'new' })`. Supports an optional `{ strict: true }` mode that ignores unknown keys and logs a warning.
+
 ## 0.7.0
 
 ### Minor Changes

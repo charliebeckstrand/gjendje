@@ -356,6 +356,27 @@ class StateImpl<T> implements StateInstance<T> {
 		}
 	}
 
+	patch(partial: T extends object ? Partial<T> : never, options?: { strict?: boolean }): void {
+		this.set((prev) => {
+			if (options?.strict) {
+				const prevKeys = new Set(Object.keys(prev as object))
+				const filtered = {} as Record<string, unknown>
+
+				for (const key of Object.keys(partial as object)) {
+					if (prevKeys.has(key)) {
+						filtered[key] = (partial as Record<string, unknown>)[key]
+					} else {
+						log('warn', `patch("${this.key}") ignored unknown key "${key}" (strict mode).`)
+					}
+				}
+
+				return { ...prev, ...filtered } as T
+			}
+
+			return { ...prev, ...partial } as T
+		})
+	}
+
 	destroy(): void {
 		const s = this._s
 
