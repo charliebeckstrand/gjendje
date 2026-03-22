@@ -384,6 +384,10 @@ class StateImpl<T> implements StateInstance<T> {
 		}
 	}
 
+	pick<K extends T extends object ? keyof T : never>(key: K): T[K & keyof T] {
+		return this.get()[key as K & keyof T]
+	}
+
 	patch(partial: T extends object ? Partial<T> : never, options?: { strict?: boolean }): void {
 		this.set((prev) => {
 			if (options?.strict) {

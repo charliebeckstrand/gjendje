@@ -114,6 +114,12 @@ export interface StateInstance<T> extends BaseInstance<T> {
 	): Unsubscribe
 
 	/**
+	 * Read a single property from the current object value.
+	 * Only available when T is an object type.
+	 */
+	pick<K extends T extends object ? keyof T : never>(key: K): T[K & keyof T]
+
+	/**
 	 * Merge a partial update into the current object value (shallow merge).
 	 * Only available when T is an object type.
 	 *

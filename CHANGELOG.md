@@ -1,5 +1,11 @@
 # gjendje
 
+## 0.9.0
+
+### Minor Changes
+
+- Add `pick()` method to state instances for reading a single property from object state. Instead of `store.get().name`, use `store.pick('name')` for a concise, type-safe read of individual keys.
+
 ## 0.8.0
 
 ### Minor Changes
