@@ -28,6 +28,13 @@ For in-memory state that doesn't persist, use `state` without a scope:
 const store = state({ counter: 0 })
 ```
 
+### Getting values
+
+```ts
+const state = store.get()            // Returns the full state object
+const counter = store.pick('counter') // Returns a single property by key
+```
+
 ### Updating values
 
 Replace the entire value with `set`, or use an updater function:
@@ -97,7 +104,7 @@ configure({
 
 ## API
 
-Every scope shares the same core API: `get`, `set`, `patch`, `reset`, `subscribe`, `watch`, `intercept`, `use`, `destroy`
+Every scope shares the same core API: `get`, `pick`, `set`, `patch`, `reset`, `subscribe`, `watch`, `intercept`, `use`, `destroy`
 
 [API reference guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
 
