@@ -50,7 +50,7 @@ form.patch({ name: 'Alice' }) // only updates name
 form.patch({ name: 'Bob', age: 30 }) // updates multiple properties at once
 ```
 
-[scopes and examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
+[Scopes and examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 
 ## Configure
 
