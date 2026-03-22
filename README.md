@@ -50,6 +50,8 @@ form.patch({ name: 'Alice' }) // only updates name
 form.patch({ name: 'Bob', age: 30 }) // updates multiple properties at once
 ```
 
+[More examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
+
 ## Configure
 
 Sets global defaults for all state instances.
@@ -121,12 +123,6 @@ Runs a side effect immediately and re-runs whenever any dependency changes. The 
 Creates a read-only view of any state or computed instance. Exposes `get`, `peek`, `subscribe`, and lifecycle — but no `set`, `reset`, `intercept`, or `use`. Zero runtime cost.
 
 [Derived state reference guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/derived.md)
-
-## Examples
-
-Real-world patterns and recipes — persistence with migration, cross-tab sync, derived state, collections, and more.
-
-[Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
 
 ## License
 
