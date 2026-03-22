@@ -122,4 +122,34 @@ describe('pick', () => {
 
 		store.destroy()
 	})
+
+	it('returns an array of values when given an array of keys', () => {
+		const store = state('pick-array', { default: { a: 1, b: 'hello', c: true } })
+
+		expect(store.pick(['a', 'b', 'c'])).toEqual([1, 'hello', true])
+
+		expect(store.pick(['b', 'a'])).toEqual(['hello', 1])
+
+		store.destroy()
+	})
+
+	it('returns an array reflecting updates when given an array of keys', () => {
+		const store = state('pick-array-update', { default: { x: 10, y: 20, z: 30 } })
+
+		store.patch({ x: 99 })
+
+		expect(store.pick(['x', 'z'])).toEqual([99, 30])
+
+		store.destroy()
+	})
+
+	it('returns an array with undefined for keys with undefined values', () => {
+		const store = state<{ a: number; b: string | undefined }>('pick-array-undef', {
+			default: { a: 1, b: undefined },
+		})
+
+		expect(store.pick(['a', 'b'])).toEqual([1, undefined])
+
+		store.destroy()
+	})
 })

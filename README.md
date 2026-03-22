@@ -35,6 +35,7 @@ const snapshot = store.get() // Returns the full state object
 const { counter } = store.get() // Get values by destructuring
 
 const counter = store.pick('counter') // Returns a single property by key
+const [name, age] = store.pick(['name', 'age']) // Returns an array of values
 ```
 
 ### Updating values
