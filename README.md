@@ -54,8 +54,6 @@ counter.set((prev) => prev + 1)
 
 Sets global defaults for all state instances.
 
-Call once at your app entry point.
-
 ```ts
 import { configure } from 'gjendje'
 
