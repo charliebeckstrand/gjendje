@@ -31,7 +31,7 @@ const filters = state({ role: 'all', status: 'active', tags: [] })
 ### Getting values
 
 ```ts
-const filters = store.get() // Returns the full state object
+const filters = store.get() // Returns the full state
 const { role, status } = store.get() // Get values by destructuring
 ```
 
