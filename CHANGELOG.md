@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- 77e16d9: Add `patch()` method to state instances for ergonomic partial object updates. Supports an optional `{ strict: true }` mode that ignores unknown keys and logs a warning.
+
+## 0.7.1
+
+### Patch Changes
+
 - Add `patch()` method to state instances for ergonomic partial object updates. Instead of `store.set(prev => ({ ...prev, value1: 'new' }))`, use `store.patch({ value1: 'new' })`. Supports an optional `{ strict: true }` mode that ignores unknown keys and logs a warning.
 
 ## 0.7.0
