@@ -29,7 +29,7 @@ const theme = state.local({ theme: 'light' })
 For in-memory state that doesn't persist, use `state` without a scope:
 
 ```ts
-const counter = state({ counter: 0 })
+const store = state({ counter: 0 })
 ```
 
 [See all scopes and examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
