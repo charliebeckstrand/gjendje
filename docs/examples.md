@@ -213,6 +213,7 @@ import { state, computed, batch } from 'gjendje'
 
 const firstName = state({ first: 'Jane' })
 const lastName = state({ last: 'Doe' })
+
 const fullName = computed([firstName, lastName], ([f, l]) => `${f} ${l}`)
 
 fullName.subscribe((name) => console.log(name))
