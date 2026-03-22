@@ -71,6 +71,19 @@ const theme = state({ theme: 'light' })
 theme.scope // 'local' — derived from configure
 ```
 
+You can also configure global events:
+
+```ts
+configure({
+  onError: ({ key, scope, error }) => {
+    console.error(`[${key}] (${scope}) error:`, error)
+  },
+  onChange: ({ key, scope, value, previousValue }) => {
+    console.log(`[${key}] (${scope}) changed:`, previousValue, '→', value)
+  },
+})
+```
+
 [Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
 ## Scopes

@@ -219,8 +219,19 @@ class StateImpl<T> implements StateInstance<T> {
 				: valueOrUpdater
 
 		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+			const original = next
+
 			for (const interceptor of s.interceptors) {
 				next = interceptor(next, prev)
+			}
+
+			if (!Object.is(original, next)) {
+				this._config.onIntercept?.({
+					key: this.key,
+					scope: this.scope,
+					original,
+					intercepted: next,
+				})
 			}
 		}
 
@@ -237,6 +248,8 @@ class StateImpl<T> implements StateInstance<T> {
 				hook(next, prev)
 			}
 		}
+
+		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
 	}
 
 	subscribe(listener: Listener<T>): Unsubscribe {
@@ -253,8 +266,19 @@ class StateImpl<T> implements StateInstance<T> {
 		let next = this._defaultValue
 
 		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+			const original = next
+
 			for (const interceptor of s.interceptors) {
 				next = interceptor(next, prev)
+			}
+
+			if (!Object.is(original, next)) {
+				this._config.onIntercept?.({
+					key: this.key,
+					scope: this.scope,
+					original,
+					intercepted: next,
+				})
 			}
 		}
 
@@ -271,6 +295,10 @@ class StateImpl<T> implements StateInstance<T> {
 				hook(next, prev)
 			}
 		}
+
+		this._config.onReset?.({ key: this.key, scope: this.scope, previousValue: prev })
+
+		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
 	}
 
 	get ready(): Promise<void> {
@@ -502,8 +530,19 @@ class RenderStateImpl<T> extends StateImpl<T> {
 				: valueOrUpdater
 
 		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+			const original = next
+
 			for (const interceptor of s.interceptors) {
 				next = interceptor(next, prev)
+			}
+
+			if (!Object.is(original, next)) {
+				this._config.onIntercept?.({
+					key: this.key,
+					scope: this.scope,
+					original,
+					intercepted: next,
+				})
 			}
 		}
 
@@ -520,6 +559,8 @@ class RenderStateImpl<T> extends StateImpl<T> {
 				hook(next, prev)
 			}
 		}
+
+		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
 	}
 
 	override subscribe(listener: Listener<T>): Unsubscribe {
@@ -560,8 +601,19 @@ class RenderStateImpl<T> extends StateImpl<T> {
 		let next = this._defaultValue
 
 		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+			const original = next
+
 			for (const interceptor of s.interceptors) {
 				next = interceptor(next, prev)
+			}
+
+			if (!Object.is(original, next)) {
+				this._config.onIntercept?.({
+					key: this.key,
+					scope: this.scope,
+					original,
+					intercepted: next,
+				})
 			}
 		}
 
@@ -578,6 +630,10 @@ class RenderStateImpl<T> extends StateImpl<T> {
 				hook(next, prev)
 			}
 		}
+
+		this._config.onReset?.({ key: this.key, scope: this.scope, previousValue: prev })
+
+		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
 	}
 
 	override get ready(): Promise<void> {

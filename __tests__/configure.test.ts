@@ -14,12 +14,17 @@ beforeEach(() => {
 		onError: undefined,
 		keyPattern: undefined,
 		sync: undefined,
+		onChange: undefined,
 		onDestroy: undefined,
+		onExpire: undefined,
 		onHydrate: undefined,
+		onIntercept: undefined,
 		onMigrate: undefined,
 		onQuotaExceeded: undefined,
 		onRegister: undefined,
+		onReset: undefined,
 		onSync: undefined,
+		onValidationFail: undefined,
 	})
 
 	Object.defineProperty(globalThis, 'localStorage', {
@@ -537,5 +542,358 @@ describe('onRegister', () => {
 		expect(handler).toHaveBeenCalledTimes(2)
 
 		b.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// onChange
+// ---------------------------------------------------------------------------
+
+describe('onChange', () => {
+	it('fires on set()', () => {
+		const handler = vi.fn()
+
+		configure({ onChange: handler })
+
+		const x = state('cfg-onchange-set', { default: 0, scope: 'render' })
+
+		x.set(1)
+
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(
+			expect.objectContaining({
+				key: 'cfg-onchange-set',
+				scope: 'render',
+				value: 1,
+				previousValue: 0,
+			}),
+		)
+
+		x.destroy()
+	})
+
+	it('fires on reset()', () => {
+		const handler = vi.fn()
+
+		configure({ onChange: handler })
+
+		const x = state('cfg-onchange-reset', { default: 0, scope: 'render' })
+
+		x.set(5)
+		handler.mockClear()
+
+		x.reset()
+
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(
+			expect.objectContaining({
+				key: 'cfg-onchange-reset',
+				scope: 'render',
+				value: 0,
+				previousValue: 5,
+			}),
+		)
+
+		x.destroy()
+	})
+
+	it('does not fire when isEqual prevents the update', () => {
+		const handler = vi.fn()
+
+		configure({ onChange: handler })
+
+		const x = state('cfg-onchange-equal', {
+			default: 0,
+			scope: 'render',
+			isEqual: (a: number, b: number) => a === b,
+		})
+
+		x.set(0)
+
+		expect(handler).not.toHaveBeenCalled()
+
+		x.destroy()
+	})
+
+	it('fires for persistent scopes', () => {
+		const handler = vi.fn()
+
+		configure({ onChange: handler })
+
+		const x = state('cfg-onchange-local', { default: 'a', scope: 'local' })
+
+		x.set('b')
+
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(
+			expect.objectContaining({
+				key: 'cfg-onchange-local',
+				scope: 'local',
+				value: 'b',
+				previousValue: 'a',
+			}),
+		)
+
+		x.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// onReset
+// ---------------------------------------------------------------------------
+
+describe('onReset', () => {
+	it('fires when reset() is called', () => {
+		const handler = vi.fn()
+
+		configure({ onReset: handler })
+
+		const x = state('cfg-onreset', { default: 0, scope: 'render' })
+
+		x.set(42)
+		x.reset()
+
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(
+			expect.objectContaining({
+				key: 'cfg-onreset',
+				scope: 'render',
+				previousValue: 42,
+			}),
+		)
+
+		x.destroy()
+	})
+
+	it('does not fire on set()', () => {
+		const handler = vi.fn()
+
+		configure({ onReset: handler })
+
+		const x = state('cfg-onreset-noset', { default: 0, scope: 'render' })
+
+		x.set(1)
+
+		expect(handler).not.toHaveBeenCalled()
+
+		x.destroy()
+	})
+
+	it('does not fire when isEqual prevents the reset', () => {
+		const handler = vi.fn()
+
+		configure({ onReset: handler })
+
+		const x = state('cfg-onreset-equal', {
+			default: 0,
+			scope: 'render',
+			isEqual: (a: number, b: number) => a === b,
+		})
+
+		// Value is already default, so reset is a no-op
+		x.reset()
+
+		expect(handler).not.toHaveBeenCalled()
+
+		x.destroy()
+	})
+
+	it('fires for persistent scopes', () => {
+		const handler = vi.fn()
+
+		configure({ onReset: handler })
+
+		const x = state('cfg-onreset-local', { default: 'default', scope: 'local' })
+
+		x.set('changed')
+		x.reset()
+
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(
+			expect.objectContaining({
+				key: 'cfg-onreset-local',
+				scope: 'local',
+				previousValue: 'changed',
+			}),
+		)
+
+		x.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// onIntercept
+// ---------------------------------------------------------------------------
+
+describe('onIntercept', () => {
+	it('fires when an interceptor modifies a value', () => {
+		const handler = vi.fn()
+
+		configure({ onIntercept: handler })
+
+		const x = state('cfg-onintercept', { default: 0, scope: 'render' })
+
+		x.intercept((next) => next * 2)
+
+		x.set(5)
+
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(
+			expect.objectContaining({
+				key: 'cfg-onintercept',
+				scope: 'render',
+				original: 5,
+				intercepted: 10,
+			}),
+		)
+
+		x.destroy()
+	})
+
+	it('does not fire when interceptor returns the same value', () => {
+		const handler = vi.fn()
+
+		configure({ onIntercept: handler })
+
+		const x = state('cfg-onintercept-noop', { default: 0, scope: 'render' })
+
+		x.intercept((next) => next)
+
+		x.set(5)
+
+		expect(handler).not.toHaveBeenCalled()
+
+		x.destroy()
+	})
+
+	it('fires during reset() when interceptor modifies value', () => {
+		const handler = vi.fn()
+
+		configure({ onIntercept: handler })
+
+		const x = state('cfg-onintercept-reset', { default: 0, scope: 'render' })
+
+		x.intercept((next) => next + 1)
+
+		x.set(5)
+		handler.mockClear()
+
+		x.reset()
+
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(
+			expect.objectContaining({
+				original: 0,
+				intercepted: 1,
+			}),
+		)
+
+		x.destroy()
+	})
+
+	it('fires for persistent scopes', () => {
+		const handler = vi.fn()
+
+		configure({ onIntercept: handler })
+
+		const x = state('cfg-onintercept-local', { default: 'a', scope: 'local' })
+
+		x.intercept(() => 'forced')
+
+		x.set('b')
+
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(
+			expect.objectContaining({
+				key: 'cfg-onintercept-local',
+				scope: 'local',
+				original: 'b',
+				intercepted: 'forced',
+			}),
+		)
+
+		x.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// onValidationFail
+// ---------------------------------------------------------------------------
+
+describe('onValidationFail', () => {
+	it('fires when validate rejects a stored value', () => {
+		const handler = vi.fn()
+
+		configure({ onValidationFail: handler })
+
+		// Pre-seed storage with invalid data
+		localStorage.setItem('cfg-valfail', JSON.stringify({ v: 1, data: 42 }))
+
+		const x = state('cfg-valfail', {
+			default: 'default',
+			scope: 'local',
+			validate: (v): v is string => typeof v === 'string',
+		})
+
+		expect(x.get()).toBe('default')
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(
+			expect.objectContaining({
+				key: 'cfg-valfail',
+				scope: 'local',
+				value: 42,
+			}),
+		)
+
+		x.destroy()
+	})
+
+	it('does not fire when validation passes', () => {
+		const handler = vi.fn()
+
+		configure({ onValidationFail: handler })
+
+		localStorage.setItem('cfg-valfail-ok', JSON.stringify({ v: 1, data: 'valid' }))
+
+		const x = state('cfg-valfail-ok', {
+			default: 'default',
+			scope: 'local',
+			validate: (v): v is string => typeof v === 'string',
+		})
+
+		expect(x.get()).toBe('valid')
+		expect(handler).not.toHaveBeenCalled()
+
+		x.destroy()
+	})
+
+	it('fires after migration when migrated value fails validation', () => {
+		const handler = vi.fn()
+
+		configure({ onValidationFail: handler })
+
+		localStorage.setItem('cfg-valfail-migrate', JSON.stringify({ v: 1, data: 'old' }))
+
+		const x = state('cfg-valfail-migrate', {
+			default: 100,
+			scope: 'local',
+			version: 2,
+			migrate: {
+				1: () => 'still-a-string',
+			},
+			validate: (v): v is number => typeof v === 'number',
+		})
+
+		expect(x.get()).toBe(100)
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(
+			expect.objectContaining({
+				key: 'cfg-valfail-migrate',
+				scope: 'local',
+				value: 'still-a-string',
+			}),
+		)
+
+		x.destroy()
 	})
 })

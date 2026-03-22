@@ -21,13 +21,23 @@ Sets global defaults for all state instances. Call once at app startup before cr
 | `ssr` | `boolean` | `false` | Enable SSR mode globally |
 | `sync` | `boolean` | `false` | Enable cross-tab sync globally for all syncable scopes |
 | `warnOnDuplicate` | `boolean` | `false` | Warn on duplicate key + scope |
-| `onDestroy` | `(context) => void` | `undefined` | Fires when any instance is destroyed |
-| `onError` | `(context) => void` | `undefined` | Global error handler |
-| `onHydrate` | `(context) => void` | `undefined` | Fires after SSR hydration completes |
-| `onMigrate` | `(context) => void` | `undefined` | Fires after a migration chain runs |
-| `onQuotaExceeded` | `(context) => void` | `undefined` | Fires when a storage write fails due to quota |
-| `onRegister` | `(context) => void` | `undefined` | Fires when a new instance is registered |
-| `onSync` | `(context) => void` | `undefined` | Fires when a cross-tab sync event arrives |
+
+## Events
+
+| Event | Type | Description |
+|-------|------|-------------|
+| `onChange` | `(context: ChangeContext) => void` | Fires when any instance's value changes (via `set` or `reset`) |
+| `onDestroy` | `(context: DestroyContext) => void` | Fires when any instance is destroyed |
+| `onError` | `(context: ErrorContext) => void` | Global error handler |
+| `onExpire` | `(context: ExpireContext) => void` | Fires when a storage bucket's data has expired |
+| `onHydrate` | `(context: HydrateContext) => void` | Fires after SSR hydration completes |
+| `onIntercept` | `(context: InterceptContext) => void` | Fires when an interceptor modifies a value |
+| `onMigrate` | `(context: MigrateContext) => void` | Fires after a migration chain runs |
+| `onQuotaExceeded` | `(context: QuotaExceededContext) => void` | Fires when a storage write fails due to quota |
+| `onRegister` | `(context: RegisterContext) => void` | Fires when a new instance is registered |
+| `onReset` | `(context: ResetContext) => void` | Fires when any instance is reset to its default value |
+| `onSync` | `(context: SyncContext) => void` | Fires when a cross-tab sync event arrives |
+| `onValidationFail` | `(context: ValidationFailContext) => void` | Fires when a `validate` function rejects a stored value |
 
 ---
 
@@ -198,6 +208,33 @@ The duplicate still returns the cached instance — this is purely a development
 
 ## Events
 
+### `onChange`
+
+Fires whenever any state instance's value changes, whether via `set()` or `reset()`. Useful for global devtools, analytics, or debugging.
+
+```ts
+configure({
+  onChange: ({ key, scope, value, previousValue }) => {
+    console.log(`[${key}] changed:`, previousValue, '→', value)
+  },
+})
+```
+
+The `ChangeContext` shape:
+
+```ts
+interface ChangeContext {
+  key: string
+  scope: Scope
+  value: unknown
+  previousValue: unknown
+}
+```
+
+Fires after the value has been written to the adapter and after per-instance `onChange` handlers. Does not fire when `isEqual` prevents the update.
+
+---
+
 ### `onDestroy`
 
 Fires when any state instance is destroyed. Useful for cleanup analytics, debugging memory leaks, or ensuring dependent systems are notified.
@@ -249,6 +286,33 @@ This handler is called in addition to the normal fallback behavior (falling back
 
 ---
 
+### `onExpire`
+
+Fires when a storage bucket's data has expired. Detected when the bucket is opened and contains no data, but the fallback storage still has a value from a previous session. Useful for tracking cache lifetimes and triggering data refetches.
+
+```ts
+configure({
+  onExpire: ({ key, scope, expiredAt }) => {
+    console.log(`Bucket data for "${key}" expired at`, new Date(expiredAt))
+    refetchData(key)
+  },
+})
+```
+
+The `ExpireContext` shape:
+
+```ts
+interface ExpireContext {
+  key: string
+  scope: Scope
+  expiredAt: number
+}
+```
+
+Only fires for `bucket` scope instances when the Storage Buckets API is available and the bucket's data has been evicted.
+
+---
+
 ### `onHydrate`
 
 Fires after SSR hydration completes for an instance. Receives both the server-rendered value and the client-side storage value. Useful for detecting mismatches and debugging hydration issues.
@@ -275,6 +339,33 @@ interface HydrateContext {
 ```
 
 Only fires for instances with SSR enabled on browser scopes.
+
+---
+
+### `onIntercept`
+
+Fires when an interceptor modifies a value during `set()` or `reset()`. Only fires when the intercepted value differs from the original (using `Object.is`). Useful for debugging and logging interceptor activity.
+
+```ts
+configure({
+  onIntercept: ({ key, scope, original, intercepted }) => {
+    console.log(`[${key}] intercepted:`, original, '→', intercepted)
+  },
+})
+```
+
+The `InterceptContext` shape:
+
+```ts
+interface InterceptContext {
+  key: string
+  scope: Scope
+  original: unknown
+  intercepted: unknown
+}
+```
+
+Does not fire when interceptors return the same value they received.
 
 ---
 
@@ -358,6 +449,33 @@ Fires again if an instance is destroyed and re-created with the same key + scope
 
 ---
 
+### `onReset`
+
+Fires when any state instance's `reset()` method is called. Distinct from `onChange` because it signals intent — the user explicitly reset state to its default. Useful for audit trails and clearing dependent caches.
+
+```ts
+configure({
+  onReset: ({ key, scope, previousValue }) => {
+    console.log(`State reset: ${key} (was ${JSON.stringify(previousValue)})`)
+    clearDependentCache(key)
+  },
+})
+```
+
+The `ResetContext` shape:
+
+```ts
+interface ResetContext {
+  key: string
+  scope: Scope
+  previousValue: unknown
+}
+```
+
+Does not fire when `isEqual` prevents the update. Both `onReset` and `onChange` fire on a successful reset — `onReset` fires first.
+
+---
+
 ### `onSync`
 
 Fires when a cross-tab sync event updates a value from another tab. Useful for conflict resolution or showing "updated in another tab" notifications.
@@ -382,3 +500,29 @@ interface SyncContext {
 ```
 
 Only fires for instances with `sync: true` on syncable scopes (`local`, `bucket`).
+
+---
+
+### `onValidationFail`
+
+Fires when a `validate` function rejects a value read from storage. More targeted than `onError` — lets you distinguish corrupted or stale storage data from other error types. Useful for detecting schema drift and tracking how often stored data fails validation.
+
+```ts
+configure({
+  onValidationFail: ({ key, scope, value }) => {
+    analytics.track('validation_failed', { key, scope, value })
+  },
+})
+```
+
+The `ValidationFailContext` shape:
+
+```ts
+interface ValidationFailContext {
+  key: string
+  scope: Scope
+  value: unknown
+}
+```
+
+Fires before falling back to the default value. The `value` is the rejected data as read from storage (after migration, if any).

@@ -1,5 +1,5 @@
 import { notify } from '../batch.js'
-import { log } from '../config.js'
+import { getConfig, log } from '../config.js'
 import { createListeners } from '../listeners.js'
 import type { Adapter, BucketOptions, StateOptions } from '../types.js'
 import { shallowEqual } from '../utils.js'
@@ -173,6 +173,13 @@ export function createBucketAdapter<T>(
 			// Swap to the bucket delegate
 			delegate.destroy?.()
 			delegate = createStorageAdapter(storage, key, options)
+
+			// Check if bucket data expired — fallback had data but bucket is empty
+			const bucketValue = delegate.get()
+
+			if (hadUserWrite && shallowEqual(bucketValue, defaultValue)) {
+				getConfig().onExpire?.({ key, scope: 'bucket', expiredAt: Date.now() })
+			}
 
 			// Migrate: if user wrote during init, carry that value into the bucket
 			if (hadUserWrite) {
