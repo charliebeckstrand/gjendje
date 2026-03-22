@@ -32,7 +32,7 @@ const filters = state({ status: 'all', page: 1 })
 
 ```ts
 const filters = store.get() // Returns the full state object
-const { status } = store.get() // Get values by destructuring
+const { status, page } = store.get() // Get values by destructuring
 ```
 
 ### Updating values
