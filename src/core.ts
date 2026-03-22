@@ -384,20 +384,6 @@ class StateImpl<T> implements StateInstance<T> {
 		}
 	}
 
-	pick<K extends T extends object ? keyof T : never>(key: K): T[K & keyof T]
-	pick<K extends (T extends object ? keyof T : never)[]>(
-		keys: [...K],
-	): { [I in keyof K]: T[K[I] & keyof T] }
-	pick(keyOrKeys: PropertyKey | PropertyKey[]) {
-		const current = this.get() as Record<PropertyKey, unknown>
-
-		if (Array.isArray(keyOrKeys)) {
-			return keyOrKeys.map((k) => current[k])
-		}
-
-		return current[keyOrKeys]
-	}
-
 	patch(partial: T extends object ? Partial<T> : never, options?: { strict?: boolean }): void {
 		this.set((prev) => {
 			if (options?.strict) {
