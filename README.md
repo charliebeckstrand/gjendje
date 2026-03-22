@@ -46,7 +46,7 @@ For object stores, `patch` lets you update specific properties without spreading
 ```ts
 const form = state({ name: '', email: '', age: 0 })
 
-form.patch({ name: 'Alice' }) // only updates name, keeps email and age
+form.patch({ name: 'Alice' }) // only updates name
 form.patch({ name: 'Bob', age: 30 }) // updates multiple properties at once
 ```
 
