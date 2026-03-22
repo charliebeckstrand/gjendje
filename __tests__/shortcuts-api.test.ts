@@ -1,5 +1,23 @@
-import { describe, expect, it } from 'vitest'
-import { local, session, state, url } from '../src/index.js'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { bucket, local, session, state, url } from '../src/index.js'
+import { makeStorage } from './helpers.js'
+
+const fallbackStorage = makeStorage()
+
+beforeEach(() => {
+	fallbackStorage.clear()
+
+	Object.defineProperty(globalThis, 'localStorage', {
+		value: fallbackStorage,
+		configurable: true,
+	})
+
+	Object.defineProperty(globalThis, 'navigator', {
+		value: {},
+		configurable: true,
+		writable: true,
+	})
+})
 
 describe('scope shortcut functions', () => {
 	describe('local()', () => {
@@ -50,6 +68,41 @@ describe('scope shortcut functions', () => {
 			expect(s.get()).toBe('')
 			expect(s.scope).toBe('url')
 			expect(s.key).toBe('q')
+
+			s.destroy()
+		})
+	})
+
+	describe('bucket()', () => {
+		it('creates state with bucket scope', () => {
+			const s = bucket({ cache: 'empty' }, { bucket: { name: 'test-bucket' } })
+
+			expect(s.get()).toBe('empty')
+			expect(s.scope).toBe('bucket')
+			expect(s.key).toBe('cache')
+
+			s.destroy()
+		})
+
+		it('falls back to localStorage when Storage Buckets unavailable', async () => {
+			const s = bucket({ theme: 'light' }, { bucket: { name: 'test-bucket', fallback: 'local' } })
+
+			await s.ready
+
+			s.set('dark')
+
+			expect(fallbackStorage.getItem('theme')).toBe('"dark"')
+
+			s.destroy()
+		})
+
+		it('passes through extra options', async () => {
+			const s = bucket(
+				{ prefs: { lang: 'en' } },
+				{ bucket: { name: 'test-bucket' }, isEqual: (a, b) => a.lang === b.lang },
+			)
+
+			expect(s.get()).toEqual({ lang: 'en' })
 
 			s.destroy()
 		})
