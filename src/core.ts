@@ -360,6 +360,7 @@ class StateImpl<T> implements StateInstance<T> {
 		this.set((prev) => {
 			if (options?.strict) {
 				const prevKeys = new Set(Object.keys(prev as object))
+
 				const filtered = {} as Record<string, unknown>
 
 				for (const key of Object.keys(partial as object)) {

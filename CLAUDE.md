@@ -44,6 +44,7 @@ Never commit without ensuring new code matches these quality guidelines:
 - Run `pnpm lint` (and fix any issues with `pnpm lint:fix`) before committing
 - Run `pnpm test` and ensure all tests pass before committing
 - Follow the formatting and linting rules listed above
+- Add blank lines between consecutive variable declarations (`const`/`let`) — each declaration should be visually separated
 - New features must include tests
 
 ## Agent Behavior
