@@ -77,14 +77,17 @@ export function state<T>(
 	extraOptions?: Omit<StateOptions<T>, 'default'>,
 ): StateInstance<T> {
 	let key: string
+
 	let options: StateOptions<T>
 
 	if (typeof keyOrEntry === 'object') {
 		const [entryKey, defaultValue] = extractEntry(keyOrEntry)
+
 		key = entryKey
 		options = { ...(optionsOrDefault as Omit<StateOptions<T>, 'default'>), default: defaultValue }
 	} else {
 		key = keyOrEntry
+
 		options = extraOptions
 			? ({ ...extraOptions, default: optionsOrDefault } as StateOptions<T>)
 			: optionsOrDefault !== null &&
