@@ -97,13 +97,13 @@ configure({
 | `bucket`  | Storage Buckets API  | `state.bucket()`   |
 | `server`  | `AsyncLocalStorage`  | `state.server()`   |
 
-[Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
+[Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md) · [Persistence reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
 
 ## API
 
 Every scope shares the same core API: `get`, `set`, `patch`, `reset`, `subscribe`, `watch`, `intercept`, `use`, `destroy`
 
-[Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md) · [Persistence reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
+[Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
 
 ## Derived state
 
