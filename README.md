@@ -61,12 +61,12 @@ theme.scope // 'local' — derived from configure
 
 | Scope    | Backend              | Shortcut           |
 |----------|----------------------|--------------------|
-| `memory` | In-memory            | `state()`          |
-| `local`  | `localStorage`       | `state.local()`    |
-| `tab`    | `sessionStorage`     | `state.session()`  |
-| `url`    | `URLSearchParams`    | `state.url()`      |
-| `bucket` | Storage Buckets API  | `state.bucket()`   |
-| `server` | `AsyncLocalStorage`  | `state.server()`   |
+| `memory`  | In-memory            | `state()`          |
+| `local`   | `localStorage`       | `state.local()`    |
+| `session` | `sessionStorage`     | `state.session()`  |
+| `url`     | `URLSearchParams`    | `state.url()`      |
+| `bucket`  | Storage Buckets API  | `state.bucket()`   |
+| `server`  | `AsyncLocalStorage`  | `state.server()`   |
 
 [Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 

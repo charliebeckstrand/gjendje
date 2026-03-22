@@ -23,7 +23,7 @@ export function createState<T>(key: string, options: StateOptions<T>): StateInst
 	}
 
 	const rawScope = options.scope ?? config.scope ?? 'render'
-	const scope = rawScope === 'memory' ? 'render' : rawScope
+	const scope = rawScope === 'memory' ? 'render' : rawScope === 'session' ? 'tab' : rawScope
 
 	const rKey = scopedKey(key, scope)
 

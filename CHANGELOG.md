@@ -7,6 +7,7 @@
 - Add dot-notation scope shortcuts on `state`: `state.local()`, `state.session()`, `state.url()`, `state.bucket()`, `state.server()`. This replaces the separate namespace imports with a unified `state.*` API.
 - Deprecate standalone `local()`, `session()`, `url()`, `bucket()`, `server()` exports — they now emit a console warning on first use. These will be removed in 1.0.0. Migrate to `state.local()`, `state.session()`, etc.
 - Update all documentation to use the new `state.*` dot notation style.
+- Add `'session'` as the preferred scope name for `sessionStorage` (replaces `'tab'`). Both work interchangeably; `'tab'` is deprecated.
 
 ## 0.6.0
 

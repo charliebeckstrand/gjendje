@@ -1,6 +1,6 @@
 # Persistence
 
-How persistent scopes (`local`, `tab`, `bucket`) read and write stored values.
+How persistent scopes (`local`, `session`, `bucket`) read and write stored values.
 
 ---
 
