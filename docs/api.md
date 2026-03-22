@@ -69,6 +69,25 @@ peek(): T
 
 Reads the current value without reactive tracking. Useful when you need the value inside a `computed` or `effect` without creating a dependency.
 
+### `pick(key)`
+
+```ts
+pick<K extends keyof T>(key: K): T[K]
+```
+
+Returns a single property from the current object value. Only available when `T` is an object type.
+
+```ts
+const user = state({ user: { name: 'Jane', age: 30 } })
+
+user.pick('name') // 'Jane'
+user.pick('age')  // 30
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `key` | `keyof T` | The property key to read |
+
 ### `set(value)`
 
 ```ts
@@ -217,7 +236,7 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 
 - **`ReadonlyInstance<T>`** — `get`, `peek`, `subscribe`, `ready`, identity, `destroy`
 - **`BaseInstance<T>`** — extends `ReadonlyInstance` with `set`, `reset`, `intercept`, `use`
-- **`StateInstance<T>`** — extends `BaseInstance` with `watch`, `patch`
+- **`StateInstance<T>`** — extends `BaseInstance` with `pick`, `watch`, `patch`
 
 `computed` returns a `ReadonlyInstance`. `collection` returns a `CollectionInstance` (extends `BaseInstance`).
 

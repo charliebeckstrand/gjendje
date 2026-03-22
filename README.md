@@ -31,8 +31,8 @@ const store = state({ counter: 0 })
 ### Getting values
 
 ```ts
-const value = store.get()            // Retrieve the entire state value
-const counter = store.pick('counter') // Retrieve a specific property from object state
+const state = store.get()            // Returns the full state object
+const counter = store.pick('counter') // Returns a single property by key
 ```
 
 ### Updating values
