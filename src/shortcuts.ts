@@ -84,6 +84,7 @@ export function state<T>(
 		const [entryKey, defaultValue] = extractEntry(keyOrEntry)
 
 		key = entryKey
+
 		options = { ...(optionsOrDefault as Omit<StateOptions<T>, 'default'>), default: defaultValue }
 	} else {
 		key = keyOrEntry
