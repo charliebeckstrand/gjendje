@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- f6c23e3: Fix "Module not found: Can't resolve 'async_hooks'" error in client bundles by breaking the static import chain from core.ts to the server adapter. The server adapter now self-registers when imported, so `node:async_hooks` is only included when server features are actually used. Added a new `gjendje/server` entry point for server-only imports (`withServerSession`, `createServerAdapter`).
+
+## 0.4.3
+
+### Patch Changes
+
 - Fix "Module not found: Can't resolve 'async_hooks'" error in client bundles. The server adapter (`node:async_hooks`) is no longer statically imported by core — it self-registers when imported. Non-server scopes (`render`, `tab`, `local`, `url`, `bucket`) no longer pull in Node.js-only modules.
 - Add `gjendje/server` entry point for server-only imports (`withServerSession`, `createServerAdapter`).
 
