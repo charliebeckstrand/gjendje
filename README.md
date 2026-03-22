@@ -25,14 +25,14 @@ const theme = state.local({ theme: 'light' })
 For in-memory state that doesn't persist, use `state` without a scope:
 
 ```ts
-const filters = state({ role: 'all', status: 'active', tags: [] })
+const user = state({ name: 'John', age: 30 })
 ```
 
 ### Getting values
 
 ```ts
-filters.get() // Returns the full state
-const { role, status } = filters.get() // Destructure specific values
+user.get() // { name: 'John', age: 30 }
+const { name, age } = user.get() // Destructure specific values
 ```
 
 ### Updating values
@@ -40,8 +40,8 @@ const { role, status } = filters.get() // Destructure specific values
 Replace the entire state with `set`, or use an updater function:
 
 ```ts
-filters.set({ role: 'admin', status: 'inactive', tags: ['new'] })
-filters.set((prev) => ({ ...prev, role: 'admin' }))
+user.set({ name: 'Jane', age: 25 })
+user.set((prev) => ({ ...prev, age: prev.age + 1 }))
 ```
 
 For object stores, `patch` lets you update specific properties without spreading:
