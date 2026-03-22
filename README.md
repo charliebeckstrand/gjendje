@@ -31,6 +31,12 @@ const cache = state.bucket({ cache: [] }, { bucket: { name: 'app-cache', expires
 const user = state.server({ user: null })
 ```
 
+Alternatively, you can pass the scope as an option:
+
+```ts
+const theme = state({ theme: 'light' }, { scope: 'local' })
+```
+
 For in-memory state that doesn't persist, call `state` without a scope:
 
 ```ts
