@@ -4,15 +4,20 @@ export { collection } from './collection.js'
 export type { ComputedInstance, ComputedOptions } from './computed.js'
 export { computed } from './computed.js'
 export type {
+	ChangeContext,
 	DestroyContext,
 	ErrorContext,
+	ExpireContext,
 	GjendjeConfig,
 	HydrateContext,
+	InterceptContext,
 	LogLevel,
 	MigrateContext,
 	QuotaExceededContext,
 	RegisterContext,
+	ResetContext,
 	SyncContext,
+	ValidationFailContext,
 } from './config.js'
 export { configure } from './config.js'
 export type { StateSnapshot } from './devtools.js'

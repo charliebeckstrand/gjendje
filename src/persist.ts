@@ -61,6 +61,10 @@ export function readAndMigrate<T>(
 
 		// Validate final shape
 		if (options.validate && !options.validate(data)) {
+			if (key && scope) {
+				getConfig().onValidationFail?.({ key, scope, value: data })
+			}
+
 			return defaultValue
 		}
 

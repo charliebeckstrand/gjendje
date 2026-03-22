@@ -46,6 +46,38 @@ export interface RegisterContext {
 	scope: Scope
 }
 
+export interface ChangeContext {
+	key: string
+	scope: Scope
+	value: unknown
+	previousValue: unknown
+}
+
+export interface ResetContext {
+	key: string
+	scope: Scope
+	previousValue: unknown
+}
+
+export interface InterceptContext {
+	key: string
+	scope: Scope
+	original: unknown
+	intercepted: unknown
+}
+
+export interface ValidationFailContext {
+	key: string
+	scope: Scope
+	value: unknown
+}
+
+export interface ExpireContext {
+	key: string
+	scope: Scope
+	expiredAt: number
+}
+
 export interface GjendjeConfig {
 	/** Default scope for all state instances. Defaults to `'render'`. */
 	scope?: Scope | undefined
@@ -94,6 +126,21 @@ export interface GjendjeConfig {
 
 	/** Fires when a cross-tab sync event updates a value. */
 	onSync?: ((context: SyncContext) => void) | undefined
+
+	/** Fires when any state instance's value changes (via set or reset). */
+	onChange?: ((context: ChangeContext) => void) | undefined
+
+	/** Fires when any state instance is reset to its default value. */
+	onReset?: ((context: ResetContext) => void) | undefined
+
+	/** Fires when an interceptor modifies a value. */
+	onIntercept?: ((context: InterceptContext) => void) | undefined
+
+	/** Fires when a validate function rejects a value read from storage. */
+	onValidationFail?: ((context: ValidationFailContext) => void) | undefined
+
+	/** Fires when a storage bucket's data has expired. */
+	onExpire?: ((context: ExpireContext) => void) | undefined
 }
 
 let globalConfig: GjendjeConfig = {}

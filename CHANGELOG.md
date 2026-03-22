@@ -1,5 +1,13 @@
 # gjendje
 
+## 0.8.0
+
+### Minor Changes
+
+- Add five new global configure events: `onChange`, `onReset`, `onIntercept`, `onValidationFail`, and `onExpire`. These provide fine-grained observability over state changes, interceptor activity, storage validation failures, and bucket data expiration.
+- Split the configure documentation into separate **Options** and **Events** tables for clarity.
+- Add global events example (`onError`, `onChange`) to the README.
+
 ## 0.7.1
 
 ### Patch Changes
