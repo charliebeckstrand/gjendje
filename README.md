@@ -31,7 +31,7 @@ const cache = state.bucket({ cache: [] }, { bucket: { name: 'app-cache', expires
 const user = state.server({ user: null })
 ```
 
-For in-memory state that doesn't persist, use `state` directly:
+For in-memory state that doesn't persist, call `state` without a scope:
 
 ```ts
 import { state } from 'gjendje'
