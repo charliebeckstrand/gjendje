@@ -33,21 +33,9 @@ After completing a change, addition, or feature:
 - **Minor changes** (bug fixes, docs, refactors) bump by `0.0.x` — use changeset type `patch`
 - **Major changes** (new features, new exports, breaking changes) bump by `0.x` — use changeset type `minor` or `major`
 
-## Deprecations (remove in 1.0.0)
+## Deprecations
 
-The following exports are deprecated and should be removed when releasing 1.0.0:
-
-- **`local()`** — standalone scope shortcut. Use `state.local()` instead. (deprecated in 0.7.0)
-- **`session()`** — standalone scope shortcut. Use `state.session()` instead. (deprecated in 0.7.0)
-- **`url()`** — standalone scope shortcut. Use `state.url()` instead. (deprecated in 0.7.0)
-- **`bucket()`** — standalone scope shortcut. Use `state.bucket()` instead. (deprecated in 0.7.0)
-- **`server()`** — standalone scope shortcut. Use `state.server()` instead. (deprecated in 0.7.0)
-
-When preparing 1.0.0:
-1. Remove the deprecated standalone functions from `src/shortcuts.ts`
-2. Remove their re-exports from `src/index.ts`
-3. Remove the `_deprecationWarned` set and `warnDeprecated` helper
-4. Update tests that use the standalone imports to use `state.*` instead
+See [docs/deprecations.md](docs/deprecations.md) for the full list of deprecated APIs and removal plans for 1.0.0. Consult this file before any major version release.
 
 ## Agent Behavior
 
