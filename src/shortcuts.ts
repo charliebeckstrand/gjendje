@@ -67,6 +67,22 @@ export function url<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): 
 }
 
 /**
+ * Create state stored in server-side `AsyncLocalStorage`.
+ *
+ * ```ts
+ * const user = server({ user: null })
+ * ```
+ */
+export function server<T>(
+	entry: Record<string, T>,
+	options?: ShortcutOptions<T>,
+): StateInstance<T> {
+	const [key, defaultValue] = extractEntry(entry)
+
+	return state(key, { ...options, default: defaultValue, scope: 'server' })
+}
+
+/**
  * Create state stored in a Storage Bucket.
  *
  * ```ts

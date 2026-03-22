@@ -13,7 +13,7 @@ npm install gjendje
 ## Quick start
 
 ```ts
-import { local, session, url, bucket } from 'gjendje'
+import { local, session, url, bucket, server } from 'gjendje'
 
 // localStorage — survives refresh, works across tabs
 const theme = local({ theme: 'light' })
@@ -26,6 +26,9 @@ const filters = url({ q: '' })
 
 // Storage Bucket — isolated, quota-managed, expirable
 const cache = bucket({ cache: [] }, { bucket: { name: 'app-cache', expires: '7d' } })
+
+// AsyncLocalStorage — server-side, session-scoped
+const user = server({ user: null })
 ```
 
 Read, write, subscribe, reset — same API everywhere:
