@@ -7,9 +7,9 @@ Real-world patterns and recipes.
 ## Theme switcher with cross-tab sync
 
 ```ts
-import { local } from 'gjendje'
+import { state } from 'gjendje'
 
-const theme = local({ theme: 'light' as 'light' | 'dark' }, {
+const theme = state.local({ theme: 'light' as 'light' | 'dark' }, {
   sync: true,
   validate: (v): v is 'light' | 'dark' => v === 'light' || v === 'dark',
 })
@@ -30,7 +30,7 @@ Changing theme in one tab updates every open tab instantly.
 ## Form with validation and selective persistence
 
 ```ts
-import { session, select } from 'gjendje'
+import { state, select } from 'gjendje'
 
 interface ContactForm {
   name: string
@@ -39,7 +39,7 @@ interface ContactForm {
   isDirty: boolean
 }
 
-const form = session({ 'contact-form': { name: '', email: '', message: '', isDirty: false } }, {
+const form = state.session({ 'contact-form': { name: '', email: '', message: '', isDirty: false } }, {
   persist: ['name', 'email', 'message'],
 })
 
@@ -172,7 +172,7 @@ export function increment() {
 ## Persisted settings with migration
 
 ```ts
-import { local } from 'gjendje'
+import { state } from 'gjendje'
 
 interface Settings {
   colorScheme: 'light' | 'dark'
@@ -180,7 +180,7 @@ interface Settings {
   compact: boolean
 }
 
-const settings = local(
+const settings = state.local(
   { settings: { colorScheme: 'light', fontSize: 14, compact: false } as Settings },
   {
     version: 3,
@@ -233,9 +233,9 @@ batch(() => {
 ## Custom serializer for Set
 
 ```ts
-import { local } from 'gjendje'
+import { state } from 'gjendje'
 
-const bookmarks = local({ bookmarks: new Set<string>() }, {
+const bookmarks = state.local({ bookmarks: new Set<string>() }, {
   serialize: {
     stringify: (value) => JSON.stringify([...value]),
     parse: (raw) => new Set(JSON.parse(raw)),
@@ -250,10 +250,10 @@ bookmarks.set((prev) => new Set([...prev, '/docs/api']))
 ## Server-scoped request state
 
 ```ts
-import { server, withServerSession } from 'gjendje'
+import { state, withServerSession } from 'gjendje'
 
-const requestId = server({ 'request-id': '' })
-const currentUser = server({ user: null as User | null })
+const requestId = state.server({ 'request-id': '' })
+const currentUser = state.server({ user: null as User | null })
 
 async function handleRequest(req: Request) {
   return withServerSession(async () => {
@@ -273,10 +273,10 @@ async function handleRequest(req: Request) {
 ## URL-driven filters
 
 ```ts
-import { url, computed } from 'gjendje'
+import { state, computed } from 'gjendje'
 
-const query = url({ q: '' })
-const category = url({ cat: 'all' })
+const query = state.url({ q: '' })
+const category = state.url({ cat: 'all' })
 
 // URL updates automatically: ?q=shoes&cat=sale
 query.set('shoes')

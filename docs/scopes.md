@@ -48,7 +48,7 @@ Backed by `sessionStorage`. Survives page reloads but is scoped to the tab — o
 Use for state that should reset when the user opens a new tab but persist through navigation — wizard progress, unsaved draft indicators.
 
 ```ts
-const step = session({ 'wizard-step': 1 })
+const step = state.session({ 'wizard-step': 1 })
 ```
 
 ---
@@ -60,13 +60,13 @@ Backed by `localStorage`. Persists across tabs, reloads, and browser restarts.
 Use for user preferences, theme, locale, feature flags — anything that should feel "remembered."
 
 ```ts
-const theme = local({ theme: 'light' })
+const theme = state.local({ theme: 'light' })
 ```
 
 Enable `sync: true` to broadcast changes to other open tabs via `BroadcastChannel`:
 
 ```ts
-const theme = local({ theme: 'light' }, { sync: true })
+const theme = state.local({ theme: 'light' }, { sync: true })
 ```
 
 ---
@@ -78,7 +78,7 @@ Backed by `URLSearchParams`. The value is encoded in the URL query string, makin
 Use for filters, search queries, pagination — state that should be part of the link.
 
 ```ts
-const query = url({ q: '' })
+const query = state.url({ q: '' })
 ```
 
 ---
@@ -90,7 +90,7 @@ Backed by the [Storage Buckets API](https://developer.chrome.com/docs/web-platfo
 Use when you need more control than `localStorage` offers — large datasets, cache isolation, or automatic expiry.
 
 ```ts
-const cache = bucket({ 'api-cache': null }, {
+const cache = state.bucket({ 'api-cache': null }, {
   bucket: {
     name: 'api',
     quota: '10mb',
@@ -117,9 +117,9 @@ Backed by Node.js `AsyncLocalStorage`. State is scoped to the current request �
 Use for request-level context in server-side rendering (user session, request ID, locale).
 
 ```ts
-import { server, withServerSession } from 'gjendje'
+import { state, withServerSession } from 'gjendje'
 
-const requestId = server({ 'request-id': '' })
+const requestId = state.server({ 'request-id': '' })
 
 await withServerSession(async () => {
   requestId.set(crypto.randomUUID())

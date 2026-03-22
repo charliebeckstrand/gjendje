@@ -86,7 +86,7 @@ Prepend a namespace to all storage keys. Prevents collisions between apps sharin
 ```ts
 configure({ prefix: 'myapp' })
 
-const theme = local({ theme: 'light' })
+const theme = state.local({ theme: 'light' })
 // Stored under key "myapp:theme" in localStorage
 ```
 
@@ -94,11 +94,11 @@ Per-instance override:
 
 ```ts
 // Use a different prefix
-local({ theme: 'light' }, { prefix: 'other' })
+state.local({ theme: 'light' }, { prefix: 'other' })
 // Stored under "other:theme"
 
 // Disable prefix entirely
-local({ 'raw-key': 0 }, { prefix: false })
+state.local({ 'raw-key': 0 }, { prefix: false })
 // Stored under "raw-key"
 ```
 
@@ -112,10 +112,10 @@ When enabled, any `state()` call with a persistent scope (`local`, `tab`, `bucke
 configure({ requireValidation: true })
 
 // Throws — no validate function
-local({ theme: 'light' })
+state.local({ theme: 'light' })
 
 // Works — validate provided
-local({ theme: 'light' }, {
+state.local({ theme: 'light' }, {
   validate: (v): v is string => typeof v === 'string',
 })
 ```
@@ -151,7 +151,7 @@ Enable SSR mode globally. Equivalent to passing `ssr: true` on every `state()` c
 configure({ ssr: true })
 
 // All browser-scope instances get SSR safety automatically
-const theme = local({ theme: 'light' })
+const theme = state.local({ theme: 'light' })
 ```
 
 When SSR is enabled:
@@ -171,7 +171,7 @@ Enable cross-tab sync globally for all syncable scopes (`local`, `bucket`). Equi
 configure({ sync: true })
 
 // All local/bucket instances automatically sync across tabs
-const theme = local({ theme: 'light' })
+const theme = state.local({ theme: 'light' })
 ```
 
 Non-syncable scopes (`render`, `tab`, `url`, `server`) emit a warning and ignore the setting.
@@ -187,8 +187,8 @@ Emit a console warning when `state()` is called with a key + scope combination t
 ```ts
 configure({ warnOnDuplicate: true })
 
-local({ theme: 'light' })
-local({ theme: 'light' })
+state.local({ theme: 'light' })
+state.local({ theme: 'light' })
 // console.warn: [gjendje] Duplicate state("theme") with scope "local". Returning cached instance.
 ```
 

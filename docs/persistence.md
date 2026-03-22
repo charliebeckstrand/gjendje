@@ -20,7 +20,7 @@ interface Serializer<T> {
 For types that don't round-trip through JSON (e.g., `Set`, `Map`, `Date`). When a custom serializer is provided, migration and validation are skipped.
 
 ```ts
-const tags = local({ tags: new Set<string>() }, {
+const tags = state.local({ tags: new Set<string>() }, {
   serialize: {
     stringify: (value) => JSON.stringify([...value]),
     parse: (raw) => new Set(JSON.parse(raw)),
@@ -61,14 +61,14 @@ Suppose you ship v1 of a settings object:
 
 ```ts
 // v1 — initial release
-const settings = local({ settings: { theme: 'light' } })
+const settings = state.local({ settings: { theme: 'light' } })
 ```
 
 Later you add `fontSize`:
 
 ```ts
 // v2 — added fontSize
-const settings = local({ settings: { theme: 'light', fontSize: 14 } }, {
+const settings = state.local({ settings: { theme: 'light', fontSize: 14 } }, {
   version: 2,
   migrate: {
     1: (old: any) => ({ ...old, fontSize: 14 }),
@@ -80,7 +80,7 @@ Later you rename `theme` to `colorScheme` and add `compact`:
 
 ```ts
 // v3 — renamed theme → colorScheme, added compact
-const settings = local({ settings: { colorScheme: 'light', fontSize: 14, compact: false } }, {
+const settings = state.local({ settings: { colorScheme: 'light', fontSize: 14, compact: false } }, {
   version: 3,
   migrate: {
     1: (old: any) => ({ ...old, fontSize: 14 }),
@@ -108,7 +108,7 @@ persist?: Array<keyof T & string>
 Only persist the listed keys of an object value. Non-listed keys remain in memory but are excluded from storage writes. On read, persisted keys are merged with the default value.
 
 ```ts
-const editor = local({ editor: { fontSize: 14, cursorPosition: 0, unsavedChanges: false } }, {
+const editor = state.local({ editor: { fontSize: 14, cursorPosition: 0, unsavedChanges: false } }, {
   persist: ['fontSize'],
 })
 
@@ -133,7 +133,7 @@ interface Settings {
   fontSize: number
 }
 
-const settings = local({ settings: { theme: 'light', fontSize: 14 } as Settings }, {
+const settings = state.local({ settings: { theme: 'light', fontSize: 14 } as Settings }, {
   validate: (v): v is Settings =>
     typeof v === 'object' &&
     v !== null &&

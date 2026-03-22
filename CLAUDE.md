@@ -33,6 +33,10 @@ After completing a change, addition, or feature:
 - **Minor changes** (bug fixes, docs, refactors) bump by `0.0.x` — use changeset type `patch`
 - **Major changes** (new features, new exports, breaking changes) bump by `0.x` — use changeset type `minor` or `major`
 
+## Deprecations
+
+**Before every major version release**, review [docs/deprecations.md](docs/deprecations.md) and remove all deprecated APIs targeted for that release. This is a required step — never ship a major version without checking the deprecations list first.
+
 ## Agent Behavior
 
 - When busy with a task and the user requests something else, delegate the new task to a sub-agent using the Agent tool rather than interrupting current work.

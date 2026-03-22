@@ -11,14 +11,26 @@ The key is derived from the property name of the entry object:
 const counter = state({ counter: 0 })
 const name = state({ name: 'guest' })
 
-// With a scope — use the shortcut
-const theme = local({ theme: 'light' })
+// With a scope — use dot notation
+const theme = state.local({ theme: 'light' })
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `entry` | `Record<string, T>` | Single-key object — property name becomes the key, value becomes the default |
 | `options` | `Omit<StateOptions<T>, 'default'>` | Optional configuration (scope, sync, validate, etc.) |
+
+### Scope shortcuts
+
+Use dot notation to create state with an implicit scope:
+
+```ts
+state.local({ theme: 'light' })              // localStorage
+state.session({ draft: '' })                  // sessionStorage
+state.url({ q: '' })                          // URLSearchParams
+state.bucket({ cache: [] }, { bucket: ... })  // Storage Buckets API
+state.server({ user: null })                  // AsyncLocalStorage
+```
 
 ### Alternative forms
 
