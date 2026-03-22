@@ -101,7 +101,7 @@ configure({
 
 ## API
 
-Every scope — `state.local`, `state.session`, `state.url`, `state.bucket`, and `state.server` — shares the same core API: `get`, `set`, `patch`, `reset`, `subscribe`, `watch`, `intercept`, and more.
+Every scope shares the same core API: `get`, `set`, `patch`, `reset`, `subscribe`, `watch`, `intercept`, and more.
 
 [Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md) · [Persistence reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
 
