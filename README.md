@@ -50,7 +50,7 @@ form.patch({ name: 'Alice' }) // only updates name
 form.patch({ name: 'Bob', age: 30 }) // updates multiple properties at once
 ```
 
-[All scopes and examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
+[scopes and examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 
 ## Configure
 
@@ -84,7 +84,7 @@ configure({
 })
 ```
 
-[Full configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
+[Configure reference guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
 ## Scopes
 
@@ -97,13 +97,13 @@ configure({
 | `bucket`  | Storage Buckets API  | `state.bucket()`   |
 | `server`  | `AsyncLocalStorage`  | `state.server()`   |
 
-[Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md) · [Persistence reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
+[Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md) · [Persistence reference guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
 
 ## API
 
 Every scope shares the same core API: `get`, `set`, `patch`, `reset`, `subscribe`, `watch`, `intercept`, `use`, `destroy`
 
-[Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
+[API reference guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
 
 ## Derived state
 
@@ -122,7 +122,7 @@ Runs a side effect immediately and re-runs whenever any dependency changes. The 
 #### `readonly(instance)`
 Creates a read-only view of any state or computed instance. Exposes `get`, `peek`, `subscribe`, and lifecycle — but no `set`, `reset`, `intercept`, or `use`. Zero runtime cost.
 
-[Full derived state reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/derived.md)
+[Derived state reference guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/derived.md)
 
 ## Examples
 
