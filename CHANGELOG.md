@@ -1,8 +1,8 @@
 # gjendje
 
-## 0.5.0
+## 0.4.3
 
-### Minor Changes
+### Patch Changes
 
 - Fix "Module not found: Can't resolve 'async_hooks'" error in client bundles. The server adapter (`node:async_hooks`) is no longer statically imported by core — it self-registers when imported. Non-server scopes (`render`, `tab`, `local`, `url`, `bucket`) no longer pull in Node.js-only modules.
 - Add `gjendje/server` entry point for server-only imports (`withServerSession`, `createServerAdapter`).
