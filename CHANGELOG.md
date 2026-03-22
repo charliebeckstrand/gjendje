@@ -1,5 +1,11 @@
 # gjendje
 
+## 0.9.1
+
+### Patch Changes
+
+- 1050e4a: Add array overload to `pick()` — pass an array of keys to get an array of values back in the same order. Example: `store.pick(['name', 'age'])` returns `['Alice', 30]`.
+
 ## 0.9.0
 
 ### Minor Changes
