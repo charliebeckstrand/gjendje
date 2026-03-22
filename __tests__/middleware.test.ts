@@ -116,12 +116,12 @@ describe('intercept', () => {
 	})
 })
 
-describe('use', () => {
+describe('onChange', () => {
 	it('fires after set with next and prev', () => {
-		const count = state('use-basic', { default: 0 })
+		const count = state('onChange-basic', { default: 0 })
 		const calls: Array<[number, number]> = []
 
-		count.use((next, prev) => {
+		count.onChange((next, prev) => {
 			calls.push([next, prev])
 		})
 
@@ -137,13 +137,13 @@ describe('use', () => {
 	})
 
 	it('fires after reset', () => {
-		const count = state('use-reset', { default: 0 })
+		const count = state('onChange-reset', { default: 0 })
 
 		count.set(5)
 
 		const calls: Array<[number, number]> = []
 
-		count.use((next, prev) => {
+		count.onChange((next, prev) => {
 			calls.push([next, prev])
 		})
 
@@ -155,13 +155,13 @@ describe('use', () => {
 	})
 
 	it('receives the intercepted value, not the original', () => {
-		const count = state('use-after-intercept', { default: 0 })
+		const count = state('onChange-after-intercept', { default: 0 })
 
 		count.intercept((next) => next * 2)
 
 		const received: number[] = []
 
-		count.use((next) => {
+		count.onChange((next) => {
 			received.push(next)
 		})
 
@@ -174,10 +174,10 @@ describe('use', () => {
 	})
 
 	it('returns an unsubscribe function', () => {
-		const count = state('use-unsub', { default: 0 })
+		const count = state('onChange-unsub', { default: 0 })
 		const fn = vi.fn()
 
-		const unsub = count.use(fn)
+		const unsub = count.onChange(fn)
 
 		count.set(1)
 
@@ -193,10 +193,10 @@ describe('use', () => {
 	})
 
 	it('does not fire after destroy', () => {
-		const count = state('use-destroy', { default: 0 })
+		const count = state('onChange-destroy', { default: 0 })
 		const fn = vi.fn()
 
-		count.use(fn)
+		count.onChange(fn)
 
 		count.destroy()
 
@@ -205,15 +205,15 @@ describe('use', () => {
 		expect(fn).not.toHaveBeenCalled()
 	})
 
-	it('multiple hooks fire in registration order', () => {
-		const count = state('use-order', { default: 0 })
+	it('multiple handlers fire in registration order', () => {
+		const count = state('onChange-order', { default: 0 })
 		const order: string[] = []
 
-		count.use(() => {
+		count.onChange(() => {
 			order.push('first')
 		})
 
-		count.use(() => {
+		count.onChange(() => {
 			order.push('second')
 		})
 
@@ -225,7 +225,7 @@ describe('use', () => {
 	})
 })
 
-describe('collection intercept and use', () => {
+describe('collection intercept and onChange', () => {
 	it('intercept works on collection set', () => {
 		const items = collection('col-intercept', { default: [1, 2, 3] })
 
@@ -238,11 +238,11 @@ describe('collection intercept and use', () => {
 		items.destroy()
 	})
 
-	it('use fires on collection add', () => {
-		const items = collection('col-use', { default: [] as number[] })
+	it('onChange fires on collection add', () => {
+		const items = collection('col-onChange', { default: [] as number[] })
 		const calls: Array<[number[], number[]]> = []
 
-		items.use((next, prev) => {
+		items.onChange((next, prev) => {
 			calls.push([next, prev])
 		})
 

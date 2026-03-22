@@ -140,7 +140,7 @@ interface MutableState<T> {
 	lastValue: T
 	isDestroyed: boolean
 	interceptors: Set<(next: T, prev: T) => T> | undefined
-	hooks: Set<(next: T, prev: T) => void> | undefined
+	changeHandlers: Set<(next: T, prev: T) => void> | undefined
 	settled: Promise<void>
 	resolveDestroyed: (() => void) | undefined
 	destroyed: Promise<void> | undefined
@@ -185,7 +185,7 @@ class StateImpl<T> implements StateInstance<T> {
 			lastValue: adapter.get(),
 			isDestroyed: false,
 			interceptors: undefined,
-			hooks: undefined,
+			changeHandlers: undefined,
 			settled: RESOLVED,
 			resolveDestroyed: undefined,
 			destroyed: undefined,
@@ -230,8 +230,8 @@ class StateImpl<T> implements StateInstance<T> {
 
 		s.settled = this._adapter.ready
 
-		if (s.hooks !== undefined && s.hooks.size > 0) {
-			for (const hook of s.hooks) {
+		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
+			for (const hook of s.changeHandlers) {
 				hook(next, prev)
 			}
 		}
@@ -264,8 +264,8 @@ class StateImpl<T> implements StateInstance<T> {
 
 		s.settled = this._adapter.ready
 
-		if (s.hooks !== undefined && s.hooks.size > 0) {
-			for (const hook of s.hooks) {
+		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
+			for (const hook of s.changeHandlers) {
 				hook(next, prev)
 			}
 		}
@@ -311,15 +311,15 @@ class StateImpl<T> implements StateInstance<T> {
 		}
 	}
 
-	use(fn: (next: T, prev: T) => void): Unsubscribe {
+	onChange(fn: (next: T, prev: T) => void): Unsubscribe {
 		const s = this._s
 
-		if (!s.hooks) s.hooks = new Set()
+		if (!s.changeHandlers) s.changeHandlers = new Set()
 
-		s.hooks.add(fn)
+		s.changeHandlers.add(fn)
 
 		return () => {
-			s.hooks?.delete(fn)
+			s.changeHandlers?.delete(fn)
 		}
 	}
 
@@ -364,7 +364,7 @@ class StateImpl<T> implements StateInstance<T> {
 		s.isDestroyed = true
 
 		s.interceptors?.clear()
-		s.hooks?.clear()
+		s.changeHandlers?.clear()
 		s.watchers?.clear()
 
 		s.watchUnsub?.()
@@ -491,8 +491,8 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			notify(s.notifyFn)
 		}
 
-		if (s.hooks !== undefined && s.hooks.size > 0) {
-			for (const hook of s.hooks) {
+		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
+			for (const hook of s.changeHandlers) {
 				hook(next, prev)
 			}
 		}
@@ -549,8 +549,8 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			notify(s.notifyFn)
 		}
 
-		if (s.hooks !== undefined && s.hooks.size > 0) {
-			for (const hook of s.hooks) {
+		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
+			for (const hook of s.changeHandlers) {
 				hook(next, prev)
 			}
 		}
@@ -606,7 +606,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 		s.isDestroyed = true
 
 		s.interceptors?.clear()
-		s.hooks?.clear()
+		s.changeHandlers?.clear()
 		s.watchers?.clear()
 
 		s.watchUnsub?.()

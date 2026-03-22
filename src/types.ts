@@ -84,11 +84,11 @@ export interface BaseInstance<T> extends ReadonlyInstance<T> {
 	intercept(fn: (next: T, prev: T) => T): Unsubscribe
 
 	/**
-	 * Register a post-set tap that fires after each set/reset.
+	 * Register a handler that fires after each set/reset.
 	 * Receives `(next, prev)`. Return value is ignored.
-	 * Multiple hooks run in registration order.
+	 * Multiple handlers run in registration order.
 	 */
-	use(fn: (next: T, prev: T) => void): Unsubscribe
+	onChange(fn: (next: T, prev: T) => void): Unsubscribe
 }
 
 // ---------------------------------------------------------------------------
