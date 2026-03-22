@@ -32,7 +32,7 @@ const user = state({ name: 'John', age: 30 })
 
 ```ts
 user.get() // { name: 'John', age: 30 }
-const { name, age } = user.get() // Destructure specific values
+const { name } = user.get() // Destructure specific values
 ```
 
 ### Updating values
