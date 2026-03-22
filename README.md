@@ -2,7 +2,7 @@
 
 # gjendje
 
-Every app juggles localStorage, sessionStorage, URL params, and in-memory state — each with its own API. gjendje replaces them all with a unified API. Choose where state lives. The rest is handled.
+Every app juggles localStorage, sessionStorage, URL params, and in-memory state. gjendje replaces them all with a unified API. Choose where state lives. The rest is handled.
 
 ## Install
 
