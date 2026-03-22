@@ -25,14 +25,14 @@ const theme = state.local({ theme: 'light' })
 For in-memory state that doesn't persist, use `state` without a scope:
 
 ```ts
-const filters = state({ status: 'all', page: 1 })
+const filters = state({ role: 'all', status: 'active', tags: [] })
 ```
 
 ### Getting values
 
 ```ts
 const filters = store.get() // Returns the full state object
-const { status, page } = store.get() // Get values by destructuring
+const { role, status } = store.get() // Get values by destructuring
 ```
 
 ### Updating values
