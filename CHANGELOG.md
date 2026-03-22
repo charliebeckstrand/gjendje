@@ -1,20 +1,10 @@
 # gjendje
 
-## 0.9.0
-
-### Minor Changes
-
-- afc2063: Add `pick()` method to state instances for reading a single property from object state. Instead of `store.get().name`, use `store.pick('name')` for a concise, type-safe read of individual keys.
-
-## 0.9.0
-
-### Minor Changes
-
-- Add `pick()` method to state instances for reading a single property from object state. Instead of `store.get().name`, use `store.pick('name')` for a concise, type-safe read of individual keys.
+## 0.9.1
 
 ### Patch Changes
 
-- Add array overload to `pick()` — pass an array of keys to get an array of values back in the same order. Example: `store.pick(['name', 'age'])` returns `['Alice', 30]`.
+- Remove `pick()` method from state instances. Use destructuring instead: `const { name } = store.get()`. The method provided no value over simple property access or destructuring.
 
 ## 0.8.0
 

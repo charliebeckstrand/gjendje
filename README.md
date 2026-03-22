@@ -33,9 +33,6 @@ const filters = state({ status: 'all', page: 1 })
 ```ts
 const filters = store.get() // Returns the full state object
 const { status } = store.get() // Get values by destructuring
-
-const status = store.pick('status') // Returns a single property by key
-const [status, page] = store.pick(['status', 'page']) // Returns an array of values
 ```
 
 ### Updating values
@@ -103,7 +100,7 @@ configure({
 
 ## API
 
-Every scope shares the same core API: `get`, `pick`, `set`, `patch`, `reset`, `subscribe`, `watch`, `intercept`, `use`, `destroy`
+Every scope shares the same core API: `get`, `set`, `patch`, `reset`, `subscribe`, `watch`, `intercept`, `use`, `destroy`
 
 [API reference guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
 
