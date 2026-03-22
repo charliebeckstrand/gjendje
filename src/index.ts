@@ -30,6 +30,7 @@ export { previous } from './previous.js'
 export { readonly } from './readonly.js'
 export type { SelectInstance, SelectOptions } from './select.js'
 export { select } from './select.js'
+export { bucket, local, server, session, url } from './shortcuts.js'
 export type {
 	Adapter,
 	BaseInstance,

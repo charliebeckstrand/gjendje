@@ -25,18 +25,32 @@ type Widen<T> = T extends string
  * // Shorthand — pass a default value directly
  * const counter = state('counter', 0)
  * const name = state('name', 'guest')
+ *
+ * // Three-argument form — default value + options without wrapping in { default: ... }
+ * const theme = state('theme', 'light', { scope: 'local' })
+ * const synced = state('count', 0, { scope: 'local', sync: true })
  * ```
  */
 export function state<T>(key: string, options: StateOptions<T>): StateInstance<T>
+export function state<T>(
+	key: string,
+	defaultValue: T,
+	options: Omit<StateOptions<T>, 'default'>,
+): StateInstance<T>
 export function state<T extends string | number | boolean | null | undefined>(
 	key: string,
 	defaultValue: T,
 ): StateInstance<Widen<T>>
-export function state<T>(key: string, optionsOrDefault: T | StateOptions<T>): StateInstance<T> {
-	const options: StateOptions<T> =
-		optionsOrDefault !== null &&
-		typeof optionsOrDefault === 'object' &&
-		'default' in optionsOrDefault
+export function state<T>(
+	key: string,
+	optionsOrDefault: T | StateOptions<T>,
+	extraOptions?: Omit<StateOptions<T>, 'default'>,
+): StateInstance<T> {
+	const options: StateOptions<T> = extraOptions
+		? ({ ...extraOptions, default: optionsOrDefault } as StateOptions<T>)
+		: optionsOrDefault !== null &&
+				typeof optionsOrDefault === 'object' &&
+				'default' in optionsOrDefault
 			? optionsOrDefault
 			: ({ default: optionsOrDefault } as StateOptions<T>)
 
@@ -52,7 +66,8 @@ export function state<T>(key: string, optionsOrDefault: T | StateOptions<T>): St
 		)
 	}
 
-	const scope = options.scope ?? config.scope ?? 'render'
+	const rawScope = options.scope ?? config.scope ?? 'render'
+	const scope = rawScope === 'memory' ? 'render' : rawScope
 
 	const rKey = scopedKey(key, scope)
 

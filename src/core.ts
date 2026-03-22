@@ -65,6 +65,7 @@ function resolveStorageKey<T>(
 
 function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptions<T>): Adapter<T> {
 	switch (scope) {
+		case 'memory':
 		case 'render':
 			return createRenderAdapter(options.default)
 
@@ -663,7 +664,8 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 	}
 
 	// Apply global defaults — per-instance options take precedence
-	const scope = options.scope ?? config.scope ?? 'render'
+	const rawScope = options.scope ?? config.scope ?? 'render'
+	const scope = rawScope === 'memory' ? 'render' : rawScope
 
 	const rKey = scopedKey(key, scope)
 
