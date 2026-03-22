@@ -12,7 +12,7 @@ npm install gjendje
 
 ## Quick start
 
-You can pass the scope as an option:
+You can pass `scope` as an option:
 
 ```ts
 import { state } from 'gjendje'
