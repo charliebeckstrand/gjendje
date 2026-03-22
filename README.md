@@ -12,6 +12,16 @@ npm install gjendje
 
 ## Quick start
 
+You can pass the scope as an option:
+
+```ts
+import { state } from 'gjendje'
+
+const theme = state({ theme: 'light' }, { scope: 'local' })
+```
+
+Or use dot notation as a shorthand:
+
 ```ts
 import { state } from 'gjendje'
 
@@ -29,12 +39,6 @@ const cache = state.bucket({ cache: [] }, { bucket: { name: 'app-cache', expires
 
 // AsyncLocalStorage — server-side, session-scoped
 const user = state.server({ user: null })
-```
-
-Alternatively, you can pass the scope as an option:
-
-```ts
-const theme = state({ theme: 'light' }, { scope: 'local' })
 ```
 
 For in-memory state that doesn't persist, call `state` without a scope:
