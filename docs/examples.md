@@ -1,7 +1,5 @@
 # Examples
 
-Real-world patterns and recipes.
-
 ---
 
 ## Theme switcher with cross-tab sync
