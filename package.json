@@ -46,6 +46,16 @@
 				"types": "./dist/server.d.cts",
 				"default": "./dist/server.cjs"
 			}
+		},
+		"./react": {
+			"import": {
+				"types": "./dist/react.d.ts",
+				"default": "./dist/react.js"
+			},
+			"require": {
+				"types": "./dist/react.d.cts",
+				"default": "./dist/react.cjs"
+			}
 		}
 	},
 	"main": "./dist/index.cjs",
@@ -74,15 +84,27 @@
 		"bench:internal": "tsx benchmarks/internal.bench.ts",
 		"bench:extended": "tsx benchmarks/internals-extended.bench.ts"
 	},
+	"peerDependencies": {
+		"react": ">=18"
+	},
+	"peerDependenciesMeta": {
+		"react": {
+			"optional": true
+		}
+	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.6",
 		"@changesets/cli": "^2.27.0",
 		"@size-limit/preset-small-lib": "^11.0.0",
+		"@testing-library/dom": "^10.4.1",
+		"@testing-library/react": "^16.3.2",
 		"@types/node": "^20.0.0",
+		"@types/react": "^19.2.14",
 		"@vitest/coverage-v8": "^4.0.0",
 		"happy-dom": "^14.0.0",
 		"lefthook": "^1.6.0",
 		"publint": "^0.3.0",
+		"react": "^19.2.4",
 		"size-limit": "^11.0.0",
 		"tinybench": "^6.0.0",
 		"tsup": "^8.0.0",
