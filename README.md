@@ -23,33 +23,18 @@ const theme = state({ theme: 'light' }, { scope: 'local' })
 Or use dot notation as a shorthand:
 
 ```ts
-import { state } from 'gjendje'
-
-// localStorage — survives refresh, works across tabs
 const theme = state.local({ theme: 'light' })
-
-// sessionStorage — survives refresh, gone when tab closes
-const draft = state.session({ draft: '' })
-
-// URL params — shareable via address bar
-const filters = state.url({ q: '' })
-
-// Storage Bucket — isolated, quota-managed, expirable
-const cache = state.bucket({ cache: [] }, { bucket: { name: 'app-cache', expires: '7d' } })
-
-// AsyncLocalStorage — server-side, session-scoped
-const user = state.server({ user: null })
 ```
 
 For in-memory state that doesn't persist, call `state` without a scope:
 
 ```ts
-import { state } from 'gjendje'
-
 const counter = state({ counter: 0 })
 
 counter.set((prev) => prev + 1)
 ```
+
+[See all scopes and examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 
 ## Configure
 
