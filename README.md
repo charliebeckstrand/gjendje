@@ -31,15 +31,6 @@ const cache = bucket({ cache: [] }, { bucket: { name: 'app-cache', expires: '7d'
 const user = server({ user: null })
 ```
 
-Read, write, subscribe, reset — same API everywhere:
-
-```ts
-theme.get()                    // 'light'
-theme.set('dark')              // stored in localStorage
-theme.subscribe((v) => {})     // listen for changes
-theme.reset()                  // back to 'light'
-```
-
 For in-memory state that doesn't persist, use `state` directly:
 
 ```ts
