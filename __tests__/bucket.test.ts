@@ -101,7 +101,7 @@ describe('bucket scope — fallback', () => {
 		prefs.destroy()
 	})
 
-	it('notifies subscribers after ready resolves if stored value differs', async () => {
+	it('reads persisted fallback value immediately without notification', async () => {
 		fallbackStorage.setItem('bkt-notify', '"dark"')
 
 		const theme = state('bkt-notify', {
@@ -110,14 +110,17 @@ describe('bucket scope — fallback', () => {
 			bucket: { name: 'test-bucket' },
 		})
 
+		// Value is available immediately via fallback — no notification needed
+		expect(theme.get()).toBe('dark')
+
 		const listener = vi.fn()
 
 		theme.subscribe(listener)
 
 		await theme.ready
 
-		expect(listener).toHaveBeenCalledWith('dark')
-		expect(listener).toHaveBeenCalledTimes(1)
+		// No notification — value was already available synchronously
+		expect(listener).not.toHaveBeenCalled()
 
 		theme.destroy()
 	})
@@ -138,7 +141,7 @@ describe('bucket scope — fallback', () => {
 		theme.destroy()
 	})
 
-	it('get() returns default before ready', () => {
+	it('get() returns persisted fallback value before ready', () => {
 		fallbackStorage.setItem('bkt-before-ready', '"dark"')
 
 		const theme = state('bkt-before-ready', {
@@ -147,24 +150,24 @@ describe('bucket scope — fallback', () => {
 			bucket: { name: 'test-bucket' },
 		})
 
-		// Before awaiting ready — returns default
-		expect(theme.get()).toBe('light')
+		// Before awaiting ready — returns persisted value from fallback
+		expect(theme.get()).toBe('dark')
 
 		theme.destroy()
 	})
 
-	it('set() writes after ready resolves', async () => {
+	it('set() writes immediately without awaiting ready', () => {
 		const theme = state('bkt-set', {
 			default: 'light',
 			scope: 'bucket',
 			bucket: { name: 'test-bucket' },
 		})
 
-		await theme.ready
-
+		// No await — set works immediately via fallback storage
 		theme.set('dark')
 
 		expect(theme.get()).toBe('dark')
+		expect(fallbackStorage.getItem('bkt-set')).toBe('"dark"')
 
 		theme.destroy()
 	})

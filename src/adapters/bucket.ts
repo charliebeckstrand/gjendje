@@ -109,33 +109,20 @@ export function createBucketAdapter<T>(
 
 	const notifyListeners = () => listeners.notify(lastNotifiedValue)
 
-	// Storage delegate — starts as null, set after ready resolves
-	let delegate: Adapter<T> | null = null
+	// Start with the fallback storage synchronously so get()/set() work immediately
+	const fallbackStorage = fallbackScope === 'tab' ? sessionStorage : localStorage
+	let delegate: Adapter<T> = createStorageAdapter(fallbackStorage, key, options)
 
 	let isDestroyed = false
 
-	function read(): T {
-		if (!delegate) return defaultValue
-
-		return delegate.get()
-	}
-
-	function write(value: T): void {
-		if (!delegate) return
-
-		delegate.set(value)
-	}
-
 	// ---------------------------------------------------------------------------
-	// Initialization — open the bucket or fall back gracefully
+	// Initialization — try to upgrade to a real Storage Bucket
 	// ---------------------------------------------------------------------------
 
 	const ready = (async (): Promise<void> => {
-		try {
-			if (!isBucketSupported()) {
-				throw new Error('Storage Buckets not supported')
-			}
+		if (!isBucketSupported()) return
 
+		try {
 			const openOptions: Parameters<StorageBucketManager['open']>[1] = {
 				persisted: bucketOptions.persisted ?? false,
 				durability: 'strict',
@@ -171,30 +158,31 @@ export function createBucketAdapter<T>(
 
 			const bucketManager = navigator.storageBuckets
 
-			if (!bucketManager) throw new Error('Storage Buckets not supported')
+			if (!bucketManager) return
 
 			const bucket = await bucketManager.open(bucketOptions.name, openOptions)
 
 			const storage = await bucket.localStorage()
 
+			if (isDestroyed) return
+
+			// Capture any value the user wrote to the fallback during init
+			const currentValue = delegate.get()
+			const hadUserWrite = !shallowEqual(currentValue, defaultValue)
+
+			// Swap to the bucket delegate
+			delegate.destroy?.()
 			delegate = createStorageAdapter(storage, key, options)
+
+			// Migrate: if user wrote during init, carry that value into the bucket
+			if (hadUserWrite) {
+				delegate.set(currentValue)
+			}
 		} catch {
-			// Yield to ensure get() returns default before ready resolves
-			await Promise.resolve()
-
-			// Storage Buckets unavailable or failed — fall back to localStorage/sessionStorage
-			const fallbackStorage = fallbackScope === 'tab' ? sessionStorage : localStorage
-
-			delegate = createStorageAdapter(fallbackStorage, key, options)
+			// Storage Buckets failed — keep using the fallback delegate
 		}
 
-		// If destroyed during initialization, clean up and bail out
-		if (isDestroyed) {
-			delegate?.destroy?.()
-			delegate = null
-
-			return
-		}
+		if (isDestroyed) return
 
 		// Notify subscribers if the stored value differs from the default
 		const storedValue = delegate.get()
@@ -217,11 +205,11 @@ export function createBucketAdapter<T>(
 		ready,
 
 		get() {
-			return read()
+			return delegate.get()
 		},
 
 		set(value) {
-			write(value)
+			delegate.set(value)
 
 			lastNotifiedValue = value
 
@@ -235,8 +223,7 @@ export function createBucketAdapter<T>(
 
 			listeners.clear()
 
-			delegate?.destroy?.()
-			delegate = null
+			delegate.destroy?.()
 		},
 	}
 }
