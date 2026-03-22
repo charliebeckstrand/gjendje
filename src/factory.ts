@@ -3,57 +3,13 @@ import { createBase, createRenderState } from './core.js'
 import { getRegistered, registerByKey, scopedKey } from './registry.js'
 import type { StateInstance, StateOptions } from './types.js'
 
-type Widen<T> = T extends string
-	? string
-	: T extends number
-		? number
-		: T extends boolean
-			? boolean
-			: T
-
 /**
- * Create a stateful value.
+ * Core state constructor. Accepts a resolved key and full options object.
  *
- * Same key + same scope always returns the same instance.
- * Change scope to move state anywhere.
- *
- * ```ts
- * const theme = state('theme', { default: 'light', scope: 'local' })
- * const filters = state('filters', { default: {}, scope: 'url' })
- * const user = state('user', { default: null, scope: 'server' })
- *
- * // Shorthand — pass a default value directly
- * const counter = state('counter', 0)
- * const name = state('name', 'guest')
- *
- * // Three-argument form — default value + options without wrapping in { default: ... }
- * const theme = state('theme', 'light', { scope: 'local' })
- * const synced = state('count', 0, { scope: 'local', sync: true })
- * ```
+ * All user-facing overloads (entry object, shorthand, three-arg, etc.)
+ * live in `shortcuts.ts` and delegate here after normalizing arguments.
  */
-export function state<T>(key: string, options: StateOptions<T>): StateInstance<T>
-export function state<T>(
-	key: string,
-	defaultValue: T,
-	options: Omit<StateOptions<T>, 'default'>,
-): StateInstance<T>
-export function state<T extends string | number | boolean | null | undefined>(
-	key: string,
-	defaultValue: T,
-): StateInstance<Widen<T>>
-export function state<T>(
-	key: string,
-	optionsOrDefault: T | StateOptions<T>,
-	extraOptions?: Omit<StateOptions<T>, 'default'>,
-): StateInstance<T> {
-	const options: StateOptions<T> = extraOptions
-		? ({ ...extraOptions, default: optionsOrDefault } as StateOptions<T>)
-		: optionsOrDefault !== null &&
-				typeof optionsOrDefault === 'object' &&
-				'default' in optionsOrDefault
-			? optionsOrDefault
-			: ({ default: optionsOrDefault } as StateOptions<T>)
-
+export function createState<T>(key: string, options: StateOptions<T>): StateInstance<T> {
 	if (!key) {
 		throw new Error('[state] key must be a non-empty string.')
 	}

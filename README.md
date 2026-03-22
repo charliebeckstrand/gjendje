@@ -45,15 +45,9 @@ For in-memory state that doesn't persist, use `state` directly:
 ```ts
 import { state } from 'gjendje'
 
-const counter = state('counter', 0)
+const counter = state({ counter: 0 })
 
 counter.set((prev) => prev + 1)
-```
-
-You can also pass options as a third argument:
-
-```ts
-const synced = state('theme', 'light', { scope: 'local', sync: true })
 ```
 
 ## Configure
@@ -71,7 +65,7 @@ configure({ scope: 'local' })
 Now every `state` call inherits that default:
 
 ```ts
-const theme = state('theme', 'light')
+const theme = state({ theme: 'light' })
 
 theme.scope // 'local' — derived from configure
 ```
@@ -87,7 +81,7 @@ theme.scope // 'local' — derived from configure
 | `tab`    | `sessionStorage`     | `session()` |
 | `url`    | `URLSearchParams`    | `url()`     |
 | `bucket` | Storage Buckets API  | `bucket()`  |
-| `server` | `AsyncLocalStorage`  | —           |
+| `server` | `AsyncLocalStorage`  | `server()`  |
 
 [Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 
