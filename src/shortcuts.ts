@@ -45,7 +45,7 @@ function warnDeprecated(name: string): void {
 	if (_deprecationWarned.has(name)) return
 	_deprecationWarned.add(name)
 	console.warn(
-		`[gjendje] ${name}() is deprecated and will be removed in 1.0.0. ` +
+		`[gjendje] ${name}() is deprecated and will be removed in the next major version. ` +
 			`Use state.${name}() instead. Example: state.${name}({ key: value })`,
 	)
 }
@@ -183,7 +183,7 @@ export const state: StateFunction = _state as StateFunction
 // ---------------------------------------------------------------------------
 
 /**
- * @deprecated Use `state.local()` instead. Will be removed in 1.0.0.
+ * @deprecated Use `state.local()` instead. Will be removed in the next major version.
  *
  * Create state stored in `localStorage`.
  *
@@ -197,7 +197,7 @@ export function local<T>(entry: Record<string, T>, options?: ShortcutOptions<T>)
 }
 
 /**
- * @deprecated Use `state.session()` instead. Will be removed in 1.0.0.
+ * @deprecated Use `state.session()` instead. Will be removed in the next major version.
  *
  * Create state stored in `sessionStorage`.
  *
@@ -214,7 +214,7 @@ export function session<T>(
 }
 
 /**
- * @deprecated Use `state.url()` instead. Will be removed in 1.0.0.
+ * @deprecated Use `state.url()` instead. Will be removed in the next major version.
  *
  * Create state stored in `URLSearchParams`.
  *
@@ -228,7 +228,7 @@ export function url<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): 
 }
 
 /**
- * @deprecated Use `state.server()` instead. Will be removed in 1.0.0.
+ * @deprecated Use `state.server()` instead. Will be removed in the next major version.
  *
  * Create state stored in server-side `AsyncLocalStorage`.
  *
@@ -245,7 +245,7 @@ export function server<T>(
 }
 
 /**
- * @deprecated Use `state.bucket()` instead. Will be removed in 1.0.0.
+ * @deprecated Use `state.bucket()` instead. Will be removed in the next major version.
  *
  * Create state stored in a Storage Bucket.
  *

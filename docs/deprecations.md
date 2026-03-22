@@ -1,10 +1,10 @@
 # Deprecations
 
-Deprecated APIs that will be removed in a future major version. When preparing a major release, review this list and remove all items targeted for that version.
+Deprecated APIs scheduled for removal. **Before every major version release**, review this entire list and remove all items targeted for that release. Do not ship a major version without completing the removal steps for each applicable entry.
 
 ---
 
-## Remove in 1.0.0
+## Remove with next major version
 
 ### Standalone scope shortcut exports
 

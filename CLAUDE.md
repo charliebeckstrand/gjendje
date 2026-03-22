@@ -35,7 +35,7 @@ After completing a change, addition, or feature:
 
 ## Deprecations
 
-See [docs/deprecations.md](docs/deprecations.md) for the full list of deprecated APIs and removal plans for 1.0.0. Consult this file before any major version release.
+**Before every major version release**, review [docs/deprecations.md](docs/deprecations.md) and remove all deprecated APIs targeted for that release. This is a required step — never ship a major version without checking the deprecations list first.
 
 ## Agent Behavior
 
