@@ -31,7 +31,9 @@ const store = state({ counter: 0 })
 ### Getting values
 
 ```ts
-const state = store.get() // Returns the full state object
+const snapshot = store.get() // Returns the full state object
+const { counter } = store.get() // Get values by destructuring
+
 const counter = store.pick('counter') // Returns a single property by key
 ```
 
@@ -49,8 +51,8 @@ For object stores, `patch` lets you update specific properties without spreading
 ```ts
 const form = state({ name: '', email: '', age: 0 })
 
-form.patch({ name: 'Alice' }) // only updates name
-form.patch({ name: 'Bob', age: 30 }) // updates multiple properties at once
+form.patch({ name: 'Alice' }) // Only updates name
+form.patch({ name: 'Bob', age: 30 }) // Update multiple properties at once
 ```
 
 [More examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
