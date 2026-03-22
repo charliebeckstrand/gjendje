@@ -112,6 +112,16 @@ export interface StateInstance<T> extends BaseInstance<T> {
 		key: K,
 		listener: (value: T[K & keyof T]) => void,
 	): Unsubscribe
+
+	/**
+	 * Merge a partial update into the current object value (shallow merge).
+	 * Only available when T is an object type.
+	 *
+	 * By default, all keys in the partial are merged (including new ones).
+	 * Pass `{ strict: true }` to only merge keys that already exist on the
+	 * current value — unknown keys are ignored and a warning is logged.
+	 */
+	patch(partial: T extends object ? Partial<T> : never, options?: { strict?: boolean }): void
 }
 
 // ---------------------------------------------------------------------------

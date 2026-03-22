@@ -37,6 +37,16 @@ After completing a change, addition, or feature:
 
 **Before every major version release**, review [docs/deprecations.md](docs/deprecations.md) and remove all deprecated APIs targeted for that release. This is a required step — never ship a major version without checking the deprecations list first.
 
+## Code Quality
+
+Never commit without ensuring new code matches these quality guidelines:
+
+- Run `pnpm lint` (and fix any issues with `pnpm lint:fix`) before committing
+- Run `pnpm test` and ensure all tests pass before committing
+- Follow the formatting and linting rules listed above
+- Add blank lines between consecutive variable declarations (`const`/`let`) — each declaration should be visually separated
+- New features must include tests
+
 ## Agent Behavior
 
 - When busy with a task and the user requests something else, delegate the new task to a sub-agent using the Agent tool rather than interrupting current work.
