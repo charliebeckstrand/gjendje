@@ -77,9 +77,6 @@ You can also configure global events:
 
 ```ts
 configure({
-  onError: ({ key, scope, error }) => {
-    console.error(`[${key}] (${scope}) error:`, error)
-  },
   onChange: ({ key, scope, value, previousValue }) => {
     console.log(`[${key}] (${scope}) changed:`, previousValue, '→', value)
   },
