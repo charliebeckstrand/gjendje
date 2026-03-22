@@ -13,32 +13,41 @@ npm install gjendje
 ## Quick start
 
 ```ts
-import { state } from 'gjendje'
+import { local, session, url } from 'gjendje'
 
-// 1. Create state
-const counter = state('counter', 0)
+// localStorage — survives refresh, works across tabs
+const theme = local({ theme: 'light' })
 
-// 2. Read
-counter.get() // 0
+// sessionStorage — survives refresh, gone when tab closes
+const draft = session({ draft: '' })
 
-// 3. Write
-counter.set(1)
-counter.set((prev) => prev + 1)
-
-// 4. Subscribe
-counter.subscribe((value) => console.log(value))
-
-// 5. Reset
-counter.reset() // back to 0
+// URL params — shareable via address bar
+const filters = url({ q: '' })
 ```
 
-To persist across page reloads, add a scope:
+Read, write, subscribe, reset — same API everywhere:
 
 ```ts
-const theme = state('theme', { default: 'light', scope: 'local' })
+theme.get()                    // 'light'
+theme.set('dark')              // stored in localStorage
+theme.subscribe((v) => {})     // listen for changes
+theme.reset()                  // back to 'light'
+```
 
-theme.set('dark')
-// Survives refresh — stored in localStorage
+For in-memory state that doesn't persist, use `state` directly:
+
+```ts
+import { state } from 'gjendje'
+
+const counter = state('counter', 0)
+
+counter.set((prev) => prev + 1)
+```
+
+You can also pass options as a third argument:
+
+```ts
+const synced = state('theme', 'light', { scope: 'local', sync: true })
 ```
 
 ## Configure
@@ -65,14 +74,14 @@ theme.scope // 'local' — derived from configure
 
 ## Scopes
 
-|Scope      |Description                                             |
-|-----------|--------------------------------------------------------|
-|`render`   | `memory` |
-|`local`    |`localStorage` |                   
-|`server`   |`AsyncLocalStorage` |
-|`bucket`   | `Storage Buckets API ` |
-|`url`      |`URLSearchParams` |
-|`tab`      |`sessionStorage` |
+| Scope    | Backend              | Shortcut    |
+|----------|----------------------|-------------|
+| `memory` | In-memory            | `state()`   |
+| `local`  | `localStorage`       | `local()`   |
+| `tab`    | `sessionStorage`     | `session()` |
+| `url`    | `URLSearchParams`    | `url()`     |
+| `bucket` | Storage Buckets API  | `bucket()`  |
+| `server` | `AsyncLocalStorage`  | —           |
 
 [Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 

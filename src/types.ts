@@ -3,7 +3,8 @@
 // ---------------------------------------------------------------------------
 
 export type Scope =
-	| 'render' // in-memory, ephemeral — gone when component unmounts
+	| 'memory' // in-memory, ephemeral (preferred name)
+	| 'render' // in-memory, ephemeral (alias for 'memory')
 	| 'tab' // sessionStorage — survives page reloads, gone when tab closes
 	| 'local' // localStorage — survives across tabs and restarts
 	| 'url' // URLSearchParams — lives in the address bar, shareable
