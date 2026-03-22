@@ -1,5 +1,11 @@
 # gjendje
 
+## 0.9.3
+
+### Patch Changes
+
+- Fix inconsistent variable names in README state examples (`store` → `filters`)
+
 ## 0.9.2
 
 ### Patch Changes

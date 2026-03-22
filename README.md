@@ -31,8 +31,8 @@ const filters = state({ role: 'all', status: 'active', tags: [] })
 ### Getting values
 
 ```ts
-const filters = store.get() // Returns the full state
-const { role, status } = store.get() // Get values by destructuring
+filters.get() // Returns the full state
+const { role, status } = filters.get() // Destructure specific values
 ```
 
 ### Updating values
@@ -40,8 +40,8 @@ const { role, status } = store.get() // Get values by destructuring
 Replace the entire state with `set`, or use an updater function:
 
 ```ts
-store.set({ counter: 1 })
-store.set((prev) => ({ ...prev, counter: prev.counter + 1 }))
+filters.set({ role: 'admin', status: 'inactive', tags: ['new'] })
+filters.set((prev) => ({ ...prev, role: 'admin' }))
 ```
 
 For object stores, `patch` lets you update specific properties without spreading:
