@@ -119,6 +119,44 @@ describe('scope shortcut functions', () => {
 	})
 })
 
+describe('state() entry object form', () => {
+	it('derives key from entry property name', () => {
+		const s = state({ counter: 0 })
+
+		expect(s.get()).toBe(0)
+		expect(s.key).toBe('counter')
+
+		s.destroy()
+	})
+
+	it('accepts options as second argument', () => {
+		const s = state({ theme: 'light' }, { scope: 'local' })
+
+		expect(s.get()).toBe('light')
+		expect(s.scope).toBe('local')
+		expect(s.key).toBe('theme')
+
+		s.destroy()
+	})
+
+	it('works with object default values', () => {
+		const s = state({ prefs: { dark: true, lang: 'en' } })
+
+		expect(s.get()).toEqual({ dark: true, lang: 'en' })
+		expect(s.key).toBe('prefs')
+
+		s.destroy()
+	})
+
+	it('throws when entry has zero keys', () => {
+		expect(() => state({})).toThrow('exactly one key')
+	})
+
+	it('throws when entry has multiple keys', () => {
+		expect(() => state({ a: 1, b: 2 })).toThrow('exactly one key')
+	})
+})
+
 describe('memory scope alias', () => {
 	it('accepts memory as a scope', () => {
 		const s = state('mem-test', 0, { scope: 'memory' })

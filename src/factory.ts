@@ -12,6 +12,23 @@ type Widen<T> = T extends string
 			: T
 
 /**
+ * Extract the single key and value from a `{ key: defaultValue }` entry object.
+ */
+function extractEntry<T>(entry: Record<string, T>): [string, T] {
+	const keys = Object.keys(entry)
+
+	if (keys.length !== 1) {
+		throw new Error(
+			`[gjendje] Entry object expects exactly one key, got ${keys.length}: ${keys.join(', ')}`,
+		)
+	}
+
+	const key = keys[0] as string
+
+	return [key, entry[key] as T]
+}
+
+/**
  * Create a stateful value.
  *
  * Same key + same scope always returns the same instance.
@@ -29,8 +46,16 @@ type Widen<T> = T extends string
  * // Three-argument form — default value + options without wrapping in { default: ... }
  * const theme = state('theme', 'light', { scope: 'local' })
  * const synced = state('count', 0, { scope: 'local', sync: true })
+ *
+ * // Entry object — key is derived from the property name
+ * const theme = state({ theme: 'light' }, { scope: 'local' })
+ * const counter = state({ counter: 0 })
  * ```
  */
+export function state<T>(
+	entry: Record<string, T>,
+	options?: Omit<StateOptions<T>, 'default'>,
+): StateInstance<T>
 export function state<T>(key: string, options: StateOptions<T>): StateInstance<T>
 export function state<T>(
 	key: string,
@@ -42,17 +67,27 @@ export function state<T extends string | number | boolean | null | undefined>(
 	defaultValue: T,
 ): StateInstance<Widen<T>>
 export function state<T>(
-	key: string,
-	optionsOrDefault: T | StateOptions<T>,
+	keyOrEntry: string | Record<string, T>,
+	optionsOrDefault?: T | StateOptions<T> | Omit<StateOptions<T>, 'default'>,
 	extraOptions?: Omit<StateOptions<T>, 'default'>,
 ): StateInstance<T> {
-	const options: StateOptions<T> = extraOptions
-		? ({ ...extraOptions, default: optionsOrDefault } as StateOptions<T>)
-		: optionsOrDefault !== null &&
-				typeof optionsOrDefault === 'object' &&
-				'default' in optionsOrDefault
-			? optionsOrDefault
-			: ({ default: optionsOrDefault } as StateOptions<T>)
+	let key: string
+	let options: StateOptions<T>
+
+	if (typeof keyOrEntry === 'object') {
+		const [entryKey, defaultValue] = extractEntry(keyOrEntry)
+		key = entryKey
+		options = { ...(optionsOrDefault as Omit<StateOptions<T>, 'default'>), default: defaultValue }
+	} else {
+		key = keyOrEntry
+		options = extraOptions
+			? ({ ...extraOptions, default: optionsOrDefault } as StateOptions<T>)
+			: optionsOrDefault !== null &&
+					typeof optionsOrDefault === 'object' &&
+					'default' in optionsOrDefault
+				? (optionsOrDefault as StateOptions<T>)
+				: ({ default: optionsOrDefault } as StateOptions<T>)
+	}
 
 	if (!key) {
 		throw new Error('[state] key must be a non-empty string.')
