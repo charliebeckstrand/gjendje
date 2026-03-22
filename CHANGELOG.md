@@ -6,6 +6,10 @@
 
 - Add `pick()` method to state instances for reading a single property from object state. Instead of `store.get().name`, use `store.pick('name')` for a concise, type-safe read of individual keys.
 
+### Patch Changes
+
+- Add array overload to `pick()` — pass an array of keys to get an array of values back in the same order. Example: `store.pick(['name', 'age'])` returns `['Alice', 30]`.
+
 ## 0.8.0
 
 ### Minor Changes
