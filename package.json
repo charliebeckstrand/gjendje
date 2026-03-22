@@ -1,7 +1,7 @@
 {
 	"name": "gjendje",
 	"version": "0.8.0",
-	"description": "TypeScript state management",
+	"description": "Unified storage backend state management, built with TypeScript",
 	"keywords": [
 		"state",
 		"storage",
