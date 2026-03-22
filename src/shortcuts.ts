@@ -36,8 +36,80 @@ function extractEntry<T>(entry: Record<string, T>): [string, T] {
 }
 
 // ---------------------------------------------------------------------------
+// Deprecation helper
+// ---------------------------------------------------------------------------
+
+const _deprecationWarned = new Set<string>()
+
+function warnDeprecated(name: string): void {
+	if (_deprecationWarned.has(name)) return
+	_deprecationWarned.add(name)
+	console.warn(
+		`[gjendje] ${name}() is deprecated and will be removed in 1.0.0. ` +
+			`Use state.${name}() instead. Example: state.${name}({ key: value })`,
+	)
+}
+
+// ---------------------------------------------------------------------------
+// Core scope shortcut implementations (shared by state.* and standalone)
+// ---------------------------------------------------------------------------
+
+function _local<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
+	const [key, defaultValue] = extractEntry(entry)
+
+	return createState(key, { ...options, default: defaultValue, scope: 'local' })
+}
+
+function _session<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
+	const [key, defaultValue] = extractEntry(entry)
+
+	return createState(key, { ...options, default: defaultValue, scope: 'tab' })
+}
+
+function _url<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
+	const [key, defaultValue] = extractEntry(entry)
+
+	return createState(key, { ...options, default: defaultValue, scope: 'url' })
+}
+
+function _server<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
+	const [key, defaultValue] = extractEntry(entry)
+
+	return createState(key, { ...options, default: defaultValue, scope: 'server' })
+}
+
+function _bucket<T>(entry: Record<string, T>, options: BucketShortcutOptions<T>): StateInstance<T> {
+	const [key, defaultValue] = extractEntry(entry)
+
+	return createState(key, { ...options, default: defaultValue, scope: 'bucket' })
+}
+
+// ---------------------------------------------------------------------------
 // state() — the universal entry point
 // ---------------------------------------------------------------------------
+
+/** state function with dot-notation scope shortcuts */
+export interface StateFunction {
+	/** Create in-memory state (default scope) */
+	<T>(entry: Record<string, T>, options?: Omit<StateOptions<T>, 'default'>): StateInstance<T>
+	<T>(key: string, options: StateOptions<T>): StateInstance<T>
+	<T>(key: string, defaultValue: T, options: Omit<StateOptions<T>, 'default'>): StateInstance<T>
+	<T extends string | number | boolean | null | undefined>(
+		key: string,
+		defaultValue: T,
+	): StateInstance<Widen<T>>
+
+	/** Create state stored in `localStorage` */
+	local: <T>(entry: Record<string, T>, options?: ShortcutOptions<T>) => StateInstance<T>
+	/** Create state stored in `sessionStorage` */
+	session: <T>(entry: Record<string, T>, options?: ShortcutOptions<T>) => StateInstance<T>
+	/** Create state stored in `URLSearchParams` */
+	url: <T>(entry: Record<string, T>, options?: ShortcutOptions<T>) => StateInstance<T>
+	/** Create state stored in a Storage Bucket */
+	bucket: <T>(entry: Record<string, T>, options: BucketShortcutOptions<T>) => StateInstance<T>
+	/** Create state stored in server-side `AsyncLocalStorage` */
+	server: <T>(entry: Record<string, T>, options?: ShortcutOptions<T>) => StateInstance<T>
+}
 
 /**
  * Create a stateful value.
@@ -46,7 +118,17 @@ function extractEntry<T>(entry: Record<string, T>): [string, T] {
  *
  * ```ts
  * const counter = state({ counter: 0 })
- * const theme = state({ theme: 'light' }, { scope: 'local' })
+ * const theme = state.local({ theme: 'light' })
+ * ```
+ *
+ * Scope shortcuts via dot notation:
+ *
+ * ```ts
+ * state.local({ theme: 'light' })    // localStorage
+ * state.session({ draft: '' })        // sessionStorage
+ * state.url({ q: '' })               // URLSearchParams
+ * state.bucket({ cache: [] }, opts)   // Storage Buckets API
+ * state.server({ user: null })        // AsyncLocalStorage
  * ```
  *
  * Alternative — string key forms:
@@ -57,21 +139,7 @@ function extractEntry<T>(entry: Record<string, T>): [string, T] {
  * const counter = state('counter', 0)
  * ```
  */
-export function state<T>(
-	entry: Record<string, T>,
-	options?: Omit<StateOptions<T>, 'default'>,
-): StateInstance<T>
-export function state<T>(key: string, options: StateOptions<T>): StateInstance<T>
-export function state<T>(
-	key: string,
-	defaultValue: T,
-	options: Omit<StateOptions<T>, 'default'>,
-): StateInstance<T>
-export function state<T extends string | number | boolean | null | undefined>(
-	key: string,
-	defaultValue: T,
-): StateInstance<Widen<T>>
-export function state<T>(
+function _state<T>(
 	keyOrEntry: string | Record<string, T>,
 	optionsOrDefault?: T | StateOptions<T> | Omit<StateOptions<T>, 'default'>,
 	extraOptions?: Omit<StateOptions<T>, 'default'>,
@@ -101,81 +169,94 @@ export function state<T>(
 	return createState(key, options)
 }
 
+// Attach scope shortcuts as dot-notation properties
+_state.local = _local
+_state.session = _session
+_state.url = _url
+_state.bucket = _bucket
+_state.server = _server
+
+export const state: StateFunction = _state as StateFunction
+
 // ---------------------------------------------------------------------------
-// Scope shortcuts
+// Deprecated standalone scope shortcuts
 // ---------------------------------------------------------------------------
 
 /**
+ * @deprecated Use `state.local()` instead. Will be removed in 1.0.0.
+ *
  * Create state stored in `localStorage`.
  *
  * ```ts
- * const theme = local({ theme: 'light' })
- * const synced = local({ theme: 'dark' }, { sync: true })
+ * const theme = state.local({ theme: 'light' })
  * ```
  */
 export function local<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
-	const [key, defaultValue] = extractEntry(entry)
-
-	return createState(key, { ...options, default: defaultValue, scope: 'local' })
+	warnDeprecated('local')
+	return _local(entry, options)
 }
 
 /**
+ * @deprecated Use `state.session()` instead. Will be removed in 1.0.0.
+ *
  * Create state stored in `sessionStorage`.
  *
  * ```ts
- * const draft = session({ draft: '' })
+ * const draft = state.session({ draft: '' })
  * ```
  */
 export function session<T>(
 	entry: Record<string, T>,
 	options?: ShortcutOptions<T>,
 ): StateInstance<T> {
-	const [key, defaultValue] = extractEntry(entry)
-
-	return createState(key, { ...options, default: defaultValue, scope: 'tab' })
+	warnDeprecated('session')
+	return _session(entry, options)
 }
 
 /**
+ * @deprecated Use `state.url()` instead. Will be removed in 1.0.0.
+ *
  * Create state stored in `URLSearchParams`.
  *
  * ```ts
- * const filters = url({ filters: { q: '' } })
+ * const filters = state.url({ q: '' })
  * ```
  */
 export function url<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
-	const [key, defaultValue] = extractEntry(entry)
-
-	return createState(key, { ...options, default: defaultValue, scope: 'url' })
+	warnDeprecated('url')
+	return _url(entry, options)
 }
 
 /**
+ * @deprecated Use `state.server()` instead. Will be removed in 1.0.0.
+ *
  * Create state stored in server-side `AsyncLocalStorage`.
  *
  * ```ts
- * const user = server({ user: null })
+ * const user = state.server({ user: null })
  * ```
  */
 export function server<T>(
 	entry: Record<string, T>,
 	options?: ShortcutOptions<T>,
 ): StateInstance<T> {
-	const [key, defaultValue] = extractEntry(entry)
-
-	return createState(key, { ...options, default: defaultValue, scope: 'server' })
+	warnDeprecated('server')
+	return _server(entry, options)
 }
 
 /**
+ * @deprecated Use `state.bucket()` instead. Will be removed in 1.0.0.
+ *
  * Create state stored in a Storage Bucket.
  *
  * ```ts
- * const data = bucket({ cache: [] }, { bucket: { name: 'my-bucket' } })
+ * const data = state.bucket({ cache: [] }, { bucket: { name: 'my-bucket' } })
  * ```
  */
 export function bucket<T>(
 	entry: Record<string, T>,
 	options: BucketShortcutOptions<T>,
 ): StateInstance<T> {
-	const [key, defaultValue] = extractEntry(entry)
-
-	return createState(key, { ...options, default: defaultValue, scope: 'bucket' })
+	warnDeprecated('bucket')
+	return _bucket(entry, options)
 }

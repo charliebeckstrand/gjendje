@@ -13,22 +13,22 @@ npm install gjendje
 ## Quick start
 
 ```ts
-import { local, session, url, bucket, server } from 'gjendje'
+import { state } from 'gjendje'
 
 // localStorage — survives refresh, works across tabs
-const theme = local({ theme: 'light' })
+const theme = state.local({ theme: 'light' })
 
 // sessionStorage — survives refresh, gone when tab closes
-const draft = session({ draft: '' })
+const draft = state.session({ draft: '' })
 
 // URL params — shareable via address bar
-const filters = url({ q: '' })
+const filters = state.url({ q: '' })
 
 // Storage Bucket — isolated, quota-managed, expirable
-const cache = bucket({ cache: [] }, { bucket: { name: 'app-cache', expires: '7d' } })
+const cache = state.bucket({ cache: [] }, { bucket: { name: 'app-cache', expires: '7d' } })
 
 // AsyncLocalStorage — server-side, session-scoped
-const user = server({ user: null })
+const user = state.server({ user: null })
 ```
 
 For in-memory state that doesn't persist, use `state` directly:
@@ -64,20 +64,20 @@ theme.scope // 'local' — derived from configure
 
 ## Scopes
 
-| Scope    | Backend              | Shortcut    |
-|----------|----------------------|-------------|
-| `memory` | In-memory            | `state()`   |
-| `local`  | `localStorage`       | `local()`   |
-| `tab`    | `sessionStorage`     | `session()` |
-| `url`    | `URLSearchParams`    | `url()`     |
-| `bucket` | Storage Buckets API  | `bucket()`  |
-| `server` | `AsyncLocalStorage`  | `server()`  |
+| Scope    | Backend              | Shortcut           |
+|----------|----------------------|--------------------|
+| `memory` | In-memory            | `state()`          |
+| `local`  | `localStorage`       | `state.local()`    |
+| `tab`    | `sessionStorage`     | `state.session()`  |
+| `url`    | `URLSearchParams`    | `state.url()`      |
+| `bucket` | Storage Buckets API  | `state.bucket()`   |
+| `server` | `AsyncLocalStorage`  | `state.server()`   |
 
 [Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 
 ## API
 
-Every primitive — `state`, `local`, `session`, `url`, `bucket`, and `server` — shares the same core API: `get`, `set`, `reset`, `subscribe`, `watch`, `intercept`, and more.
+Every scope shortcut — `state.local`, `state.session`, `state.url`, `state.bucket`, and `state.server` — shares the same core API: `get`, `set`, `reset`, `subscribe`, `watch`, `intercept`, and more.
 
 [Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md) · [Persistence reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
 
