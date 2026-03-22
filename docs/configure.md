@@ -86,7 +86,7 @@ Prepend a namespace to all storage keys. Prevents collisions between apps sharin
 ```ts
 configure({ prefix: 'myapp' })
 
-const theme = state('theme', { default: 'light', scope: 'local' })
+const theme = local({ theme: 'light' })
 // Stored under key "myapp:theme" in localStorage
 ```
 
@@ -94,11 +94,11 @@ Per-instance override:
 
 ```ts
 // Use a different prefix
-state('theme', { default: 'light', scope: 'local', prefix: 'other' })
+local({ theme: 'light' }, { prefix: 'other' })
 // Stored under "other:theme"
 
 // Disable prefix entirely
-state('raw-key', { default: 0, scope: 'local', prefix: false })
+local({ 'raw-key': 0 }, { prefix: false })
 // Stored under "raw-key"
 ```
 
@@ -112,12 +112,10 @@ When enabled, any `state()` call with a persistent scope (`local`, `tab`, `bucke
 configure({ requireValidation: true })
 
 // Throws — no validate function
-state('theme', { default: 'light', scope: 'local' })
+local({ theme: 'light' })
 
 // Works — validate provided
-state('theme', {
-  default: 'light',
-  scope: 'local',
+local({ theme: 'light' }, {
   validate: (v): v is string => typeof v === 'string',
 })
 ```
@@ -133,12 +131,12 @@ Sets a scope when `scope` is omitted from `state()`. Without this, the default i
 ```ts
 configure({ scope: 'local' })
 
-const theme = state('theme', 'light')
+const theme = state({ theme: 'light' })
 
 theme.scope // 'local'
 
 // Per-instance scope always takes precedence
-const temp = state('temp', { default: 0, scope: 'render' })
+const temp = state({ temp: 0 }, { scope: 'render' })
 
 temp.scope // 'render'
 ```
@@ -153,7 +151,7 @@ Enable SSR mode globally. Equivalent to passing `ssr: true` on every `state()` c
 configure({ ssr: true })
 
 // All browser-scope instances get SSR safety automatically
-const theme = state('theme', { default: 'light', scope: 'local' })
+const theme = local({ theme: 'light' })
 ```
 
 When SSR is enabled:
@@ -173,7 +171,7 @@ Enable cross-tab sync globally for all syncable scopes (`local`, `bucket`). Equi
 configure({ sync: true })
 
 // All local/bucket instances automatically sync across tabs
-const theme = state('theme', { default: 'light', scope: 'local' })
+const theme = local({ theme: 'light' })
 ```
 
 Non-syncable scopes (`render`, `tab`, `url`, `server`) emit a warning and ignore the setting.
@@ -189,8 +187,8 @@ Emit a console warning when `state()` is called with a key + scope combination t
 ```ts
 configure({ warnOnDuplicate: true })
 
-state('theme', { default: 'light', scope: 'local' })
-state('theme', { default: 'light', scope: 'local' })
+local({ theme: 'light' })
+local({ theme: 'light' })
 // console.warn: [gjendje] Duplicate state("theme") with scope "local". Returning cached instance.
 ```
 

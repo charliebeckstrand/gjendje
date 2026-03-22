@@ -24,13 +24,12 @@ export type { HistoryOptions, WithHistoryInstance } from './enhancers/history.js
 export { withHistory } from './enhancers/history.js'
 export type { WithWatch } from './enhancers/watch.js'
 export { withWatch } from './enhancers/watch.js'
-export { state } from './factory.js'
 export type { PreviousInstance, PreviousOptions } from './previous.js'
 export { previous } from './previous.js'
 export { readonly } from './readonly.js'
 export type { SelectInstance, SelectOptions } from './select.js'
 export { select } from './select.js'
-export { bucket, local, server, session, url } from './shortcuts.js'
+export { bucket, local, server, session, state, url } from './shortcuts.js'
 export type {
 	Adapter,
 	BaseInstance,

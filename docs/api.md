@@ -1,29 +1,39 @@
 # API
 
-## `state(key, options)` / `state(key, defaultValue)`
+## `state(entry)` / `state(entry, options)`
 
 Creates a named, reactive value in a specific scope. Same key + scope always returns the same instance.
 
-```ts
-function state<T>(key: string, options: StateOptions<T>): StateInstance<T>
-function state<T>(key: string, defaultValue: T): StateInstance<T>
-```
-
-For simple cases, pass a primitive default directly. Use the options object when you need `scope`, `sync`, `validate`, or other settings.
+The key is derived from the property name of the entry object:
 
 ```ts
-// Shorthand — primitive default only
-const counter = state('counter', 0)
-const name = state('name', 'guest')
+// In-memory (default scope)
+const counter = state({ counter: 0 })
+const name = state({ name: 'guest' })
 
-// Full options — when you need more than a default
-const theme = state('theme', { default: 'light', scope: 'local' })
+// With a scope — use the shortcut
+const theme = local({ theme: 'light' })
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `key` | `string` | Unique identifier for this value |
-| `options` | `StateOptions<T>` or `T` | Configuration object, or a primitive default value |
+| `entry` | `Record<string, T>` | Single-key object — property name becomes the key, value becomes the default |
+| `options` | `Omit<StateOptions<T>, 'default'>` | Optional configuration (scope, sync, validate, etc.) |
+
+### Alternative forms
+
+You can also pass the key as a string directly. These forms are convenient for dynamic keys or when migrating existing code:
+
+```ts
+// String key + options object
+const theme = state('theme', { default: 'light', scope: 'local' })
+
+// String key + default value + options
+const synced = state('theme', 'light', { scope: 'local', sync: true })
+
+// String key + primitive default (in-memory scope)
+const counter = state('counter', 0)
+```
 
 **Returns** `StateInstance<T>`
 
@@ -278,7 +288,7 @@ Options:
 | `maxSize` | `number` | `50` | Maximum number of history entries |
 
 ```ts
-const counter = state('counter', 0)
+const counter = state({ counter: 0 })
 const h = withHistory(counter)
 
 h.set(1)
@@ -302,7 +312,7 @@ Adds per-key change tracking to any instance. The returned instance has all orig
 | `watch(key, fn)` | `(key: keyof T, fn: (value: T[K]) => void) => Unsubscribe` | Listen for changes to a single property. Uses `Object.is` for comparison. |
 
 ```ts
-const user = state('user', { default: { name: 'Jane', age: 30 } })
+const user = state({ user: { name: 'Jane', age: 30 } })
 const w = withWatch(user)
 
 w.watch('name', (name) => console.log(name))

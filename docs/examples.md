@@ -7,11 +7,9 @@ Real-world patterns and recipes.
 ## Theme switcher with cross-tab sync
 
 ```ts
-import { state } from 'gjendje'
+import { local } from 'gjendje'
 
-const theme = state('theme', {
-  default: 'light' as 'light' | 'dark',
-  scope: 'local',
+const theme = local({ theme: 'light' as 'light' | 'dark' }, {
   sync: true,
   validate: (v): v is 'light' | 'dark' => v === 'light' || v === 'dark',
 })
@@ -32,7 +30,7 @@ Changing theme in one tab updates every open tab instantly.
 ## Form with validation and selective persistence
 
 ```ts
-import { state, select } from 'gjendje'
+import { session, select } from 'gjendje'
 
 interface ContactForm {
   name: string
@@ -41,9 +39,7 @@ interface ContactForm {
   isDirty: boolean
 }
 
-const form = state('contact-form', {
-  default: { name: '', email: '', message: '', isDirty: false },
-  scope: 'tab',
+const form = session({ 'contact-form': { name: '', email: '', message: '', isDirty: false } }, {
   persist: ['name', 'email', 'message'],
 })
 
@@ -100,7 +96,7 @@ const remaining = select(todos, (items) => items.filter((t) => !t.done).length)
 ```ts
 import { state, withHistory } from 'gjendje'
 
-const doc = state('doc', '')
+const doc = state({ doc: '' })
 const h = withHistory(doc, { maxSize: 100 })
 
 h.set('Hello')
@@ -119,7 +115,7 @@ h.redo()   // 'Hello, world'
 ```ts
 import { state, previous, effect } from 'gjendje'
 
-const route = state('route', '/home')
+const route = state({ route: '/home' })
 const prevRoute = previous(route)
 
 effect([route], ([current]) => {
@@ -141,9 +137,7 @@ route.set('/settings')
 ```ts
 import { state } from 'gjendje'
 
-const user = state('user', {
-  default: { name: 'Jane', age: 30, role: 'admin' },
-})
+const user = state({ user: { name: 'Jane', age: 30, role: 'admin' } })
 
 // Only fires when name changes — ignores age and role updates
 user.watch('name', (name) => {
@@ -162,7 +156,7 @@ user.set({ name: 'John', age: 31, role: 'admin' })  // logs 'John'
 // store.ts
 import { state, readonly } from 'gjendje'
 
-const _count = state('count', 0)
+const _count = state({ count: 0 })
 
 // Consumers can read and subscribe, but can't call set() or reset()
 export const count = readonly(_count)
@@ -178,7 +172,7 @@ export function increment() {
 ## Persisted settings with migration
 
 ```ts
-import { state } from 'gjendje'
+import { local } from 'gjendje'
 
 interface Settings {
   colorScheme: 'light' | 'dark'
@@ -186,27 +180,28 @@ interface Settings {
   compact: boolean
 }
 
-const settings = state('settings', {
-  default: { colorScheme: 'light', fontSize: 14, compact: false } as Settings,
-  scope: 'local',
-  version: 3,
-  migrate: {
-    // v1 → v2: added fontSize
-    1: (old: any) => ({ ...old, fontSize: 14 }),
-    // v2 → v3: renamed theme → colorScheme, added compact
-    2: (old: any) => ({
-      colorScheme: old.theme ?? 'light',
-      fontSize: old.fontSize,
-      compact: false,
-    }),
+const settings = local(
+  { settings: { colorScheme: 'light', fontSize: 14, compact: false } as Settings },
+  {
+    version: 3,
+    migrate: {
+      // v1 → v2: added fontSize
+      1: (old: any) => ({ ...old, fontSize: 14 }),
+      // v2 → v3: renamed theme → colorScheme, added compact
+      2: (old: any) => ({
+        colorScheme: old.theme ?? 'light',
+        fontSize: old.fontSize,
+        compact: false,
+      }),
+    },
+    validate: (v): v is Settings =>
+      typeof v === 'object' &&
+      v !== null &&
+      'colorScheme' in v &&
+      'fontSize' in v &&
+      'compact' in v,
   },
-  validate: (v): v is Settings =>
-    typeof v === 'object' &&
-    v !== null &&
-    'colorScheme' in v &&
-    'fontSize' in v &&
-    'compact' in v,
-})
+)
 ```
 
 Users on v1 migrate through both steps. Users on v2 run only the second. Users on v3 skip migration entirely.
@@ -218,8 +213,8 @@ Users on v1 migrate through both steps. Users on v2 run only the second. Users o
 ```ts
 import { state, computed, batch } from 'gjendje'
 
-const firstName = state('first', 'Jane')
-const lastName = state('last', 'Doe')
+const firstName = state({ first: 'Jane' })
+const lastName = state({ last: 'Doe' })
 const fullName = computed([firstName, lastName], ([f, l]) => `${f} ${l}`)
 
 fullName.subscribe((name) => console.log(name))
@@ -238,11 +233,9 @@ batch(() => {
 ## Custom serializer for Set
 
 ```ts
-import { state } from 'gjendje'
+import { local } from 'gjendje'
 
-const bookmarks = state('bookmarks', {
-  default: new Set<string>(),
-  scope: 'local',
+const bookmarks = local({ bookmarks: new Set<string>() }, {
   serialize: {
     stringify: (value) => JSON.stringify([...value]),
     parse: (raw) => new Set(JSON.parse(raw)),
@@ -257,10 +250,10 @@ bookmarks.set((prev) => new Set([...prev, '/docs/api']))
 ## Server-scoped request state
 
 ```ts
-import { state, withServerSession } from 'gjendje'
+import { server, withServerSession } from 'gjendje'
 
-const requestId = state('request-id', { default: '', scope: 'server' })
-const currentUser = state('user', { default: null as User | null, scope: 'server' })
+const requestId = server({ 'request-id': '' })
+const currentUser = server({ user: null as User | null })
 
 async function handleRequest(req: Request) {
   return withServerSession(async () => {
@@ -280,10 +273,10 @@ async function handleRequest(req: Request) {
 ## URL-driven filters
 
 ```ts
-import { state, computed } from 'gjendje'
+import { url, computed } from 'gjendje'
 
-const query = state('q', { default: '', scope: 'url' })
-const category = state('cat', { default: 'all', scope: 'url' })
+const query = url({ q: '' })
+const category = url({ cat: 'all' })
 
 // URL updates automatically: ?q=shoes&cat=sale
 query.set('shoes')
