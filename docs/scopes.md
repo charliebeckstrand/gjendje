@@ -41,18 +41,6 @@ const isOpen = state({ modal: false })
 
 ---
 
-## `session`
-
-Backed by `sessionStorage`. Survives page reloads but is scoped to the tab — opening a new tab starts fresh.
-
-Use for state that should reset when the user opens a new tab but persist through navigation — wizard progress, unsaved draft indicators.
-
-```ts
-const step = state.session({ 'wizard-step': 1 })
-```
-
----
-
 ## `local`
 
 Backed by `localStorage`. Persists across tabs, reloads, and browser restarts.
@@ -67,6 +55,17 @@ Enable `sync: true` to broadcast changes to other open tabs via `BroadcastChanne
 
 ```ts
 const theme = state.local({ theme: 'light' }, { sync: true })
+```
+---
+
+## `session`
+
+Backed by `sessionStorage`. Survives page reloads but is scoped to the tab — opening a new tab starts fresh.
+
+Use for state that should reset when the user opens a new tab but persist through navigation — wizard progress, unsaved draft indicators.
+
+```ts
+const step = state.session({ 'wizard-step': 1 })
 ```
 
 ---
