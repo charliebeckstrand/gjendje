@@ -1,5 +1,11 @@
 # gjendje
 
+## 0.9.2
+
+### Patch Changes
+
+- 85fe179: Remove `pick()` method from state instances. Use destructuring instead: `const { name } = store.get()`. The method provided no value over simple property access or destructuring.
+
 ## 0.9.1
 
 ### Patch Changes
