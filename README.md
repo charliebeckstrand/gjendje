@@ -37,7 +37,7 @@ const { role, status } = store.get() // Get values by destructuring
 
 ### Updating values
 
-Replace the entire value with `set`, or use an updater function:
+Replace the entire state with `set`, or use an updater function:
 
 ```ts
 store.set({ counter: 1 })
