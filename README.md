@@ -77,7 +77,7 @@ theme.scope // 'local' — derived from configure
 
 ## API
 
-Every primitive — `state`, `local`, `session`, `url`, `bucket`, `server`, and `collection` — shares the same core API: `get`, `set`, `reset`, `subscribe`, `watch`, `intercept`, and more.
+Every primitive — `state`, `local`, `session`, `url`, `bucket`, and `server` — shares the same core API: `get`, `set`, `reset`, `subscribe`, `watch`, `intercept`, and more.
 
 [Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md) · [Persistence reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
 
