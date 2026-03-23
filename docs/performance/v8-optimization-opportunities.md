@@ -10,7 +10,7 @@ Identified during the V8 performance audit (March 2026). Each section is a self-
 
 | # | Optimization | Status | Branch / PR |
 |---|-------------|--------|-------------|
-| 1 | [Storage write cache pre-population](#1-storage-write-cache-pre-population) | Planned | — |
+| 1 | [Storage write cache pre-population](#1-storage-write-cache-pre-population) | **Done** | `claude/audit-v8-performance-xWIn6` |
 | 2 | [URL adapter search-string cache](#2-url-adapter-search-string-cache) | Planned | — |
 | 3 | [Promise.all short-circuit for memory deps](#3-promiseall-short-circuit-for-memory-deps) | Planned | — |
 | 4 | [Computed settled getter caching](#4-computed-settled-getter-caching) | Planned | — |

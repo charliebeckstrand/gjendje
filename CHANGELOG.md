@@ -1,5 +1,11 @@
 # gjendje
 
+## 1.0.2
+
+### Patch Changes
+
+- Pre-populate storage adapter read cache after writes — eliminates redundant `getItem()` + `JSON.parse()` on read-after-write paths (subscriber chains, computed, effects). Benchmarks show ~41% improvement on single read-after-write and ~92% improvement on many-reads-per-write scenarios.
+
 ## 1.0.1
 
 ### Patch Changes

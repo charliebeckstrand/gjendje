@@ -180,7 +180,7 @@ describe('read cache', () => {
 		theme.destroy()
 	})
 
-	it('invalidates cache after set()', () => {
+	it('returns correct value after set() without re-parsing (cache pre-populated)', () => {
 		const parseFn = vi.fn((raw: string) => JSON.parse(raw) as string)
 
 		const theme = state('stor-cache-invalidate', {
@@ -198,8 +198,8 @@ describe('read cache', () => {
 
 		expect(val1).toBe('dark')
 		expect(val2).toBe('blue')
-		// Must have parsed again after set changed the value
-		expect(parseFn.mock.calls.length).toBeGreaterThan(callsAfterDark)
+		// write() pre-populates the cache, so get() after set() should NOT re-parse
+		expect(parseFn.mock.calls.length).toBe(callsAfterDark)
 
 		theme.destroy()
 	})

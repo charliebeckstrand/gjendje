@@ -67,9 +67,12 @@ export function createStorageAdapter<T>(
 
 			storage.setItem(key, raw)
 
-			// Invalidate cache so next read() re-reads from storage
-			cachedRaw = undefined
-			cachedValue = undefined
+			// Pre-populate cache so the next read() hits the fast path instead of
+			// re-reading from storage. The cached value must match what read() would
+			// return: when `persist` is set, pickKeys strips keys on write and
+			// mergeKeys re-adds defaults on read, so we merge here too.
+			cachedRaw = raw
+			cachedValue = persist ? mergeKeys(toStore as T, defaultValue, persist) : value
 		} catch (e) {
 			// Invalidate cache — write may have partially succeeded
 			cachedRaw = undefined
