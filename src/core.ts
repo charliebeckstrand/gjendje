@@ -471,7 +471,6 @@ interface MemoryCore<T> {
 }
 
 interface MemoryExtras<T> {
-	lastValue: T
 	interceptors: Set<(next: T, prev: T) => T> | undefined
 	changeHandlers: Set<(next: T, prev: T) => void> | undefined
 	watchers: Map<PropertyKey, Set<Listener<unknown>>> | undefined
@@ -484,7 +483,6 @@ interface MemoryExtras<T> {
 function getExt<T>(c: MemoryCore<T>): MemoryExtras<T> {
 	if (c.ext === undefined) {
 		c.ext = {
-			lastValue: undefined as T,
 			interceptors: undefined,
 			changeHandlers: undefined,
 			watchers: undefined,
@@ -769,7 +767,6 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 		const ext = c.ext
 
 		if (ext !== undefined) {
-			ext.lastValue = c.current
 			ext.interceptors?.clear()
 			ext.changeHandlers?.clear()
 			ext.watchers?.clear()
