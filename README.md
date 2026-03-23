@@ -20,6 +20,10 @@ npm install gjendje
 ```ts
 import { state } from 'gjendje'
 
+// Pass scope as an option
+const theme = state({ theme: 'light' }, { scope: 'local' })
+
+// Or use dot notation
 const theme = state.local({ theme: 'light' })
 
 theme.get()        // 'light'
