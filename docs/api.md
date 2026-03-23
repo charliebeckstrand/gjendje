@@ -9,9 +9,11 @@ The key is derived from the property name of the entry object:
 ```ts
 // In-memory (default scope)
 const counter = state({ counter: 0 })
-const name = state({ name: 'guest' })
 
-// With a scope — use dot notation
+// With a scope
+const theme = state({ theme: 'light' }, { scope: 'local' })
+
+// With dot notation
 const theme = state.local({ theme: 'light' })
 ```
 
