@@ -49,19 +49,7 @@ Every instance shares the same core methods: `get`, `peek`, `set`, `patch`, `res
 
 [Primitives reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/primitives.md)
 
-## Utilities
-
-| Utility | Description |
-|---------|-------------|
-| `batch(fn)` | Group updates so subscribers are notified once. |
-| `withHistory(instance)` | Adds undo/redo to any state instance. |
-| `withWatch(instance)` | Adds per-key change tracking to any instance. |
-| `snapshot()` | Returns a read-only snapshot of all registered instances. |
-| `shallowEqual(a, b)` | Shallow equality check for primitives, arrays, and plain objects. |
-| `withServerSession(fn)` | Wraps a callback in `AsyncLocalStorage` context for `server` scope. |
-| `configure(config)` | Set global defaults and event handlers. |
-
-[Configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
+[Configure & utilities guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
 ## License
 

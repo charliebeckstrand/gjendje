@@ -1,4 +1,20 @@
-# Configure
+# Configure & Utilities
+
+## Utilities
+
+| Utility | Description |
+|---------|-------------|
+| `batch(fn)` | Group updates so subscribers are notified once. |
+| `withHistory(instance)` | Adds undo/redo to any state instance. |
+| `withWatch(instance)` | Adds per-key change tracking to any instance. |
+| `snapshot()` | Returns a read-only snapshot of all registered instances. |
+| `shallowEqual(a, b)` | Shallow equality check for primitives, arrays, and plain objects. |
+| `withServerSession(fn)` | Wraps a callback in `AsyncLocalStorage` context for `server` scope. |
+| `configure(config)` | Set global defaults and event handlers. |
+
+---
+
+## `configure()`
 
 ```ts
 import { configure } from 'gjendje'
