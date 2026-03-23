@@ -1,27 +1,13 @@
 # Scopes
 
-## Which scope should I use?
-
-**Does this value need to survive a page reload?**
-
-- **No** → `memory`
-
-**Should it be visible in the URL (bookmarkable, shareable)?**
-
-- **Yes** → `url`
-
-**Should it survive after the tab closes?**
-
-- **No** → `session`
-
-**Do you need fine-grained storage control (quota, expiry, isolation)?**
-
-- **Yes** → `bucket`
-- **No** → `local`
-
-**Is this server-side, per-request state?**
-
-- **Yes** → `server`
+| Scope     | Backend              |
+|-----------|----------------------|
+| `memory`  | In-memory (default)  |
+| `local`   | `localStorage`       |
+| `session` | `sessionStorage`     |
+| `url`     | `URLSearchParams`    |
+| `bucket`  | Storage Buckets API  |
+| `server`  | `AsyncLocalStorage`  |
 
 ---
 
@@ -33,9 +19,7 @@ const isOpen = state({ modal: false })
 
 ---
 
-## `local`
-
-`localStorage`
+## `local` (localStorage)
 
 ```ts
 const theme = state.local({ theme: 'light' })
@@ -48,9 +32,7 @@ const theme = state.local({ theme: 'light' }, { sync: true })
 ```
 ---
 
-## `session`
-
-`sessionStorage`
+## `session` (sessionStorage)
 
 ```ts
 const step = state.session({ 'wizard-step': 1 })
@@ -58,9 +40,7 @@ const step = state.session({ 'wizard-step': 1 })
 
 ---
 
-## `url`
-
-`URLSearchParams`
+## `url` (URLSearchParams)
 
 ```ts
 const query = state.url({ q: '' })
@@ -68,9 +48,9 @@ const query = state.url({ q: '' })
 
 ---
 
-## `bucket`
+## `bucket` (Storage Buckets API)
 
-[Storage Buckets API](https://developer.chrome.com/docs/web-platform/storage-buckets). Falls back to `local` or `session` if unavailable.
+Falls back to `local` or `session` if unavailable.
 
 ```ts
 const cache = state.bucket({ 'api-cache': null }, {
@@ -85,9 +65,7 @@ const cache = state.bucket({ 'api-cache': null }, {
 
 ---
 
-## `server`
-
-`AsyncLocalStorage`
+## `server` (AsyncLocalStorage)
 
 ```ts
 import { state, withServerSession } from 'gjendje'
