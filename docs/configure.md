@@ -2,7 +2,12 @@
 
 Sets global defaults for all state instances.
 
+```ts
+import { configure } from 'gjendje'
+```
+
 ---
+
 
 ## `scope`
 
