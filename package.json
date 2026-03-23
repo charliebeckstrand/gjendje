@@ -55,6 +55,10 @@
 		"dist",
 		"README.md"
 	],
+	"publishConfig": {
+		"provenance": true,
+		"access": "public"
+	},
 	"scripts": {
 		"build": "tsup",
 		"dev": "tsup --watch",
