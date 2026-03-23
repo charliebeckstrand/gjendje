@@ -103,6 +103,20 @@ export interface GjendjeConfig {
 	/** Enable cross-tab sync globally for all syncable scopes. */
 	sync?: boolean | undefined
 
+	/**
+	 * Control which scopes are tracked in the global registry.
+	 *
+	 * - `'all'` (default): every state instance is registered, enabling duplicate
+	 *   detection and `getRegistry()` for all scopes.
+	 * - `'persistent'`: only persistent scopes (`local`, `session`, `bucket`) are
+	 *   registered. Memory-scoped state skips registry lookup and insertion,
+	 *   eliminating the primary bottleneck in high-throughput creation scenarios.
+	 *
+	 * Use `'persistent'` when you create many short-lived or uniquely-keyed
+	 * memory states and want creation performance closer to bare closures.
+	 */
+	trackMemory?: boolean | undefined
+
 	/** Warn when two state() calls use the same key + scope. */
 	warnOnDuplicate?: boolean | undefined
 

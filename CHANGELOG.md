@@ -1,5 +1,11 @@
 # gjendje
 
+## 1.1.0
+
+### Minor Changes
+
+- Optimize state creation performance: inline `resolveKeyAndScope` to eliminate intermediate object allocation, early-exit memory fast path before SSR/sync computation, consolidate registry lookups via `registerNew`, and build `MemoryStateImpl` mutable state in a single allocation (avoids hidden class transitions). Default creation improved ~13% (1.0M → 1.13M ops/s). Add `trackMemory: false` config option to skip registry for memory-scoped state, bringing creation throughput to ~6M ops/s (within 2x of Zustand, down from 10.75x).
+
 ## 1.0.2
 
 ### Patch Changes

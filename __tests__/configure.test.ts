@@ -7,6 +7,7 @@ beforeEach(() => {
 		prefix: undefined,
 		scope: undefined,
 		ssr: undefined,
+		trackMemory: undefined,
 		warnOnDuplicate: undefined,
 		requireValidation: undefined,
 		logLevel: undefined,
@@ -895,5 +896,79 @@ describe('onValidationFail', () => {
 		)
 
 		x.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// trackMemory
+// ---------------------------------------------------------------------------
+
+describe('trackMemory', () => {
+	it('tracks memory-scoped state by default (duplicate detection)', () => {
+		const a = state('cfg-track-default', { default: 0, scope: 'memory' })
+
+		const b = state('cfg-track-default', { default: 0, scope: 'memory' })
+
+		expect(a).toBe(b)
+
+		a.destroy()
+	})
+
+	it('skips registry when trackMemory is false', () => {
+		configure({ trackMemory: false })
+
+		const a = state('cfg-track-off', { default: 0, scope: 'memory' })
+
+		const b = state('cfg-track-off', { default: 0, scope: 'memory' })
+
+		// Without registry tracking, each call creates a new instance
+		expect(a).not.toBe(b)
+
+		a.destroy()
+		b.destroy()
+	})
+
+	it('still works correctly for get/set/subscribe when trackMemory is false', () => {
+		configure({ trackMemory: false })
+
+		const x = state('cfg-track-off-ops', { default: 0, scope: 'memory' })
+
+		const values: number[] = []
+
+		x.subscribe((v) => values.push(v))
+
+		x.set(1)
+		x.set(2)
+
+		expect(x.get()).toBe(2)
+		expect(values).toEqual([1, 2])
+
+		x.destroy()
+	})
+
+	it('does not affect persistent scopes when trackMemory is false', () => {
+		configure({ trackMemory: false })
+
+		const a = state('cfg-track-off-local', { default: 'a', scope: 'local' })
+
+		const b = state('cfg-track-off-local', { default: 'a', scope: 'local' })
+
+		// Persistent scopes still use the registry
+		expect(a).toBe(b)
+
+		a.destroy()
+	})
+
+	it('destroy works correctly when trackMemory is false', () => {
+		configure({ trackMemory: false })
+
+		const x = state('cfg-track-off-destroy', { default: 42, scope: 'memory' })
+
+		expect(x.get()).toBe(42)
+		expect(x.isDestroyed).toBe(false)
+
+		x.destroy()
+
+		expect(x.isDestroyed).toBe(true)
 	})
 })

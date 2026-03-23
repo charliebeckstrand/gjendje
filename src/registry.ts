@@ -48,6 +48,37 @@ export function registerByKey<T>(
 }
 
 /**
+ * Fast-path register when the caller already looked up the existing entry.
+ * Skips the redundant Map.get() that registerByKey performs.
+ */
+export function registerNew<T>(
+	rKey: string,
+	key: string,
+	scope: Scope,
+	instance: BaseInstance<T>,
+	config: Readonly<GjendjeConfig>,
+	existing: BaseInstance<unknown> | undefined,
+): void {
+	if (existing !== undefined) {
+		// Caller already verified !existing || existing.isDestroyed
+		registry.set(rKey, instance)
+
+		return
+	}
+
+	if (config.maxKeys !== undefined && registry.size >= config.maxKeys) {
+		throw new Error(
+			`[gjendje] maxKeys limit (${config.maxKeys}) reached. ` +
+				`Cannot register state("${key}") with scope "${scope}".`,
+		)
+	}
+
+	registry.set(rKey, instance)
+
+	config.onRegister?.({ key, scope })
+}
+
+/**
  * Unregister using a pre-computed scoped key.
  */
 export function unregisterByKey(rKey: string): void {
