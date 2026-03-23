@@ -115,8 +115,3 @@ await withServerSession(async () => {
 ```
 
 Every `server`-scoped `state()` must run inside `withServerSession`.
-
----
-
-**Next:** [Persistence](persistence.md) · [Primitives](primitives.md) · [Configure](configure.md)
-**Previous:** [Quick start](quick-start.md) · [Examples](examples.md) · [API reference](api.md)
