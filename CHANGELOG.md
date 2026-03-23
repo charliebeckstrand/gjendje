@@ -1,12 +1,10 @@
 # gjendje
 
-## 1.1.0
+## Unreleased
 
 ### Minor Changes
 
 - Optimize state creation performance: inline `resolveKeyAndScope` to eliminate intermediate object allocation, early-exit memory fast path before SSR/sync computation, consolidate registry lookups via `registerNew`, and build `MemoryStateImpl` mutable state in a single allocation (avoids hidden class transitions). Default creation improved ~13% (1.0M → 1.13M ops/s). Add `trackMemory: false` config option to skip registry for memory-scoped state, bringing creation throughput to ~6M ops/s (within 2x of Zustand, down from 10.75x).
-
-## 1.0.2
 
 ### Patch Changes
 
@@ -14,11 +12,6 @@
 - Add read cache to URL adapter — caches parsed value keyed on `location.search` string, skipping URLSearchParams construction and re-parsing when the URL hasn't changed. Also pre-populates cache after writes. Benchmarks show 16x faster repeated reads and 26x faster many-reads-per-write.
 - Short-circuit `Promise.all` in `computed()` for memory-scoped deps — when all deps return the shared `RESOLVED` promise, skip array allocation and promise wrapping entirely. Also caches the `settled` getter (previously allocated `Promise.all` + `.map()` + `.then()` on every access). Computed creation 12-30% faster, `.settled` access 2.6x faster.
 - Extract try/catch from listener notification loops into a shared `safeCall` helper — allows V8 to optimize the loop body independently. Deduplicates three identical try/catch blocks across `listeners.ts`, `core.ts`, and `adapters/memory.ts`.
-
-## 1.0.1
-
-### Patch Changes
-
 - Fix race conditions in SSR hydration, cross-tab sync, and bucket adapter — prevent hydration from overwriting user-set values, guard sync message handler against post-destroy delivery, and clean up bucket delegate on mid-swap destroy
 - Fix subscription and adapter leaks on destroy — store and call unsubscribe in sync.ts and bucket.ts, move hydration adapter cleanup to `finally` block in core.ts
 - Improve type safety: extract shared `DepValues` type to `types.ts`, add `isRecord` type guard to `utils.ts`, replace unsafe double casts and inline type narrowing across watchers, collection, persist, batch, and sync modules, remove redundant `as const` and `as PropertyKey` casts
