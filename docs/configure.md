@@ -2,8 +2,6 @@
 
 Sets global defaults for all state instances.
 
-## Quick start
-
 ```ts
 import { configure } from 'gjendje'
 
