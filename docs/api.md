@@ -119,6 +119,14 @@ reset(): void
 
 Restores the value to the `default` provided at creation.
 
+### `destroy()`
+
+```ts
+destroy(): void
+```
+
+Tears down all listeners, interceptors, hooks, and storage resources. After destruction, the next `state()` call with the same key creates a fresh instance.
+
 ### `subscribe(listener)`
 
 ```ts
@@ -150,14 +158,6 @@ onChange(fn: (next: T, prev: T) => void): Unsubscribe
 ```
 
 Registers a post-set handler. Receives `(next, prev)`. Return value is ignored. Multiple handlers run in registration order.
-
-### `destroy()`
-
-```ts
-destroy(): void
-```
-
-Tears down all listeners, interceptors, hooks, and storage resources. After destruction, the next `state()` call with the same key creates a fresh instance.
 
 ---
 
