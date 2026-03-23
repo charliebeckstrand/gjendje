@@ -2,7 +2,7 @@
 
 | Scope     | Backend              |
 |-----------|----------------------|
-| `memory`  | In-memory (default)  |
+| `memory`  | Default |
 | `local`   | `localStorage`       |
 | `session` | `sessionStorage`     |
 | `url`     | `URLSearchParams`    |
@@ -25,9 +25,8 @@ const isOpen = state({ modal: false })
 const theme = state.local({ theme: 'light' })
 ```
 
-Enable `sync: true` to broadcast changes to other open tabs via `BroadcastChannel`:
-
 ```ts
+// Enable `sync: true` to broadcast changes to other open tabs via `BroadcastChannel`:
 const theme = state.local({ theme: 'light' }, { sync: true })
 ```
 ---
@@ -50,15 +49,13 @@ const query = state.url({ q: '' })
 
 ## `bucket` (Storage Buckets API)
 
-Falls back to `local` or `session` if unavailable.
-
 ```ts
 const cache = state.bucket({ 'api-cache': null }, {
   bucket: {
     name: 'api',
     quota: '10mb',
     expires: '7d',
-    fallback: 'local',
+    fallback: 'local', // Fall back to `local` or `session` if unavailable.
   },
 })
 ```
@@ -78,4 +75,4 @@ await withServerSession(async () => {
 })
 ```
 
-Every `server`-scoped `state()` must run inside `withServerSession`.
+Every `server` scoped `state()` must run inside [`withServerSession`](https://github.com/charliebeckstrand/gjendje/blob/main/docs/utilities#withServerSession.md).
