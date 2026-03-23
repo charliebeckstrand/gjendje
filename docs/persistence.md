@@ -159,3 +159,8 @@ On every read from storage, gjendje runs this pipeline:
 4. **Fallback** — if any step fails, use `default`
 
 When a custom serializer is provided, steps 2 and 3 are skipped — the serializer is expected to handle the full round-trip.
+
+---
+
+**Next:** [Primitives](primitives.md) · [Configure](configure.md)
+**Previous:** [Quick start](quick-start.md) · [Examples](examples.md) · [API reference](api.md) · [Scopes](scopes.md)

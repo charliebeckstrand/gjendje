@@ -237,3 +237,8 @@ interface EffectHandle {
 - **Cleanup** — if the callback returns a function, it runs before the next execution and on `stop()`.
 - **Cleanup sequence** — (1) previous cleanup runs, (2) callback runs with new values, (3) new cleanup stored.
 - **Framework-agnostic** — works in React, Vue, Svelte, vanilla JS, or Node.
+
+---
+
+**Next:** [Configure](configure.md)
+**Previous:** [Quick start](quick-start.md) · [Examples](examples.md) · [API reference](api.md) · [Scopes](scopes.md) · [Persistence](persistence.md)

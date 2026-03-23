@@ -43,4 +43,6 @@ form.patch({ name: 'Alice' })          // Only updates name
 form.patch({ name: 'Bob', age: 30 })   // Update multiple properties at once
 ```
 
-[More examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
+---
+
+**Next:** [Examples](examples.md) · [API reference](api.md) · [Scopes](scopes.md) · [Persistence](persistence.md) · [Primitives](primitives.md) · [Configure](configure.md)
