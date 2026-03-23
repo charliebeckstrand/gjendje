@@ -29,7 +29,7 @@ function increment() {
 const { counter} = store.get()
 ```
 
-[Quick start guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/quick-start.md)
+[Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
 
 ## Configure 
 
