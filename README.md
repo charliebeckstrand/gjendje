@@ -39,7 +39,7 @@ const { counter} = store.get()
 
 `memory`, `local`, `session`, `url`, `bucket`, `server`
 
-[Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md) · [Persistence reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
+[Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 
 ## API
 
