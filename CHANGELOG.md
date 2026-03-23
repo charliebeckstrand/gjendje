@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- a047407: Rewrite API, primitives, and utilities docs with consistent formatting, type references, and code examples for every entry
+
+## 1.0.1
+
+### Patch Changes
+
 - Rewrite API, primitives, and utilities docs with consistent formatting, type references, and code examples for every entry
 
 ## 1.0.0
