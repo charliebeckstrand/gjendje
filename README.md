@@ -20,11 +20,11 @@ npm install gjendje
 ```ts
 import { state } from 'gjendje'
 
-const store = state.local({ theme: 'light' })
+const theme = state.local({ theme: 'light' })
 
-store.get()        // 'light'
-store.set('dark')  // persisted to localStorage
-store.reset()      // back to 'light'
+theme.get()        // 'light'
+theme.set('dark')  // persisted to localStorage
+theme.reset()      // back to 'light'
 ```
 
 For in-memory state that doesn't persist:
