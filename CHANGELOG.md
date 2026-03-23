@@ -1,5 +1,31 @@
 # gjendje
 
+## 2.0.0
+
+### Major Changes
+
+- b516449: Release 1.0.0 — first stable major version.
+
+  **Breaking changes:**
+
+  - Remove deprecated standalone scope shortcut exports (`local()`, `session()`, `url()`, `bucket()`, `server()`). Use `state.local()`, `state.session()`, `state.url()`, `state.bucket()`, `state.server()` instead.
+  - Remove deprecated `'tab'` scope alias. Use `'session'` instead.
+  - Remove `'tab'` from `BucketOptions.fallback` type. Use `'session'` instead.
+
+  **Improvements:**
+
+  - Promote `noNonNullAssertion` and `noExplicitAny` lint rules from warnings to errors.
+  - Fix size-limit config referencing `withServerSession` from the wrong entry point.
+  - Update size limit for core bundle from 4 kB to 5 kB.
+
+### Patch Changes
+
+- 241db2d: Improve documentation usability.
+
+  - README: add inline quick start, API methods table (consistent with primitives table), unified documentation index, and utilities/enhancers section.
+  - Remove misplaced utilities table from configure guide.
+  - Add navigation links between all doc pages.
+
 ## Unreleased
 
 ### Patch Changes
