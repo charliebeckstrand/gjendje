@@ -78,21 +78,6 @@ export interface ExpireContext {
 	expiredAt: number
 }
 
-export interface MemoryConfig {
-	/**
-	 * Track memory-scoped state in the global registry. Defaults to `true`.
-	 *
-	 * When `true`, memory-scoped state is registered for duplicate detection
-	 * and enumeration via `getRegistry()`.
-	 *
-	 * When `false`, memory-scoped state skips registry lookup and insertion,
-	 * eliminating the primary bottleneck in high-throughput creation scenarios.
-	 * Each `state()` call with the same key will create a new instance instead
-	 * of returning the cached one.
-	 */
-	registry?: boolean | undefined
-}
-
 export interface GjendjeConfig {
 	/** Default scope for all state instances. Defaults to `'memory'`. */
 	scope?: Scope | undefined
@@ -109,6 +94,21 @@ export interface GjendjeConfig {
 	/** Prepends to all storage keys (e.g. `myapp:theme`) */
 	prefix?: string | undefined
 
+	/**
+	 * Track state instances in the global registry. Defaults to `true`.
+	 *
+	 * When `true`, calling `state()` twice with the same key + scope returns the
+	 * cached instance, and instances appear in `getRegistry()`.
+	 *
+	 * When `false`, registry lookup and insertion are skipped for memory-scoped
+	 * state. Each `state()` call creates a new instance regardless of key.
+	 *
+	 * Persistent scopes (`local`, `session`, `bucket`) always use the registry.
+	 * Setting `registry: false` alongside a persistent global `scope` emits a
+	 * warning and the registry remains enabled for that scope.
+	 */
+	registry?: boolean | undefined
+
 	/** Require a validate option for persisted scopes (local, session, bucket). */
 	requireValidation?: boolean | undefined
 
@@ -117,17 +117,6 @@ export interface GjendjeConfig {
 
 	/** Enable cross-tab sync globally for all syncable scopes. */
 	sync?: boolean | undefined
-
-	/**
-	 * Options for memory-scoped state.
-	 *
-	 * ```ts
-	 * configure({
-	 *   memory: { registry: false }
-	 * })
-	 * ```
-	 */
-	memory?: MemoryConfig | undefined
 
 	/** Warn when two state() calls use the same key + scope. */
 	warnOnDuplicate?: boolean | undefined
@@ -171,8 +160,21 @@ export interface GjendjeConfig {
 
 let globalConfig: GjendjeConfig = {}
 
+const PERSISTENT_SCOPES = new Set<Scope>(['local', 'session', 'bucket'])
+
 export function configure(config: GjendjeConfig): void {
 	globalConfig = { ...globalConfig, ...config }
+
+	if (
+		globalConfig.registry === false &&
+		globalConfig.scope &&
+		PERSISTENT_SCOPES.has(globalConfig.scope)
+	) {
+		log(
+			'warn',
+			`registry: false has no effect on scope "${globalConfig.scope}" — persistent scopes always use the registry.`,
+		)
+	}
 }
 
 export function getConfig(): Readonly<GjendjeConfig> {
