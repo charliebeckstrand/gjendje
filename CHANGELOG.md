@@ -31,19 +31,7 @@
 
 ### Patch Changes
 
-- 85fe179: Remove `pick()` method from state instances. Use destructuring instead: `const { name } = store.get()`. The method provided no value over simple property access or destructuring.
-
-## 0.9.1
-
-### Patch Changes
-
 - Remove `pick()` method from state instances. Use destructuring instead: `const { name } = store.get()`. The method provided no value over simple property access or destructuring.
-
-## 0.8.0
-
-### Minor Changes
-
-- 17e6741: Add five new global configure events: `onChange`, `onReset`, `onIntercept`, `onValidationFail`, and `onExpire`. Split the configure docs into separate Options and Events tables.
 
 ## 0.8.0
 
@@ -57,19 +45,7 @@
 
 ### Patch Changes
 
-- 77e16d9: Add `patch()` method to state instances for ergonomic partial object updates. Supports an optional `{ strict: true }` mode that ignores unknown keys and logs a warning.
-
-## 0.7.1
-
-### Patch Changes
-
 - Add `patch()` method to state instances for ergonomic partial object updates. Instead of `store.set(prev => ({ ...prev, value1: 'new' }))`, use `store.patch({ value1: 'new' })`. Supports an optional `{ strict: true }` mode that ignores unknown keys and logs a warning.
-
-## 0.7.0
-
-### Minor Changes
-
-- ef12eab: Add dot-notation scope shortcuts on `state`: `state.local()`, `state.session()`, `state.url()`, `state.bucket()`, `state.server()`. Deprecate standalone scope shortcut exports (`local()`, `session()`, `url()`, `bucket()`, `server()`) with a console warning — these will be removed in 1.0.0.
 
 ## 0.7.0
 
@@ -84,22 +60,10 @@
 
 ### Minor Changes
 
-- a400299: Add scope shortcuts (`local`, `session`, `url`, `bucket`), three-argument `state()` overload, and `memory` scope alias to simplify the API surface and reduce the learning curve.
-
-## 0.6.0
-
-### Minor Changes
-
 - Add scope shortcut functions — `local()`, `session()`, `url()`, `bucket()` — for creating state with an implicit key format: `local({ theme: 'light' })`. Eliminates the need to learn the options object pattern for common use cases.
 - Add three-argument `state()` overload: `state('key', defaultValue, options)` separates the default value from options, removing the `{ default: ... }` wrapper.
 - Add `'memory'` as a scope alias for `'render'`. Both work interchangeably; `'memory'` is now the recommended name.
 - Update README to lead with the simplified API.
-
-## 0.5.0
-
-### Minor Changes
-
-- 8db2096: Rename `use()` to `onChange()` on state and collection instances. The `use()` name was overloaded in the JS ecosystem (React hooks, Express middleware) and didn't convey its purpose as a post-write handler. `onChange()` is self-documenting and idiomatic. This is a breaking change — update all `.use(fn)` calls to `.onChange(fn)`.
 
 ## 0.5.0
 
@@ -111,44 +75,21 @@
 
 ### Patch Changes
 
-- 043b14f: Make bucket adapter synchronously initialize with fallback storage so `get()` and `set()` work immediately without awaiting `ready`. The `ready` promise still resolves when the real Storage Bucket opens, but users no longer need to await it for basic operations.
-
-## 0.4.4
-
-### Patch Changes
-
 - Make bucket adapter synchronously initialize with fallback storage so `get()` and `set()` work immediately without awaiting `ready`. The `ready` promise still resolves when the real Storage Bucket opens, but users no longer need to await it for basic operations.
 
 ## 0.4.3
 
 ### Patch Changes
 
-- f6c23e3: Fix "Module not found: Can't resolve 'async_hooks'" error in client bundles by breaking the static import chain from core.ts to the server adapter. The server adapter now self-registers when imported, so `node:async_hooks` is only included when server features are actually used. Added a new `gjendje/server` entry point for server-only imports (`withServerSession`, `createServerAdapter`).
-
-## 0.4.3
-
-### Patch Changes
-
-- Fix "Module not found: Can't resolve 'async_hooks'" error in client bundles. The server adapter (`node:async_hooks`) is no longer statically imported by core — it self-registers when imported. Non-server scopes (`render`, `tab`, `local`, `url`, `bucket`) no longer pull in Node.js-only modules.
+- Fix "Module not found: Can't resolve 'async_hooks'" error in client bundles. The server adapter (`node:async_hooks`) is no longer statically imported by core — it self-registers when imported. Non-server scopes (`memory`, `session`, `local`, `url`, `bucket`) no longer pull in Node.js-only modules.
 - Add `gjendje/server` entry point for server-only imports (`withServerSession`, `createServerAdapter`).
 
 ## 0.4.2
 
 ### Patch Changes
 
-- 52a62bf: Add extended internal benchmarks for select vs computed, readonly overhead, registry lookup at scale, and persistence round-trip performance.
-
-  Optimize readonly() to true zero-cost via Object.create() prototype delegation, reducing get/peek overhead from ~37% to ~0% vs direct access.
-
-## 0.4.1
-
-### Patch Changes
-
-- Add extended internal benchmarks: `select()` vs `computed()`, `readonly()` overhead, registry lookup at scale, and persistence round-trip (`wrapForStorage`/`readAndMigrate` with migrations and validation). Run via `pnpm bench:extended`.
-
-- Optimize `readonly()` to true zero-cost: replace object literal with `Object.create()` prototype delegation. `get()`/`peek()` overhead drops from ~37% to ~0% vs direct access. Wrapper creation is 20x faster (14.4M vs 721K ops/s). Write methods are shadowed as `undefined` for runtime safety.
-
-- a17f18f: Security audit hardening: fix URL adapter double-encoding, prevent migration infinite loops from corrupted version numbers, harden BroadcastChannel message validation, use Object.hasOwn in pickKeys, reject non-safe-integer version envelopes.
+- Add extended internal benchmarks for select vs computed, readonly overhead, registry lookup at scale, and persistence round-trip performance.
+- Optimize `readonly()` to true zero-cost via `Object.create()` prototype delegation, reducing get/peek overhead from ~37% to ~0% vs direct access.
 
 ## 0.4.1
 
@@ -164,13 +105,8 @@
 
 ### Minor Changes
 
-- d7dcdb2: Initial release of gjendje.
-
-  Six scopes (`render`, `tab`, `local`, `url`, `server`, `bucket`), reactive primitives (`computed`, `effect`, `collection`), persistence with validation and migration, Storage Buckets API support, `sync: true` for cross-tab broadcasting, SSR safety, and React bindings.
-
-### Patch Changes
-
-- 5129bc0: Add retroactive changelog entries for versions 0.2.0–0.3.6, add regression tests for 100% coverage, update CLAUDE.md with versioning guidance and changeset workflow.
+- Initial release of gjendje. Six scopes (`memory`, `session`, `local`, `url`, `server`, `bucket`), reactive primitives (`computed`, `effect`, `collection`), persistence with validation and migration, Storage Buckets API support, `sync: true` for cross-tab broadcasting, SSR safety, and React bindings.
+- Add retroactive changelog entries for versions 0.2.0–0.3.6, add regression tests for 100% coverage, update CLAUDE.md with versioning guidance and changeset workflow.
 
 ## 0.3.7
 

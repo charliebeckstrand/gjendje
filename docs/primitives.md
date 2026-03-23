@@ -199,7 +199,7 @@ Reactive array with first-class mutation methods.
 | `subscribe(fn)` | `(fn: (value: T[]) => void) => Unsubscribe` | Listen for any change |
 | `watch(key, fn)` | `(key: keyof T, fn: (items: T[]) => void) => Unsubscribe` | Listen for changes to a specific key across all items |
 | `intercept(fn)` | `(fn: (next: T[], prev: T[]) => T[]) => Unsubscribe` | Pre-set interceptor |
-| `use(fn)` | `(fn: (next: T[], prev: T[]) => void) => Unsubscribe` | Post-set hook |
+| `onChange(fn)` | `(fn: (next: T[], prev: T[]) => void) => Unsubscribe` | Post-set handler |
 
 ### Lifecycle
 
