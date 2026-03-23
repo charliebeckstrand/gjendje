@@ -65,7 +65,3 @@ Update specific properties:
 ```ts
 user.patch({ name: 'Jane', age: 25 })
 ```
-
----
-
-**Next:** [Examples](examples.md) · [API reference](api.md) · [Scopes](scopes.md) · [Persistence](persistence.md) · [Primitives](primitives.md) · [Configure](configure.md)
