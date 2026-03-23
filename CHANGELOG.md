@@ -16,6 +16,9 @@
 - Promote `noNonNullAssertion` and `noExplicitAny` lint rules from warnings to errors.
 - Fix size-limit config referencing `withServerSession` from the wrong entry point.
 - Update all tests and documentation to use the new API surface.
+- Rewrite README for scannability — highlights section, one-liner primitive/utility tables, simplified quick start.
+- Fix stale `use()` → `onChange()` references in docs/api.md and docs/primitives.md.
+- Rename `docs/derived.md` to `docs/primitives.md`.
 
 ## 0.9.3
 

@@ -4,6 +4,11 @@
 
 Every app juggles localStorage, URL params, sessionStorage, and in-memory state. **gjendje** replaces storage backends with a unified API. Choose where state lives. The rest is handled.
 
+- Zero runtime dependencies
+- ~5 kB core (minified + brotli)
+- TypeScript-first with full type inference
+- 6 storage backends, one API
+
 ## Install
 
 ```sh
@@ -15,75 +20,26 @@ npm install gjendje
 ```ts
 import { state } from 'gjendje'
 
-// Pass scope as an option
-const theme = state({ theme: 'light' }, { scope: 'local' })
-
-// Or use dot notation
 const theme = state.local({ theme: 'light' })
+
+theme.get()        // 'light'
+theme.set('dark')  // persisted to localStorage
+theme.reset()      // back to 'light'
 ```
 
-For in-memory state that doesn't persist, use `state` without a scope:
+For in-memory state that doesn't persist:
 
 ```ts
 const user = state({ name: 'John', age: 30 })
 ```
 
-### Getting values
+Use `patch` to update specific properties without spreading:
 
 ```ts
-user.get() // { name: 'John', age: 30 }
-const { name } = user.get() // Destructure specific values
-```
-
-### Updating values
-
-Replace the entire state with `set`, or use an updater function:
-
-```ts
-user.set({ name: 'Jane', age: 25 })
-user.set((prev) => ({ ...prev, age: prev.age + 1 }))
-```
-
-For object stores, `patch` lets you update specific properties without spreading:
-
-```ts
-const form = state({ name: '', email: '', age: 0 })
-
-form.patch({ name: 'Alice' }) // Only updates name
-form.patch({ name: 'Bob', age: 30 }) // Update multiple properties at once
+user.patch({ name: 'Jane' })
 ```
 
 [More examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
-
-## Configure
-
-Call once at app initialization. Sets global defaults for all state instances.
-
-```ts
-import { configure } from 'gjendje'
-
-configure({ scope: 'local' })
-```
-
-Now every `state` call inherits that default:
-
-```ts
-const theme = state({ theme: 'light' })
-
-theme.scope // 'local' — derived from configure
-```
-
-You can also configure global events:
-
-```ts
-configure({
-  onChange: ({ key, scope, value, previousValue }) => {
-    console.log(`[${key}] (${scope}) changed:`, previousValue, '→', value)
-  },
-})
-```
-
-[Configure reference guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
 ## Scopes
 
@@ -96,32 +52,37 @@ configure({
 | `bucket`  | Storage Buckets API  | `state.bucket()`   |
 | `server`  | `AsyncLocalStorage`  | `state.server()`   |
 
-[Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md) · [Persistence reference guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
+[Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md) · [Persistence reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
 
 ## API
 
-Every scope shares the same core API: `get`, `set`, `patch`, `reset`, `subscribe`, `watch`, `intercept`, `use`, `destroy`
+Every instance shares the same core methods: `get`, `peek`, `set`, `patch`, `reset`, `destroy`, `subscribe`, `watch`, `intercept`, `onChange`
 
-[API reference guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
+[API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
 
-## Derived state
+## Primitives
 
-#### `computed(deps, fn)`
-Derives a reactive, read-only value from one or more state dependencies. Recomputes only when a dependency changes and caches the result between changes. Returns a `ReadonlyInstance` — no `set()` or `reset()`.
+| Primitive | Description |
+|-----------|-------------|
+| `computed(deps, fn)` | Reactive derived value from one or more dependencies. Cached, lazy, read-only. |
+| `select(source, fn)` | Lightweight single-source alternative to `computed`. |
+| `effect(deps, fn)` | Side effect that re-runs when dependencies change. Supports cleanup. |
+| `collection(key, options)` | Reactive array with `add`, `remove`, `update`, `find`, `has`, `clear`. |
+| `readonly(instance)` | Read-only view of any instance. Zero runtime cost. |
+| `previous(source)` | Tracks the previous value of a source instance. |
 
-#### `select(source, fn)`
-Lightweight single-dependency alternative to `computed`. No array allocation or dependency loop — just `source.get()` → `fn(value)`. Ideal for projecting a single field or transformation.
+[Primitives reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/primitives.md)
 
-#### `collection(key, options)`
-Reactive array with first-class mutation methods — `add`, `remove`, `update`, `find`, `findAll`, `has`, `clear`. Supports all the same scopes, persistence, validation, and migration as `state`.
+## Utilities
 
-#### `effect(deps, fn)`
-Runs a side effect immediately and re-runs whenever any dependency changes. The callback can return a cleanup function that runs before the next execution and on `stop()`. Returns an `EffectHandle` with a `stop()` method.
+| Utility | Description |
+|---------|-------------|
+| `batch(fn)` | Group updates so subscribers are notified once. |
+| `withHistory(instance)` | Adds undo/redo to any state instance. |
+| `snapshot()` | Returns a read-only snapshot of all registered instances. |
+| `configure(config)` | Set global defaults and event handlers. |
 
-#### `readonly(instance)`
-Creates a read-only view of any state or computed instance. Exposes `get`, `peek`, `subscribe`, and lifecycle — but no `set`, `reset`, `intercept`, or `use`. Zero runtime cost.
-
-[Derived state reference guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/derived.md)
+[Configure reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
 ## License
 
