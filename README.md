@@ -31,7 +31,8 @@ const user = state({ name: 'John', age: 30 })
 ### Getting values
 
 ```ts
-user.get()
+user.get() // Return the full state
+
 const { name } = user.get() // Destructure specific values
 ```
 
