@@ -507,7 +507,24 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 				? (valueOrUpdater as (prev: T) => T)(prev)
 				: valueOrUpdater
 
-		next = this._applyInterceptors(next, prev)
+		// Inline interceptors and change handlers for hot-path performance.
+		// Avoids virtual dispatch overhead of _applyInterceptors/_notifyChange.
+		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+			const original = next
+
+			for (const interceptor of s.interceptors) {
+				next = interceptor(next, prev)
+			}
+
+			if (!Object.is(original, next)) {
+				this._config.onIntercept?.({
+					key: this.key,
+					scope: this.scope,
+					original,
+					intercepted: next,
+				})
+			}
+		}
 
 		if (this._hasIsEqual && this._options.isEqual?.(next, prev)) return
 
@@ -517,7 +534,13 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 			notify(s.notifyFn)
 		}
 
-		this._notifyChange(next, prev)
+		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
+			for (const hook of s.changeHandlers) {
+				hook(next, prev)
+			}
+		}
+
+		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
 	}
 
 	override subscribe(listener: Listener<T>): Unsubscribe {
@@ -555,7 +578,24 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 
 		const prev = s.current
 
-		const next = this._applyInterceptors(this._defaultValue, prev)
+		let next = this._defaultValue
+
+		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+			const original = next
+
+			for (const interceptor of s.interceptors) {
+				next = interceptor(next, prev)
+			}
+
+			if (!Object.is(original, next)) {
+				this._config.onIntercept?.({
+					key: this.key,
+					scope: this.scope,
+					original,
+					intercepted: next,
+				})
+			}
+		}
 
 		if (this._hasIsEqual && this._options.isEqual?.(next, prev)) return
 
@@ -565,9 +605,15 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 			notify(s.notifyFn)
 		}
 
+		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
+			for (const hook of s.changeHandlers) {
+				hook(next, prev)
+			}
+		}
+
 		this._config.onReset?.({ key: this.key, scope: this.scope, previousValue: prev })
 
-		this._notifyChange(next, prev)
+		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
 	}
 
 	override get ready(): Promise<void> {
