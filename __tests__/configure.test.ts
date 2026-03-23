@@ -7,7 +7,7 @@ beforeEach(() => {
 		prefix: undefined,
 		scope: undefined,
 		ssr: undefined,
-		trackMemory: undefined,
+		memory: undefined,
 		warnOnDuplicate: undefined,
 		requireValidation: undefined,
 		logLevel: undefined,
@@ -900,10 +900,10 @@ describe('onValidationFail', () => {
 })
 
 // ---------------------------------------------------------------------------
-// trackMemory
+// memory
 // ---------------------------------------------------------------------------
 
-describe('trackMemory', () => {
+describe('memory', () => {
 	it('tracks memory-scoped state by default (duplicate detection)', () => {
 		const a = state('cfg-track-default', { default: 0, scope: 'memory' })
 
@@ -914,8 +914,8 @@ describe('trackMemory', () => {
 		a.destroy()
 	})
 
-	it('skips registry when trackMemory is false', () => {
-		configure({ trackMemory: false })
+	it('skips registry when memory.registry is false', () => {
+		configure({ memory: { registry: false } })
 
 		const a = state('cfg-track-off', { default: 0, scope: 'memory' })
 
@@ -928,8 +928,8 @@ describe('trackMemory', () => {
 		b.destroy()
 	})
 
-	it('still works correctly for get/set/subscribe when trackMemory is false', () => {
-		configure({ trackMemory: false })
+	it('still works correctly for get/set/subscribe when memory.registry is false', () => {
+		configure({ memory: { registry: false } })
 
 		const x = state('cfg-track-off-ops', { default: 0, scope: 'memory' })
 
@@ -946,8 +946,8 @@ describe('trackMemory', () => {
 		x.destroy()
 	})
 
-	it('does not affect persistent scopes when trackMemory is false', () => {
-		configure({ trackMemory: false })
+	it('does not affect persistent scopes when memory.registry is false', () => {
+		configure({ memory: { registry: false } })
 
 		const a = state('cfg-track-off-local', { default: 'a', scope: 'local' })
 
@@ -959,8 +959,8 @@ describe('trackMemory', () => {
 		a.destroy()
 	})
 
-	it('destroy works correctly when trackMemory is false', () => {
-		configure({ trackMemory: false })
+	it('destroy works correctly when memory.registry is false', () => {
+		configure({ memory: { registry: false } })
 
 		const x = state('cfg-track-off-destroy', { default: 42, scope: 'memory' })
 

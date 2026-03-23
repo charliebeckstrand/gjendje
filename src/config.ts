@@ -78,6 +78,21 @@ export interface ExpireContext {
 	expiredAt: number
 }
 
+export interface MemoryConfig {
+	/**
+	 * Track memory-scoped state in the global registry. Defaults to `true`.
+	 *
+	 * When `true`, memory-scoped state is registered for duplicate detection
+	 * and enumeration via `getRegistry()`.
+	 *
+	 * When `false`, memory-scoped state skips registry lookup and insertion,
+	 * eliminating the primary bottleneck in high-throughput creation scenarios.
+	 * Each `state()` call with the same key will create a new instance instead
+	 * of returning the cached one.
+	 */
+	registry?: boolean | undefined
+}
+
 export interface GjendjeConfig {
 	/** Default scope for all state instances. Defaults to `'memory'`. */
 	scope?: Scope | undefined
@@ -104,18 +119,15 @@ export interface GjendjeConfig {
 	sync?: boolean | undefined
 
 	/**
-	 * Control which scopes are tracked in the global registry.
+	 * Options for memory-scoped state.
 	 *
-	 * - `'all'` (default): every state instance is registered, enabling duplicate
-	 *   detection and `getRegistry()` for all scopes.
-	 * - `'persistent'`: only persistent scopes (`local`, `session`, `bucket`) are
-	 *   registered. Memory-scoped state skips registry lookup and insertion,
-	 *   eliminating the primary bottleneck in high-throughput creation scenarios.
-	 *
-	 * Use `'persistent'` when you create many short-lived or uniquely-keyed
-	 * memory states and want creation performance closer to bare closures.
+	 * ```ts
+	 * configure({
+	 *   memory: { registry: false }
+	 * })
+	 * ```
 	 */
-	trackMemory?: boolean | undefined
+	memory?: MemoryConfig | undefined
 
 	/** Warn when two state() calls use the same key + scope. */
 	warnOnDuplicate?: boolean | undefined
