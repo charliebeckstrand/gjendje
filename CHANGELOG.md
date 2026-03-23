@@ -10,6 +10,9 @@
 
 ### Improvements
 
+- Standardize all error message prefixes to `[gjendje]` (previously mixed `[state]` and `[gjendje]`).
+- Remove unused legacy `register()` and `unregister()` functions from internal registry.
+- Fix inaccurate `sync` option comment — only `local` and `bucket` scopes support cross-tab sync, not `session`.
 - Promote `noNonNullAssertion` and `noExplicitAny` lint rules from warnings to errors.
 - Fix size-limit config referencing `withServerSession` from the wrong entry point.
 - Update all tests and documentation to use the new API surface.

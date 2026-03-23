@@ -493,7 +493,7 @@ describe('edge cases', () => {
 	})
 
 	it('throws on empty string key', () => {
-		expect(() => state('', { default: 0 })).toThrow('[state] key must be a non-empty string.')
+		expect(() => state('', { default: 0 })).toThrow('[gjendje] key must be a non-empty string.')
 	})
 
 	it('supports zero and false as valid values', () => {

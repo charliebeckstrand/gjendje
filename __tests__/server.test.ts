@@ -15,7 +15,7 @@ describe('server scope', () => {
 	it('throws on set outside a session', () => {
 		const user = state('srv-throw', { default: null as { id: string } | null, scope: 'server' })
 
-		expect(() => user.set({ id: '1' })).toThrow('[state]')
+		expect(() => user.set({ id: '1' })).toThrow('[gjendje]')
 
 		user.destroy()
 	})

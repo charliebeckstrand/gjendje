@@ -216,7 +216,7 @@ export interface StateOptions<T> {
 	 * When true, any set() call is also sent to other open tabs,
 	 * and incoming changes from other tabs update this instance.
 	 *
-	 * Works with any persistent scope (local, session, bucket).
+	 * Works with `local` and `bucket` scopes only.
 	 */
 	sync?: boolean
 

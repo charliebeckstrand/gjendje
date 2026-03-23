@@ -4,7 +4,7 @@ import { createStorageAdapter } from '../src/adapters/storage.js'
 import { withSync } from '../src/adapters/sync.js'
 import { getConfig } from '../src/config.js'
 import { configure, previous, readonly, select, state, withWatch } from '../src/index.js'
-import { getRegistry, register, registerByKey, scopedKey, unregister } from '../src/registry.js'
+import { getRegistry, registerByKey, scopedKey } from '../src/registry.js'
 import { afterHydration, isServer } from '../src/ssr.js'
 import { makeStorage } from './helpers.js'
 
@@ -398,18 +398,16 @@ describe('registry', () => {
 		configure({ onRegister: undefined })
 	})
 
-	it('legacy register/unregister API works', () => {
-		const instance = state('reg-legacy-src', { default: 0, scope: 'render' })
+	it('registerByKey adds instance to registry', () => {
+		const instance = state('reg-bykey-src', { default: 0, scope: 'render' })
 
-		register('reg-legacy', 'render', instance)
+		const rKey = scopedKey('reg-bykey', 'render')
 
-		const rKey = scopedKey('reg-legacy', 'render')
+		registerByKey(rKey, 'reg-bykey', 'render', instance, getConfig())
 
 		expect(getRegistry().has(rKey)).toBe(true)
 
-		unregister('reg-legacy', 'render')
-
-		expect(getRegistry().has(rKey)).toBe(false)
+		instance.destroy()
 	})
 
 	it('warnOnDuplicate via state() API logs a warning for duplicate keys', () => {

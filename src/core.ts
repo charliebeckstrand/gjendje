@@ -72,7 +72,7 @@ function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptio
 		case 'session':
 			if (typeof sessionStorage === 'undefined') {
 				throw new Error(
-					'[state] sessionStorage is not available. Use ssr: true or scope: "render" for server environments.',
+					'[gjendje] sessionStorage is not available. Use ssr: true or scope: "render" for server environments.',
 				)
 			}
 
@@ -81,7 +81,7 @@ function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptio
 		case 'local':
 			if (typeof localStorage === 'undefined') {
 				throw new Error(
-					'[state] localStorage is not available. Use ssr: true or scope: "server" for server environments.',
+					'[gjendje] localStorage is not available. Use ssr: true or scope: "server" for server environments.',
 				)
 			}
 
@@ -101,7 +101,7 @@ function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptio
 		case 'server':
 			if (!_serverAdapterFactory) {
 				throw new Error(
-					'[state] scope: "server" requires the server adapter. ' +
+					'[gjendje] scope: "server" requires the server adapter. ' +
 						'Import { withServerSession } from "gjendje" or "gjendje/server" to enable it.',
 				)
 			}
@@ -111,7 +111,7 @@ function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptio
 		case 'bucket': {
 			if (!options.bucket) {
 				throw new Error(
-					'[state] scope: "bucket" requires a bucket option. ' +
+					'[gjendje] scope: "bucket" requires a bucket option. ' +
 						'Example: { scope: "bucket", bucket: { name: "my-bucket" } }',
 				)
 			}
@@ -122,7 +122,7 @@ function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptio
 		default: {
 			const _exhaustive: never = scope
 
-			throw new Error(`[state] Unknown scope: ${_exhaustive}`)
+			throw new Error(`[gjendje] Unknown scope: ${_exhaustive}`)
 		}
 	}
 }
@@ -729,7 +729,7 @@ export function createRenderState<T>(
 
 export function createBase<T>(key: string, options: StateOptions<T>): StateInstance<T> {
 	if (!key) {
-		throw new Error('[state] key must be a non-empty string.')
+		throw new Error('[gjendje] key must be a non-empty string.')
 	}
 
 	const config = getConfig()

@@ -1,4 +1,4 @@
-import { type GjendjeConfig, getConfig, log } from './config.js'
+import { type GjendjeConfig, log } from './config.js'
 import type { BaseInstance, Scope } from './types.js'
 
 export function scopedKey(key: string, scope: Scope): string {
@@ -52,18 +52,6 @@ export function registerByKey<T>(
  */
 export function unregisterByKey(rKey: string): void {
 	registry.delete(rKey)
-}
-
-// ---------------------------------------------------------------------------
-// Legacy API — used by collection, devtools, etc.
-// ---------------------------------------------------------------------------
-
-export function register<T>(key: string, scope: Scope, instance: BaseInstance<T>): void {
-	registerByKey(scopedKey(key, scope), key, scope, instance, getConfig())
-}
-
-export function unregister(key: string, scope: Scope): void {
-	registry.delete(scopedKey(key, scope))
 }
 
 export function getRegistry(): Map<string, BaseInstance<unknown>> {

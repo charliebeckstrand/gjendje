@@ -11,7 +11,7 @@ import type { StateInstance, StateOptions } from './types.js'
  */
 export function createState<T>(key: string, options: StateOptions<T>): StateInstance<T> {
 	if (!key) {
-		throw new Error('[state] key must be a non-empty string.')
+		throw new Error('[gjendje] key must be a non-empty string.')
 	}
 
 	const config = getConfig()

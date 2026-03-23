@@ -292,7 +292,7 @@ describe('bucket scope — native Storage Buckets', () => {
 				default: 'light',
 				scope: 'bucket',
 			})
-		}).toThrow('[state]')
+		}).toThrow('[gjendje]')
 	})
 
 	it('warns on invalid expires format', async () => {
