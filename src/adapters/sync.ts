@@ -13,7 +13,7 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 
 	const listeners = createListeners<T>()
 
-	adapter.subscribe((value) => {
+	const unsubscribeAdapter = adapter.subscribe((value) => {
 		listeners.notify(value)
 	})
 
@@ -72,6 +72,8 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 		},
 
 		destroy() {
+			unsubscribeAdapter()
+
 			listeners.clear()
 
 			channel?.close()

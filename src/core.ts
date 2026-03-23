@@ -504,8 +504,10 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 	// SSR hydration
 	if (isSsrMode && !isServer()) {
 		instance._s.hydrated = afterHydration(() => {
+			let realAdapter: Adapter<T> | undefined
+
 			try {
-				const realAdapter = resolveAdapter(storageKey, scope, options)
+				realAdapter = resolveAdapter(storageKey, scope, options)
 
 				const storedValue = realAdapter.get()
 
@@ -519,12 +521,12 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 					serverValue: options.default,
 					clientValue: storedValue,
 				})
-
-				realAdapter.destroy?.()
 			} catch (err) {
 				log('debug', `Hydration adapter unavailable for state("${key}") — using memory fallback.`)
 
 				reportError(key, scope, err)
+			} finally {
+				realAdapter?.destroy?.()
 			}
 		})
 	}

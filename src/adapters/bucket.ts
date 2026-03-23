@@ -117,6 +117,8 @@ export function createBucketAdapter<T>(
 
 	let isDestroyed = false
 
+	let delegateUnsub: (() => void) | undefined
+
 	// ---------------------------------------------------------------------------
 	// Initialization — try to upgrade to a real Storage Bucket
 	// ---------------------------------------------------------------------------
@@ -203,7 +205,7 @@ export function createBucketAdapter<T>(
 		}
 
 		// Forward future storage events from the delegate to our listeners
-		delegate.subscribe((value) => {
+		delegateUnsub = delegate.subscribe((value) => {
 			lastNotifiedValue = value
 
 			notify(notifyListeners)
@@ -229,6 +231,8 @@ export function createBucketAdapter<T>(
 
 		destroy() {
 			isDestroyed = true
+
+			delegateUnsub?.()
 
 			listeners.clear()
 
