@@ -8,6 +8,7 @@
 
 ### Patch Changes
 
+- Codebase elegance refactor — cache computed `settled` promise (was allocating `Promise.all` on every access), reuse shared `RESOLVED` promise in storage/URL adapters and SSR, extract `navigate` helper in `withHistory` to remove undo/redo duplication, short-circuit collection watcher notification on length change, simplify snapshot/devtools/sync adapter code, remove redundant assignments and unnecessary `.bind()` calls. No behavioral or performance changes.
 - Pre-populate storage adapter read cache after writes — eliminates redundant `getItem()` + `JSON.parse()` on read-after-write paths (subscriber chains, computed, effects). Benchmarks show ~41% improvement on single read-after-write and ~92% improvement on many-reads-per-write scenarios.
 - Add read cache to URL adapter — caches parsed value keyed on `location.search` string, skipping URLSearchParams construction and re-parsing when the URL hasn't changed. Also pre-populates cache after writes. Benchmarks show 16x faster repeated reads and 26x faster many-reads-per-write.
 - Short-circuit `Promise.all` in `computed()` for memory-scoped deps — when all deps return the shared `RESOLVED` promise, skip array allocation and promise wrapping entirely. Also caches the `settled` getter (previously allocated `Promise.all` + `.map()` + `.then()` on every access). Computed creation 12-30% faster, `.settled` access 2.6x faster.

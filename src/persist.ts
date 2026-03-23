@@ -39,9 +39,6 @@ export function readAndMigrate<T>(
 
 			data = parsed.data
 		} else {
-			// Legacy value with no version envelope — treat as version 1
-			storedVersion = 1
-
 			data = parsed
 		}
 

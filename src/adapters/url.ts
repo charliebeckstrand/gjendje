@@ -2,6 +2,7 @@ import { notify } from '../batch.js'
 import { createListeners } from '../listeners.js'
 import { mergeKeys, pickKeys } from '../persist.js'
 import type { Adapter, Serializer } from '../types.js'
+import { RESOLVED } from '../utils.js'
 
 export function createUrlAdapter<T>(
 	key: string,
@@ -106,7 +107,7 @@ export function createUrlAdapter<T>(
 	window.addEventListener('popstate', onPopState)
 
 	return {
-		ready: Promise.resolve(),
+		ready: RESOLVED,
 
 		get() {
 			return read()

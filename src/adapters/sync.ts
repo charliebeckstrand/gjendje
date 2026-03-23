@@ -28,10 +28,13 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 			// but a compromised tab could still send malformed data.
 			const msg = event.data
 
-			if (msg == null || typeof msg !== 'object' || !('value' in msg)) return
-
-			// Already narrowed to non-null object above
-			if (Object.keys(msg).length !== 1) return
+			if (
+				msg == null ||
+				typeof msg !== 'object' ||
+				!('value' in msg) ||
+				Object.keys(msg as object).length !== 1
+			)
+				return
 
 			const value = (msg as Record<'value', T>).value
 

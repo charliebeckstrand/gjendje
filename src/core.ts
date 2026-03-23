@@ -90,10 +90,7 @@ function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptio
 			return createUrlAdapter(
 				storageKey,
 				options.default,
-				options.serialize ?? {
-					stringify: (v) => JSON.stringify(v),
-					parse: (s) => JSON.parse(s),
-				},
+				options.serialize ?? { stringify: JSON.stringify, parse: JSON.parse },
 				options.persist,
 			)
 

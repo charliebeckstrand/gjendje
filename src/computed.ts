@@ -127,6 +127,10 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		? RESOLVED
 		: Promise.all(deps.map((d) => d.hydrated)).then(() => undefined)
 
+	const settledPromise = allDepsImmediate
+		? RESOLVED
+		: Promise.all(deps.map((d) => d.settled)).then(() => undefined)
+
 	return {
 		key: instanceKey,
 		scope: 'memory',
@@ -136,9 +140,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		get settled(): Promise<void> {
-			if (allDepsImmediate) return RESOLVED
-
-			return Promise.all(deps.map((d) => d.settled)).then(() => undefined)
+			return settledPromise
 		},
 
 		get hydrated(): Promise<void> {
