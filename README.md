@@ -20,99 +20,44 @@ npm install gjendje
 ```ts
 import { state } from 'gjendje'
 
-const theme = state.local({ theme: 'light' })
+const store = state({ count: 0 })
 
-theme.get()        // 'light'
-theme.set('dark')  // persisted to localStorage
-theme.reset()      // back to 'light'
+function increment() {
+  store.set((prev) => ({ ...prev, count: prev.count + 1 }))
+}
+
+const { counter} = store.get()
 ```
 
-For in-memory state that doesn't persist, use `state` without a scope:
+[Quick start guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/quick-start.md)
 
-```ts
-const user = state({ name: 'John', age: 30 })
+## Configure 
 
-user.get()                                       // { name: 'John', age: 30 }
-user.patch({ name: 'Jane' })                     // only updates name
-user.set((prev) => ({ ...prev, age: prev.age + 1 }))  // updater function
-```
-
-[More in the quick start guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/quick-start.md)
+[Configure guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
 ## Scopes
 
-Every `state()` targets a scope — the storage backend that holds the value.
+`memory`, `local`, `session`, `url`, `bucket`, `server`
 
-| Scope     | Backend              | Shortcut           |
-|-----------|----------------------|--------------------|
-| `memory`  | In-memory (default)  | `state()`          |
-| `local`   | `localStorage`       | `state.local()`    |
-| `session` | `sessionStorage`     | `state.session()`  |
-| `url`     | `URLSearchParams`    | `state.url()`      |
-| `bucket`  | Storage Buckets API  | `state.bucket()`   |
-| `server`  | `AsyncLocalStorage`  | `state.server()`   |
-
-[Scope decision guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md) · [Persistence reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
+[Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md) · [Persistence reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md)
 
 ## API
 
-Every instance shares the same core methods:
+`get`, `peek`, `set`, `patch`, `reset`, `destroy`, `subscribe`, `watch`, `intercept`, `onChange`
 
-| Method | Description |
-|--------|-------------|
-| `get()` | Current value (reactive — tracked by `computed` and `effect`) |
-| `peek()` | Current value without reactive tracking |
-| `set(value)` | Replace the value, or pass an updater function |
-| `patch(partial)` | Merge partial updates into an object value |
-| `reset()` | Restore to the default value |
-| `subscribe(fn)` | Listen for changes — returns an unsubscribe function |
-| `watch(key, fn)` | Listen for changes to a single property |
-| `intercept(fn)` | Pre-set hook — transform or reject values before they're stored |
-| `onChange(fn)` | Post-set hook — react after a value changes |
-| `destroy()` | Tear down all listeners and storage resources |
-
-[Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
+[API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
 
 ## Primitives
 
-Reactive primitives that build on top of `state`:
-
-| Primitive | Description |
-|-----------|-------------|
-| `computed(deps, fn)` | Derived value from one or more dependencies. Cached, lazy, read-only. |
-| `select(source, fn)` | Single-source alternative to `computed`. Simpler and faster for one dependency. |
-| `effect(deps, fn)` | Side effect that re-runs when dependencies change. Supports cleanup. |
-| `collection(key, options)` | Reactive array with `add`, `remove`, `update`, `find`, `has`, `clear`. |
-| `readonly(instance)` | Read-only view of any instance. Zero runtime cost. |
-| `previous(source)` | Tracks the previous value of a source instance. |
+`computed`, `select`, `previous`, `readonly`, `collection`, `effect`
 
 [Primitives reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/primitives.md)
 
-## Utilities and enhancers
+## Utilities
 
-| Function | Description |
-|----------|-------------|
-| `configure(options)` | Set global defaults and event hooks for all state instances |
-| `batch(fn)` | Group updates so subscribers are notified once |
-| `snapshot()` | Read-only snapshot of all registered instances |
-| `shallowEqual(a, b)` | Shallow equality check for primitives, arrays, and objects |
-| `withHistory(instance)` | Adds undo/redo to any state instance |
-| `withWatch(instance)` | Adds per-key change tracking to any instance |
-| `withServerSession(fn)` | Wraps a callback in `AsyncLocalStorage` context for `server` scope |
+`configure`, `batch`, `snapshot`, `shallowEqual`, `withHistory`, `withWatch`, `withServerSession`
 
-[Configure guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md) · [Full API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md#utility-functions)
-
-## Documentation
-
-| Guide | What it covers |
-|-------|----------------|
-| [Quick start](https://github.com/charliebeckstrand/gjendje/blob/main/docs/quick-start.md) | Create, read, and update state in 2 minutes |
-| [Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md) | Real-world patterns — forms, todo lists, undo/redo, cross-tab sync |
-| [API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md) | Every method, option, and type |
-| [Scopes](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md) | Decision guide for choosing a storage backend |
-| [Persistence](https://github.com/charliebeckstrand/gjendje/blob/main/docs/persistence.md) | Serialization, migration, validation, selective persistence |
-| [Primitives](https://github.com/charliebeckstrand/gjendje/blob/main/docs/primitives.md) | computed, select, effect, collection, readonly, previous |
-| [Configure](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md) | Global defaults, events, and options |
+[Utilities reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/utilities.md)
 
 ## License
 
