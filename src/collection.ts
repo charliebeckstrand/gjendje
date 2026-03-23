@@ -98,10 +98,16 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 		const lengthChanged = next.length !== prevItems.length
 
 		if (lengthChanged) {
-			// Length change means all keys are potentially affected
-			for (const watchKey of watchers.keys()) {
-				changedKeys.add(watchKey)
+			// Length change implies all watched keys changed — notify all directly
+			for (const [, listeners] of watchers) {
+				for (const listener of listeners) {
+					listener(next)
+				}
 			}
+
+			prevItems = next
+
+			return
 		} else {
 			const len = next.length
 
@@ -148,8 +154,6 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 		prevItems = next
 	})
-
-	const originalDestroy = base.destroy.bind(base)
 
 	// Delegate to base via prototype to inherit all BaseInstance methods and
 	// getters (ready, settled, isDestroyed, etc.) without manual forwarding.
@@ -252,7 +256,7 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 		unsubscribe()
 
-		originalDestroy()
+		base.destroy()
 	}
 
 	return col

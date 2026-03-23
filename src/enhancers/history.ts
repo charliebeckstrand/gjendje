@@ -65,48 +65,32 @@ export function withHistory<T>(
 		return next
 	})
 
+	function navigate(from: T[], to: T[]): void {
+		if (from.length === 0) return
+
+		const current = instance.get()
+
+		const value = from.pop() as T
+
+		to.push(current)
+
+		isNavigating = true
+
+		try {
+			instance.set(value)
+		} finally {
+			isNavigating = false
+		}
+	}
+
 	// Delegate to instance via prototype to inherit all BaseInstance methods
 	// and getters without manual forwarding. Only history-specific methods
 	// are defined as own properties.
 	const result = Object.create(instance) as WithHistoryInstance<T>
 
-	result.undo = (): void => {
-		if (past.length === 0) return
+	result.undo = () => navigate(past, future)
 
-		const current = instance.get()
-
-		// Length is checked above — pop() always returns T here
-		const prev = past.pop() as T
-
-		future.push(current)
-
-		isNavigating = true
-
-		try {
-			instance.set(prev)
-		} finally {
-			isNavigating = false
-		}
-	}
-
-	result.redo = (): void => {
-		if (future.length === 0) return
-
-		const current = instance.get()
-
-		// Length is checked above — pop() always returns T here
-		const next = future.pop() as T
-
-		past.push(current)
-
-		isNavigating = true
-
-		try {
-			instance.set(next)
-		} finally {
-			isNavigating = false
-		}
-	}
+	result.redo = () => navigate(future, past)
 
 	Object.defineProperty(result, 'canUndo', {
 		get(): boolean {

@@ -3,6 +3,7 @@ import { getConfig, log } from '../config.js'
 import { createListeners } from '../listeners.js'
 import { mergeKeys, pickKeys, readAndMigrate, wrapForStorage } from '../persist.js'
 import type { Adapter, StateOptions } from '../types.js'
+import { RESOLVED } from '../utils.js'
 
 export function createStorageAdapter<T>(
 	storage: Storage,
@@ -113,7 +114,7 @@ export function createStorageAdapter<T>(
 	}
 
 	return {
-		ready: Promise.resolve(),
+		ready: RESOLVED,
 
 		get() {
 			return read()

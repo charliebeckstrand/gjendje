@@ -27,17 +27,10 @@ export interface StateSnapshot {
  * ```
  */
 export function snapshot(): StateSnapshot[] {
-	const registry = getRegistry()
-	const result: StateSnapshot[] = []
-
-	for (const instance of registry.values()) {
-		result.push({
-			key: instance.key,
-			scope: instance.scope,
-			value: instance.isDestroyed ? undefined : instance.get(),
-			isDestroyed: instance.isDestroyed,
-		})
-	}
-
-	return result
+	return Array.from(getRegistry().values(), (instance) => ({
+		key: instance.key,
+		scope: instance.scope,
+		value: instance.isDestroyed ? undefined : instance.get(),
+		isDestroyed: instance.isDestroyed,
+	}))
 }

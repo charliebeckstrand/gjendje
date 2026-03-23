@@ -1,3 +1,5 @@
+import { RESOLVED } from './utils.js'
+
 /**
  * True when running on the server (no window/document).
  */
@@ -20,7 +22,7 @@ export const BROWSER_SCOPES = new Set(['session', 'local', 'url', 'bucket'])
  * Returns a promise that resolves after the callback has executed.
  */
 export function afterHydration(fn: () => void): Promise<void> {
-	if (isServer()) return Promise.resolve()
+	if (isServer()) return RESOLVED
 
 	// Use a microtask + rAF to ensure we're past React's hydration
 	return new Promise<void>((resolve) => {
