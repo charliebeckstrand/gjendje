@@ -63,10 +63,10 @@ describe('global prefix', () => {
 		theme.destroy()
 	})
 
-	it('does not prefix render scope', () => {
+	it('does not prefix memory scope', () => {
 		configure({ prefix: 'myapp' })
 
-		const x = state('pfx-render', { default: 0, scope: 'render' })
+		const x = state('pfx-memory', { default: 0, scope: 'memory' })
 
 		x.set(42)
 

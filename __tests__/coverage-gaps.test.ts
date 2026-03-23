@@ -35,7 +35,7 @@ beforeEach(() => {
 
 describe('interceptor chain', () => {
 	it('multiple interceptors run in registration order', () => {
-		const s = state('chain-order', { default: 0, scope: 'render' })
+		const s = state('chain-order', { default: 0, scope: 'memory' })
 		const log: string[] = []
 
 		s.intercept((next, _prev) => {
@@ -55,7 +55,7 @@ describe('interceptor chain', () => {
 	})
 
 	it('first interceptor throwing prevents subsequent interceptors from running', () => {
-		const s = state('chain-throw-first', { default: 0, scope: 'render' })
+		const s = state('chain-throw-first', { default: 0, scope: 'memory' })
 		const secondCalled = vi.fn()
 
 		s.intercept(() => {
@@ -73,7 +73,7 @@ describe('interceptor chain', () => {
 	})
 
 	it('unsubscribing an interceptor removes it from the chain', () => {
-		const s = state('chain-unsub', { default: 0, scope: 'render' })
+		const s = state('chain-unsub', { default: 0, scope: 'memory' })
 
 		const unsub = s.intercept((next) => next * 2)
 
@@ -87,7 +87,7 @@ describe('interceptor chain', () => {
 	})
 
 	it('interceptor can reject update by returning prev', () => {
-		const s = state('chain-reject', { default: 0, scope: 'render' })
+		const s = state('chain-reject', { default: 0, scope: 'memory' })
 		const listener = vi.fn()
 
 		s.subscribe(listener)
@@ -101,7 +101,7 @@ describe('interceptor chain', () => {
 	})
 
 	it('interceptors run on reset() too', () => {
-		const s = state('chain-reset', { default: 0, scope: 'render' })
+		const s = state('chain-reset', { default: 0, scope: 'memory' })
 		const intercepted = vi.fn((next: number) => next + 100)
 
 		s.intercept(intercepted)
@@ -121,7 +121,7 @@ describe('interceptor chain', () => {
 
 describe('destroyed instance advanced', () => {
 	it('subscribe() after destroy still returns an unsubscribe function', () => {
-		const s = state('destroyed-sub', { default: 0, scope: 'render' })
+		const s = state('destroyed-sub', { default: 0, scope: 'memory' })
 
 		s.destroy()
 
@@ -131,7 +131,7 @@ describe('destroyed instance advanced', () => {
 	})
 
 	it('intercept() after destroy still returns an unsubscribe function', () => {
-		const s = state('destroyed-intercept', { default: 0, scope: 'render' })
+		const s = state('destroyed-intercept', { default: 0, scope: 'memory' })
 
 		s.destroy()
 
@@ -141,7 +141,7 @@ describe('destroyed instance advanced', () => {
 	})
 
 	it('onChange() after destroy still returns an unsubscribe function', () => {
-		const s = state('destroyed-onChange', { default: 0, scope: 'render' })
+		const s = state('destroyed-onChange', { default: 0, scope: 'memory' })
 
 		s.destroy()
 
@@ -151,7 +151,7 @@ describe('destroyed instance advanced', () => {
 	})
 
 	it('peek() returns last known value after destroy', () => {
-		const s = state('destroyed-peek', { default: 0, scope: 'render' })
+		const s = state('destroyed-peek', { default: 0, scope: 'memory' })
 
 		s.set(42)
 		s.destroy()
@@ -160,7 +160,7 @@ describe('destroyed instance advanced', () => {
 	})
 
 	it('subscribers are not notified after destroy', () => {
-		const s = state('destroyed-no-notify', { default: 0, scope: 'render' })
+		const s = state('destroyed-no-notify', { default: 0, scope: 'memory' })
 		const listener = vi.fn()
 
 		s.subscribe(listener)
@@ -173,7 +173,7 @@ describe('destroyed instance advanced', () => {
 	})
 
 	it('ready promise resolves even after destroy', async () => {
-		const s = state('destroyed-ready', { default: 0, scope: 'render' })
+		const s = state('destroyed-ready', { default: 0, scope: 'memory' })
 
 		s.destroy()
 
@@ -181,7 +181,7 @@ describe('destroyed instance advanced', () => {
 	})
 
 	it('onChange() handlers are cleared on destroy and do not fire', () => {
-		const s = state('destroyed-hooks-clear', { default: 0, scope: 'render' })
+		const s = state('destroyed-hooks-clear', { default: 0, scope: 'memory' })
 		const hookFn = vi.fn()
 
 		s.onChange(hookFn)
@@ -201,7 +201,7 @@ describe('destroyed instance advanced', () => {
 
 describe('effect cleanup edge cases', () => {
 	it('cleanup throwing does not prevent the next effect run', () => {
-		const a = state('effect-cleanup-throw', { default: 0, scope: 'render' })
+		const a = state('effect-cleanup-throw', { default: 0, scope: 'memory' })
 		const log: string[] = []
 
 		const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -231,7 +231,7 @@ describe('effect cleanup edge cases', () => {
 	})
 
 	it('effect does not run after stop even if dep changes', () => {
-		const a = state('effect-stop-dep', { default: 0, scope: 'render' })
+		const a = state('effect-stop-dep', { default: 0, scope: 'memory' })
 		let runCount = 0
 
 		const handle = effect([a], () => {
@@ -263,7 +263,7 @@ describe('effect cleanup edge cases', () => {
 	it('effect cleanup runs when stop() is called without any dependency change', () => {
 		let cleanedUp = false
 
-		const a = state('effect-cleanup-stop', { default: 0, scope: 'render' })
+		const a = state('effect-cleanup-stop', { default: 0, scope: 'memory' })
 
 		const handle = effect([a], () => {
 			return () => {
@@ -284,7 +284,7 @@ describe('effect cleanup edge cases', () => {
 
 describe('re-entrancy', () => {
 	it('subscriber calling set() on same state during notification works', () => {
-		const s = state('reentrant-same', { default: 0, scope: 'render' })
+		const s = state('reentrant-same', { default: 0, scope: 'memory' })
 		const values: number[] = []
 
 		s.subscribe((v) => {
@@ -304,8 +304,8 @@ describe('re-entrancy', () => {
 	})
 
 	it('subscriber calling set() on different state during notification works', () => {
-		const a = state('reentrant-a', { default: 0, scope: 'render' })
-		const b = state('reentrant-b', { default: 0, scope: 'render' })
+		const a = state('reentrant-a', { default: 0, scope: 'memory' })
+		const b = state('reentrant-b', { default: 0, scope: 'memory' })
 		const bValues: number[] = []
 
 		a.subscribe((v) => {
@@ -323,8 +323,8 @@ describe('re-entrancy', () => {
 	})
 
 	it('batch prevents re-entrant notifications until flush', () => {
-		const a = state('reentrant-batch-a', { default: 0, scope: 'render' })
-		const b = state('reentrant-batch-b', { default: 0, scope: 'render' })
+		const a = state('reentrant-batch-a', { default: 0, scope: 'memory' })
+		const b = state('reentrant-batch-b', { default: 0, scope: 'memory' })
 		const log: string[] = []
 
 		a.subscribe((v) => {
@@ -347,7 +347,7 @@ describe('re-entrancy', () => {
 	})
 
 	it('computed handles re-entrant dependency updates', () => {
-		const a = state('reentrant-comp', { default: 1, scope: 'render' })
+		const a = state('reentrant-comp', { default: 1, scope: 'memory' })
 		const c = computed([a], ([v]) => (v ?? 0) * 2)
 
 		const values: number[] = []
@@ -374,7 +374,7 @@ describe('collection watch edge cases', () => {
 	it('watch on empty collection fires when first item added', () => {
 		const col = collection<{ id: number; name: string }>('col-watch-empty', {
 			default: [],
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const listener = vi.fn()
@@ -391,7 +391,7 @@ describe('collection watch edge cases', () => {
 				{ id: 1, name: 'Alice' },
 				{ id: 2, name: 'Bob' },
 			],
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const listener = vi.fn()
@@ -405,7 +405,7 @@ describe('collection watch edge cases', () => {
 	it('watch unsubscribe during notification does not throw', () => {
 		const col = collection('col-watch-unsub-mid', {
 			default: [{ id: 1, name: 'A' }],
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		let unsub: (() => void) | null = null
@@ -421,7 +421,7 @@ describe('collection watch edge cases', () => {
 	it('multiple watchers on same key all fire', () => {
 		const col = collection('col-watch-multi', {
 			default: [{ id: 1, val: 0 }],
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const listener1 = vi.fn()
@@ -439,7 +439,7 @@ describe('collection watch edge cases', () => {
 	it('watch does not fire when unwatched key changes', () => {
 		const col = collection('col-watch-wrong-key', {
 			default: [{ id: 1, name: 'A', age: 20 }],
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const listener = vi.fn()
@@ -457,7 +457,7 @@ describe('collection watch edge cases', () => {
 
 describe('withHistory concurrent operations', () => {
 	it('undo at max history depth drops oldest entry', () => {
-		const base = state('hist-maxsize', { default: 0, scope: 'render' })
+		const base = state('hist-maxsize', { default: 0, scope: 'memory' })
 		const h = withHistory(base, { maxSize: 3 })
 
 		h.set(1)
@@ -476,7 +476,7 @@ describe('withHistory concurrent operations', () => {
 	})
 
 	it('redo stack is cleared on new set after undo', () => {
-		const base = state('hist-redo-clear', { default: 0, scope: 'render' })
+		const base = state('hist-redo-clear', { default: 0, scope: 'memory' })
 		const h = withHistory(base)
 
 		h.set(1)
@@ -490,7 +490,7 @@ describe('withHistory concurrent operations', () => {
 	})
 
 	it('clearHistory makes undo/redo no-ops', () => {
-		const base = state('hist-clear', { default: 0, scope: 'render' })
+		const base = state('hist-clear', { default: 0, scope: 'memory' })
 		const h = withHistory(base)
 
 		h.set(1)
@@ -507,7 +507,7 @@ describe('withHistory concurrent operations', () => {
 	it('undo and redo with isEqual option', () => {
 		const base = state('hist-equal', {
 			default: { x: 0 },
-			scope: 'render',
+			scope: 'memory',
 			isEqual: (a, b) => a.x === b.x,
 		})
 		const h = withHistory(base)
@@ -523,10 +523,10 @@ describe('withHistory concurrent operations', () => {
 	})
 
 	it('withHistory delegates lifecycle getters correctly', () => {
-		const base = state('hist-lifecycle', { default: 0, scope: 'render' })
+		const base = state('hist-lifecycle', { default: 0, scope: 'memory' })
 		const h = withHistory(base)
 
-		expect(h.scope).toBe('render')
+		expect(h.scope).toBe('memory')
 		expect(h.key).toBe('hist-lifecycle')
 		expect(h.isDestroyed).toBe(false)
 
@@ -736,17 +736,17 @@ describe('configuration cascading', () => {
 	it('per-instance scope overrides scope', () => {
 		configure({ scope: 'local' })
 
-		const s = state('config-override', { default: 0, scope: 'render' })
-		expect(s.scope).toBe('render')
+		const s = state('config-override', { default: 0, scope: 'memory' })
+		expect(s.scope).toBe('memory')
 
 		configure({ scope: undefined })
 	})
 
-	it('requireValidation does not affect render scope', () => {
+	it('requireValidation does not affect memory scope', () => {
 		configure({ requireValidation: true })
 
-		// render scope should not require validation
-		expect(() => state('config-render-no-val', { default: 0, scope: 'render' })).not.toThrow()
+		// memory scope should not require validation
+		expect(() => state('config-memory-no-val', { default: 0, scope: 'memory' })).not.toThrow()
 
 		configure({ requireValidation: false })
 	})
@@ -781,7 +781,7 @@ describe('configuration cascading', () => {
 
 describe('computed advanced', () => {
 	it('computed of computed chains correctly', () => {
-		const a = state('comp-chain-a', { default: 1, scope: 'render' })
+		const a = state('comp-chain-a', { default: 1, scope: 'memory' })
 
 		// biome-ignore lint/suspicious/noExplicitAny: computed deps need BaseInstance
 		const b = computed([a], ([v]) => (v ?? 0) * 2) as any
@@ -795,7 +795,7 @@ describe('computed advanced', () => {
 	})
 
 	it('computed destroy unsubscribes from deps', () => {
-		const a = state('comp-destroy-unsub', { default: 0, scope: 'render' })
+		const a = state('comp-destroy-unsub', { default: 0, scope: 'memory' })
 		let computeCount = 0
 
 		const c = computed([a], ([v]) => {
@@ -812,7 +812,7 @@ describe('computed advanced', () => {
 	})
 
 	it('computed subscribe + unsubscribe works', () => {
-		const a = state('comp-sub-unsub', { default: 0, scope: 'render' })
+		const a = state('comp-sub-unsub', { default: 0, scope: 'memory' })
 		const c = computed([a], ([v]) => (v ?? 0) * 2)
 		const listener = vi.fn()
 
@@ -835,7 +835,7 @@ describe('computed advanced', () => {
 
 describe('batch advanced', () => {
 	it('nested batch defers until outermost completes', () => {
-		const s = state('batch-nested', { default: 0, scope: 'render' })
+		const s = state('batch-nested', { default: 0, scope: 'memory' })
 		const values: number[] = []
 
 		s.subscribe((v) => values.push(v))
@@ -855,8 +855,8 @@ describe('batch advanced', () => {
 	})
 
 	it('batch with computed dependency correctly defers', () => {
-		const a = state('batch-comp-a', { default: 0, scope: 'render' })
-		const b = state('batch-comp-b', { default: 0, scope: 'render' })
+		const a = state('batch-comp-a', { default: 0, scope: 'memory' })
+		const b = state('batch-comp-b', { default: 0, scope: 'memory' })
 		// biome-ignore lint/suspicious/noExplicitAny: computed deps need BaseInstance
 		const sum = computed([a, b] as any, (vals: unknown[]) => {
 			const [av, bv] = vals as [number, number]
@@ -887,7 +887,7 @@ describe('isEqual advanced', () => {
 
 		const s = state('isequal-skip', {
 			default: { x: 1 },
-			scope: 'render',
+			scope: 'memory',
 			isEqual: (a, b) => a.x === b.x,
 		})
 
@@ -903,7 +903,7 @@ describe('isEqual advanced', () => {
 
 		const s = state('isequal-intercept', {
 			default: 0,
-			scope: 'render',
+			scope: 'memory',
 			isEqual: (a, b) => a === b,
 		})
 
@@ -927,7 +927,7 @@ describe('isEqual advanced', () => {
 
 describe('onChange() handlers', () => {
 	it('multiple handlers fire in registration order', () => {
-		const s = state('hooks-order', { default: 0, scope: 'render' })
+		const s = state('hooks-order', { default: 0, scope: 'memory' })
 		const log: string[] = []
 
 		s.onChange(() => log.push('A'))
@@ -940,7 +940,7 @@ describe('onChange() handlers', () => {
 	})
 
 	it('handler receives next and prev values', () => {
-		const s = state('hooks-args', { default: 'hello', scope: 'render' })
+		const s = state('hooks-args', { default: 'hello', scope: 'memory' })
 		const calls: [string, string][] = []
 
 		s.onChange((next, prev) => {
@@ -953,7 +953,7 @@ describe('onChange() handlers', () => {
 	})
 
 	it('unsubscribing a handler removes it', () => {
-		const s = state('hooks-unsub', { default: 0, scope: 'render' })
+		const s = state('hooks-unsub', { default: 0, scope: 'memory' })
 		const hookFn = vi.fn()
 
 		const unsub = s.onChange(hookFn)
@@ -976,7 +976,7 @@ describe('watch edge cases advanced', () => {
 	it('watch fires when value transitions from null to object', () => {
 		const s = state<{ name: string } | null>('watch-null-to-obj', {
 			default: null,
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const listener = vi.fn()
@@ -990,7 +990,7 @@ describe('watch edge cases advanced', () => {
 	it('watch does not fire when watched key value is unchanged', () => {
 		const s = state('watch-unchanged', {
 			default: { name: 'Alice', age: 20 },
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const listener = vi.fn()
@@ -1004,7 +1004,7 @@ describe('watch edge cases advanced', () => {
 	it('multiple watches on different keys fire independently', () => {
 		const s = state('watch-multi-key', {
 			default: { x: 0, y: 0 },
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const xListener = vi.fn()
@@ -1028,8 +1028,8 @@ describe('snapshot', () => {
 	it('includes all registered instances', async () => {
 		const { snapshot } = await import('../src/devtools.js')
 
-		state('snap-a', { default: 1, scope: 'render' })
-		state('snap-b', { default: 'hello', scope: 'render' })
+		state('snap-a', { default: 1, scope: 'memory' })
+		state('snap-b', { default: 'hello', scope: 'memory' })
 
 		const snap = snapshot()
 
@@ -1041,7 +1041,7 @@ describe('snapshot', () => {
 	it('shows destroyed instances with undefined value', async () => {
 		const { snapshot } = await import('../src/devtools.js')
 
-		const s = state('snap-destroyed', { default: 42, scope: 'render' })
+		const s = state('snap-destroyed', { default: 42, scope: 'memory' })
 		s.destroy()
 
 		const snap = snapshot()
@@ -1054,7 +1054,7 @@ describe('snapshot', () => {
 	it('updates reflect current values', async () => {
 		const { snapshot } = await import('../src/devtools.js')
 
-		const s = state('snap-update', { default: 0, scope: 'render' })
+		const s = state('snap-update', { default: 0, scope: 'memory' })
 		s.set(99)
 
 		const snap = snapshot()
@@ -1068,11 +1068,11 @@ describe('snapshot', () => {
 
 describe('state recreation', () => {
 	it('new instance after destroy gets fresh default', () => {
-		const s1 = state('recreate', { default: 0, scope: 'render' })
+		const s1 = state('recreate', { default: 0, scope: 'memory' })
 		s1.set(42)
 		s1.destroy()
 
-		const s2 = state('recreate', { default: 0, scope: 'render' })
+		const s2 = state('recreate', { default: 0, scope: 'memory' })
 		expect(s2.get()).toBe(0) // fresh default
 		expect(s2.isDestroyed).toBe(false)
 	})

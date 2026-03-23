@@ -177,8 +177,8 @@ describe('memory scope alias', () => {
 		const a = state('mem-shared', 10, { scope: 'render' })
 		const b = state('mem-shared', 10, { scope: 'memory' })
 
-		// Both should resolve to the same underlying render scope
-		// Since 'memory' normalizes to 'render', they share a registry key
+		// Both should resolve to the same underlying memory scope
+		// Since 'render' normalizes to 'memory', they share a registry key
 		expect(a).toBe(b)
 
 		a.destroy()

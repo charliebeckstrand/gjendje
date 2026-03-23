@@ -3,14 +3,14 @@ import { previous, state } from '../src/index.js'
 
 describe('previous', () => {
 	it('returns undefined before the first change', () => {
-		const counter = state('prev-init', { default: 0, scope: 'render' })
+		const counter = state('prev-init', { default: 0, scope: 'memory' })
 		const prev = previous(counter)
 
 		expect(prev.get()).toBeUndefined()
 	})
 
 	it('returns the previous value after a change', () => {
-		const counter = state('prev-basic', { default: 0, scope: 'render' })
+		const counter = state('prev-basic', { default: 0, scope: 'memory' })
 		const prev = previous(counter)
 
 		counter.set(1)
@@ -24,7 +24,7 @@ describe('previous', () => {
 	})
 
 	it('notifies subscribers when previous value changes', () => {
-		const counter = state('prev-notify', { default: 0, scope: 'render' })
+		const counter = state('prev-notify', { default: 0, scope: 'memory' })
 		const prev = previous(counter)
 
 		const listener = vi.fn()
@@ -41,7 +41,7 @@ describe('previous', () => {
 	it('works with object values', () => {
 		const user = state('prev-obj', {
 			default: { name: 'Jane', age: 30 },
-			scope: 'render',
+			scope: 'memory',
 		})
 		const prev = previous(user)
 
@@ -52,7 +52,7 @@ describe('previous', () => {
 	})
 
 	it('auto-generates unique keys', () => {
-		const s = state('prev-key-auto', { default: 0, scope: 'render' })
+		const s = state('prev-key-auto', { default: 0, scope: 'memory' })
 		const a = previous(s)
 		const b = previous(s)
 
@@ -62,14 +62,14 @@ describe('previous', () => {
 	})
 
 	it('uses provided key', () => {
-		const s = state('prev-key-custom', { default: 0, scope: 'render' })
+		const s = state('prev-key-custom', { default: 0, scope: 'memory' })
 		const prev = previous(s, { key: 'my-previous' })
 
 		expect(prev.key).toBe('my-previous')
 	})
 
 	it('peek returns same as get', () => {
-		const counter = state('prev-peek', { default: 0, scope: 'render' })
+		const counter = state('prev-peek', { default: 0, scope: 'memory' })
 		const prev = previous(counter)
 
 		counter.set(1)
@@ -77,7 +77,7 @@ describe('previous', () => {
 	})
 
 	it('destroy stops listening', () => {
-		const counter = state('prev-destroy', { default: 0, scope: 'render' })
+		const counter = state('prev-destroy', { default: 0, scope: 'memory' })
 		const prev = previous(counter)
 
 		const listener = vi.fn()
@@ -90,10 +90,10 @@ describe('previous', () => {
 		expect(prev.isDestroyed).toBe(true)
 	})
 
-	it('has render scope', () => {
-		const s = state('prev-scope', { default: 0, scope: 'render' })
+	it('has memory scope', () => {
+		const s = state('prev-scope', { default: 0, scope: 'memory' })
 		const prev = previous(s)
 
-		expect(prev.scope).toBe('render')
+		expect(prev.scope).toBe('memory')
 	})
 })

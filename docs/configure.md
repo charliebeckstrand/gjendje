@@ -12,7 +12,7 @@ Sets global defaults for all state instances. Call once at app startup before cr
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `scope` | `Scope` | `'render'` | Default scope for all state instances |
+| `scope` | `Scope` | `'memory'` | Default scope for all state instances |
 | `keyPattern` | `RegExp` | `undefined` | Enforce a naming pattern for state keys |
 | `logLevel` | `LogLevel` | `'warn'` | Control log verbosity |
 | `maxKeys` | `number` | `undefined` | Cap the total number of registered state instances |
@@ -130,13 +130,13 @@ state.local({ theme: 'light' }, {
 })
 ```
 
-Non-persistent scopes (`render`, `url`, `server`) are not affected.
+Non-persistent scopes (`memory`, `url`, `server`) are not affected.
 
 ---
 
 ## `scope`
 
-Sets a scope when `scope` is omitted from `state()`. Without this, the default is `'render'`.
+Sets a scope when `scope` is omitted from `state()`. Without this, the default is `'memory'`.
 
 ```ts
 configure({ scope: 'local' })
@@ -146,9 +146,9 @@ const theme = state({ theme: 'light' })
 theme.scope // 'local'
 
 // Per-instance scope always takes precedence
-const temp = state({ temp: 0 }, { scope: 'render' })
+const temp = state({ temp: 0 }, { scope: 'memory' })
 
-temp.scope // 'render'
+temp.scope // 'memory'
 ```
 
 ---
@@ -165,7 +165,7 @@ const theme = state.local({ theme: 'light' })
 ```
 
 When SSR is enabled:
-- On the server: browser scopes silently fall back to `render`
+- On the server: browser scopes silently fall back to `memory`
 - On the client before hydration: uses the default value to match server output
 - On the client after hydration: reads real storage and emits an update if different
 
@@ -184,7 +184,7 @@ configure({ sync: true })
 const theme = state.local({ theme: 'light' })
 ```
 
-Non-syncable scopes (`render`, `session`, `url`, `server`) emit a warning and ignore the setting.
+Non-syncable scopes (`memory`, `session`, `url`, `server`) emit a warning and ignore the setting.
 
 Per-instance `sync: false` overrides the global setting.
 

@@ -30,7 +30,7 @@ beforeEach(() => {
 
 describe('listener error isolation', () => {
 	it('one throwing listener does not prevent others from being notified', () => {
-		const s = state('listener-err', { default: 0, scope: 'render' })
+		const s = state('listener-err', { default: 0, scope: 'memory' })
 
 		const calls: number[] = []
 
@@ -58,7 +58,7 @@ describe('listener error isolation', () => {
 
 describe('interceptor error handling', () => {
 	it('throwing interceptor prevents update but does not crash', () => {
-		const s = state('intercept-err', { default: 0, scope: 'render' })
+		const s = state('intercept-err', { default: 0, scope: 'memory' })
 
 		s.intercept(() => {
 			throw new Error('interceptor boom')
@@ -75,7 +75,7 @@ describe('interceptor error handling', () => {
 
 describe('destroyed instance', () => {
 	it('set() is a no-op after destroy', () => {
-		const s = state('destroyed-set', { default: 0, scope: 'render' })
+		const s = state('destroyed-set', { default: 0, scope: 'memory' })
 
 		s.destroy()
 		s.set(42)
@@ -84,7 +84,7 @@ describe('destroyed instance', () => {
 	})
 
 	it('reset() is a no-op after destroy', () => {
-		const s = state('destroyed-reset', { default: 0, scope: 'render' })
+		const s = state('destroyed-reset', { default: 0, scope: 'memory' })
 
 		s.set(5)
 		s.destroy()
@@ -94,7 +94,7 @@ describe('destroyed instance', () => {
 	})
 
 	it('destroyed promise resolves after destroy()', async () => {
-		const s = state('destroyed-promise', { default: 0, scope: 'render' })
+		const s = state('destroyed-promise', { default: 0, scope: 'memory' })
 
 		s.destroy()
 
@@ -102,7 +102,7 @@ describe('destroyed instance', () => {
 	})
 
 	it('multiple destroy() calls are safe', () => {
-		const s = state('destroyed-multi', { default: 0, scope: 'render' })
+		const s = state('destroyed-multi', { default: 0, scope: 'memory' })
 
 		s.destroy()
 		s.destroy()
@@ -118,7 +118,7 @@ describe('destroyed instance', () => {
 describe('computed edge cases', () => {
 	it('peek() returns cached value without triggering recomputation', () => {
 		let computeCount = 0
-		const a = state('comp-peek-a', { default: 1, scope: 'render' })
+		const a = state('comp-peek-a', { default: 1, scope: 'memory' })
 
 		const c = computed([a], ([v]) => {
 			computeCount++
@@ -143,7 +143,7 @@ describe('computed edge cases', () => {
 	})
 
 	it('handles destroyed dependency gracefully', () => {
-		const a = state('comp-destroyed-dep', { default: 1, scope: 'render' })
+		const a = state('comp-destroyed-dep', { default: 1, scope: 'memory' })
 		const c = computed([a], ([v]) => (v ?? 0) * 2)
 
 		expect(c.get()).toBe(2)
@@ -155,7 +155,7 @@ describe('computed edge cases', () => {
 	})
 
 	it('diamond dependency computes correctly within a batch', () => {
-		const a = state('diamond-a', { default: 1, scope: 'render' })
+		const a = state('diamond-a', { default: 1, scope: 'memory' })
 		const b = computed([a], ([v]) => (v ?? 0) * 2)
 		const c = computed([a], ([v]) => (v ?? 0) * 3)
 
@@ -184,7 +184,7 @@ describe('computed edge cases', () => {
 describe('effect edge cases', () => {
 	it('cleanup runs before next execution', () => {
 		const log: string[] = []
-		const a = state('effect-cleanup', { default: 0, scope: 'render' })
+		const a = state('effect-cleanup', { default: 0, scope: 'memory' })
 
 		const handle = effect([a], () => {
 			log.push('run')
@@ -206,7 +206,7 @@ describe('effect edge cases', () => {
 	})
 
 	it('stop() is idempotent', () => {
-		const a = state('effect-stop', { default: 0, scope: 'render' })
+		const a = state('effect-stop', { default: 0, scope: 'memory' })
 		const handle = effect([a], () => undefined)
 
 		handle.stop()
@@ -222,7 +222,7 @@ describe('collection edge cases', () => {
 	it('remove with no matches is a no-op', () => {
 		const col = collection('col-noop', {
 			default: [{ id: 1 }],
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const listener = vi.fn()
@@ -238,7 +238,7 @@ describe('collection edge cases', () => {
 	it('update with no matches is a no-op', () => {
 		const col = collection('col-update-noop', {
 			default: [{ id: 1, name: 'a' }],
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		col.update((item) => item.id === 999, { name: 'b' })
@@ -249,7 +249,7 @@ describe('collection edge cases', () => {
 	it('clear() empties the collection', () => {
 		const col = collection('col-clear', {
 			default: [1, 2, 3],
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		col.clear()
@@ -261,7 +261,7 @@ describe('collection edge cases', () => {
 	it('find returns undefined when nothing matches', () => {
 		const col = collection('col-find', {
 			default: [1, 2, 3],
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		expect(col.find((x) => x === 99)).toBeUndefined()
@@ -276,7 +276,7 @@ describe('watch edge cases', () => {
 	it('watch notifies when value transitions to null', () => {
 		const s = state<{ name: string } | null>('watch-null', {
 			default: { name: 'hello' },
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const listener = vi.fn()
@@ -296,7 +296,7 @@ describe('watch edge cases', () => {
 
 describe('withHistory edge cases', () => {
 	it('undo/redo still works after interceptor throws', () => {
-		const base = state('hist-intercept-err', { default: 0, scope: 'render' })
+		const base = state('hist-intercept-err', { default: 0, scope: 'memory' })
 		const h = withHistory(base)
 
 		h.set(1)
@@ -320,7 +320,7 @@ describe('withHistory edge cases', () => {
 	})
 
 	it('reset is tracked in history', () => {
-		const base = state('hist-reset', { default: 0, scope: 'render' })
+		const base = state('hist-reset', { default: 0, scope: 'memory' })
 		const h = withHistory(base)
 
 		h.set(1)
@@ -341,7 +341,7 @@ describe('withHistory edge cases', () => {
 
 describe('batch edge cases', () => {
 	it('flushes even if fn throws', () => {
-		const s = state('batch-throw', { default: 0, scope: 'render' })
+		const s = state('batch-throw', { default: 0, scope: 'memory' })
 		const listener = vi.fn()
 
 		s.subscribe(listener)

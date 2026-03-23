@@ -94,7 +94,7 @@ export function select<TSource, TResult>(
 
 	return {
 		key: instanceKey,
-		scope: 'render' as const,
+		scope: 'memory' as const,
 
 		get ready(): Promise<void> {
 			return source.ready

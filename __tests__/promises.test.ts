@@ -46,8 +46,8 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('settled', () => {
-	it('resolves immediately for render scope', async () => {
-		const x = state('settled-render', { default: 0 })
+	it('resolves immediately for memory scope', async () => {
+		const x = state('settled-memory', { default: 0 })
 
 		x.set(1)
 
@@ -127,7 +127,7 @@ describe('settled', () => {
 
 describe('hydrated', () => {
 	it('resolves immediately for non-SSR state', async () => {
-		const x = state('hydrated-render', { default: 0 })
+		const x = state('hydrated-memory', { default: 0 })
 
 		await expect(x.hydrated).resolves.toBeUndefined()
 

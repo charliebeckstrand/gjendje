@@ -30,7 +30,7 @@ export interface HistoryOptions {
  * Enhance a state instance with undo/redo capabilities.
  *
  * ```ts
- * const counter = state('counter', { default: 0, scope: 'render' })
+ * const counter = state('counter', { default: 0, scope: 'memory' })
  * const h = withHistory(counter)
  *
  * h.set(1)

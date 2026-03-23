@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createRenderAdapter } from '../src/adapters/render.js'
+import { createMemoryAdapter } from '../src/adapters/memory.js'
 import { createStorageAdapter } from '../src/adapters/storage.js'
 import { withSync } from '../src/adapters/sync.js'
 import { getConfig } from '../src/config.js'
@@ -16,7 +16,7 @@ describe('withWatch', () => {
 	it('fires listener only when the watched key changes', () => {
 		const user = state('watch-key-change', {
 			default: { name: 'Jane', age: 30 },
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const w = withWatch(user)
@@ -34,7 +34,7 @@ describe('withWatch', () => {
 	it('does not fire when watched key is unchanged', () => {
 		const user = state('watch-no-fire', {
 			default: { name: 'Jane', age: 30 },
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const w = withWatch(user)
@@ -51,7 +51,7 @@ describe('withWatch', () => {
 	it('supports multiple watchers on different keys', () => {
 		const user = state('watch-multi-key', {
 			default: { name: 'Jane', age: 30 },
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const w = withWatch(user)
@@ -71,7 +71,7 @@ describe('withWatch', () => {
 	it('unsubscribe removes the watcher', () => {
 		const user = state('watch-unsub', {
 			default: { name: 'Jane', age: 30 },
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const w = withWatch(user)
@@ -88,7 +88,7 @@ describe('withWatch', () => {
 	})
 
 	it('handles watch on non-object values gracefully', () => {
-		const counter = state('watch-non-obj', { default: 0, scope: 'render' })
+		const counter = state('watch-non-obj', { default: 0, scope: 'memory' })
 
 		const w = withWatch(counter)
 
@@ -105,7 +105,7 @@ describe('withWatch', () => {
 	it('destroy clears watchers and stops listening', () => {
 		const user = state('watch-destroy', {
 			default: { name: 'Jane', age: 30 },
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const w = withWatch(user)
@@ -121,7 +121,7 @@ describe('withWatch', () => {
 	})
 
 	it('delegates get/set to the underlying instance', () => {
-		const counter = state('watch-delegate', { default: 5, scope: 'render' })
+		const counter = state('watch-delegate', { default: 5, scope: 'memory' })
 
 		const w = withWatch(counter)
 
@@ -139,7 +139,7 @@ describe('withWatch', () => {
 
 describe('readonly lifecycle getters', () => {
 	it('ready delegates to source', async () => {
-		const base = state('ro-ready', { default: 0, scope: 'render' })
+		const base = state('ro-ready', { default: 0, scope: 'memory' })
 
 		const ro = readonly(base)
 
@@ -147,7 +147,7 @@ describe('readonly lifecycle getters', () => {
 	})
 
 	it('settled delegates to source', async () => {
-		const base = state('ro-settled', { default: 0, scope: 'render' })
+		const base = state('ro-settled', { default: 0, scope: 'memory' })
 
 		const ro = readonly(base)
 
@@ -155,7 +155,7 @@ describe('readonly lifecycle getters', () => {
 	})
 
 	it('hydrated delegates to source', async () => {
-		const base = state('ro-hydrated', { default: 0, scope: 'render' })
+		const base = state('ro-hydrated', { default: 0, scope: 'memory' })
 
 		const ro = readonly(base)
 
@@ -163,7 +163,7 @@ describe('readonly lifecycle getters', () => {
 	})
 
 	it('destroyed delegates to source', async () => {
-		const base = state('ro-destroyed-promise', { default: 0, scope: 'render' })
+		const base = state('ro-destroyed-promise', { default: 0, scope: 'memory' })
 
 		const ro = readonly(base)
 
@@ -181,7 +181,7 @@ describe('readonly lifecycle getters', () => {
 
 describe('previous lifecycle', () => {
 	it('ready delegates to source', async () => {
-		const counter = state('prev-ready', { default: 0, scope: 'render' })
+		const counter = state('prev-ready', { default: 0, scope: 'memory' })
 
 		const prev = previous(counter)
 
@@ -189,7 +189,7 @@ describe('previous lifecycle', () => {
 	})
 
 	it('settled delegates to source', async () => {
-		const counter = state('prev-settled', { default: 0, scope: 'render' })
+		const counter = state('prev-settled', { default: 0, scope: 'memory' })
 
 		const prev = previous(counter)
 
@@ -197,7 +197,7 @@ describe('previous lifecycle', () => {
 	})
 
 	it('hydrated delegates to source', async () => {
-		const counter = state('prev-hydrated', { default: 0, scope: 'render' })
+		const counter = state('prev-hydrated', { default: 0, scope: 'memory' })
 
 		const prev = previous(counter)
 
@@ -205,7 +205,7 @@ describe('previous lifecycle', () => {
 	})
 
 	it('destroyed promise resolves on destroy', async () => {
-		const counter = state('prev-destroyed-p', { default: 0, scope: 'render' })
+		const counter = state('prev-destroyed-p', { default: 0, scope: 'memory' })
 
 		const prev = previous(counter)
 
@@ -217,7 +217,7 @@ describe('previous lifecycle', () => {
 	})
 
 	it('destroy without prior destroyed access allocates resolved promise', async () => {
-		const counter = state('prev-destroy-no-access', { default: 0, scope: 'render' })
+		const counter = state('prev-destroy-no-access', { default: 0, scope: 'memory' })
 
 		const prev = previous(counter)
 
@@ -228,7 +228,7 @@ describe('previous lifecycle', () => {
 	})
 
 	it('double destroy is idempotent', () => {
-		const counter = state('prev-double-destroy', { default: 0, scope: 'render' })
+		const counter = state('prev-double-destroy', { default: 0, scope: 'memory' })
 
 		const prev = previous(counter)
 
@@ -245,7 +245,7 @@ describe('previous lifecycle', () => {
 
 describe('select lifecycle', () => {
 	it('ready delegates to source', async () => {
-		const s = state('sel-ready', { default: 0, scope: 'render' })
+		const s = state('sel-ready', { default: 0, scope: 'memory' })
 
 		const derived = select(s, (n) => n)
 
@@ -253,7 +253,7 @@ describe('select lifecycle', () => {
 	})
 
 	it('settled delegates to source', async () => {
-		const s = state('sel-settled', { default: 0, scope: 'render' })
+		const s = state('sel-settled', { default: 0, scope: 'memory' })
 
 		const derived = select(s, (n) => n)
 
@@ -261,7 +261,7 @@ describe('select lifecycle', () => {
 	})
 
 	it('hydrated delegates to source', async () => {
-		const s = state('sel-hydrated', { default: 0, scope: 'render' })
+		const s = state('sel-hydrated', { default: 0, scope: 'memory' })
 
 		const derived = select(s, (n) => n)
 
@@ -269,7 +269,7 @@ describe('select lifecycle', () => {
 	})
 
 	it('destroyed promise resolves on destroy', async () => {
-		const s = state('sel-destroyed-p', { default: 0, scope: 'render' })
+		const s = state('sel-destroyed-p', { default: 0, scope: 'memory' })
 
 		const derived = select(s, (n) => n)
 
@@ -281,7 +281,7 @@ describe('select lifecycle', () => {
 	})
 
 	it('destroy without prior destroyed access allocates resolved promise', async () => {
-		const s = state('sel-destroy-no-access', { default: 0, scope: 'render' })
+		const s = state('sel-destroy-no-access', { default: 0, scope: 'memory' })
 
 		const derived = select(s, (n) => n)
 
@@ -291,7 +291,7 @@ describe('select lifecycle', () => {
 	})
 
 	it('double destroy is idempotent', () => {
-		const s = state('sel-double-destroy', { default: 0, scope: 'render' })
+		const s = state('sel-double-destroy', { default: 0, scope: 'memory' })
 
 		const derived = select(s, (n) => n)
 
@@ -317,9 +317,9 @@ describe('registry', () => {
 	})
 
 	it('re-registering over a destroyed entry via registerByKey replaces it', () => {
-		const a = state('reg-replace-direct', { default: 1, scope: 'render' })
+		const a = state('reg-replace-direct', { default: 1, scope: 'memory' })
 
-		const rKey = scopedKey('reg-replace-direct', 'render')
+		const rKey = scopedKey('reg-replace-direct', 'memory')
 
 		// Mark destroyed but don't unregister (simulate the internal state)
 		// We need to manually put a destroyed instance back in the registry
@@ -328,10 +328,10 @@ describe('registry', () => {
 		// destroy() already unregisters, so re-register the destroyed instance manually
 		getRegistry().set(rKey, a)
 
-		const b = state('reg-replace-direct-src', { default: 2, scope: 'render' })
+		const b = state('reg-replace-direct-src', { default: 2, scope: 'memory' })
 
 		// Now call registerByKey with the same rKey — should replace destroyed entry
-		registerByKey(rKey, 'reg-replace-direct', 'render', b, getConfig())
+		registerByKey(rKey, 'reg-replace-direct', 'memory', b, getConfig())
 
 		expect(getRegistry().get(rKey)).toBe(b)
 	})
@@ -339,12 +339,12 @@ describe('registry', () => {
 	it('registerByKey with existing non-destroyed entry and warnOnDuplicate logs warning', () => {
 		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-		const a = state('reg-bykey-dup', { default: 1, scope: 'render' })
+		const a = state('reg-bykey-dup', { default: 1, scope: 'memory' })
 
-		const rKey = scopedKey('reg-bykey-dup', 'render')
+		const rKey = scopedKey('reg-bykey-dup', 'memory')
 
 		// Call registerByKey again with the same key — hits line 31-32
-		registerByKey(rKey, 'reg-bykey-dup', 'render', a, {
+		registerByKey(rKey, 'reg-bykey-dup', 'memory', a, {
 			...getConfig(),
 			warnOnDuplicate: true,
 			logLevel: 'warn',
@@ -358,12 +358,12 @@ describe('registry', () => {
 	it('registerByKey with existing non-destroyed entry without warnOnDuplicate is silent', () => {
 		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-		const a = state('reg-bykey-silent', { default: 1, scope: 'render' })
+		const a = state('reg-bykey-silent', { default: 1, scope: 'memory' })
 
-		const rKey = scopedKey('reg-bykey-silent', 'render')
+		const rKey = scopedKey('reg-bykey-silent', 'memory')
 
 		// Call registerByKey again — hits line 28 but not 31
-		registerByKey(rKey, 'reg-bykey-silent', 'render', a, {
+		registerByKey(rKey, 'reg-bykey-silent', 'memory', a, {
 			...getConfig(),
 			warnOnDuplicate: false,
 		})
@@ -379,10 +379,10 @@ describe('registry', () => {
 
 		configure({ maxKeys: currentSize + 1 })
 
-		state('reg-max-1', { default: 0, scope: 'render' })
+		state('reg-max-1', { default: 0, scope: 'memory' })
 
 		expect(() => {
-			state('reg-max-2', { default: 0, scope: 'render' })
+			state('reg-max-2', { default: 0, scope: 'memory' })
 		}).toThrow(/maxKeys limit/)
 	})
 
@@ -391,19 +391,19 @@ describe('registry', () => {
 
 		configure({ onRegister })
 
-		state('reg-callback', { default: 0, scope: 'render' })
+		state('reg-callback', { default: 0, scope: 'memory' })
 
-		expect(onRegister).toHaveBeenCalledWith({ key: 'reg-callback', scope: 'render' })
+		expect(onRegister).toHaveBeenCalledWith({ key: 'reg-callback', scope: 'memory' })
 
 		configure({ onRegister: undefined })
 	})
 
 	it('registerByKey adds instance to registry', () => {
-		const instance = state('reg-bykey-src', { default: 0, scope: 'render' })
+		const instance = state('reg-bykey-src', { default: 0, scope: 'memory' })
 
-		const rKey = scopedKey('reg-bykey', 'render')
+		const rKey = scopedKey('reg-bykey', 'memory')
 
-		registerByKey(rKey, 'reg-bykey', 'render', instance, getConfig())
+		registerByKey(rKey, 'reg-bykey', 'memory', instance, getConfig())
 
 		expect(getRegistry().has(rKey)).toBe(true)
 
@@ -415,8 +415,8 @@ describe('registry', () => {
 
 		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-		state('reg-dup-warn', { default: 0, scope: 'render' })
-		state('reg-dup-warn', { default: 0, scope: 'render' })
+		state('reg-dup-warn', { default: 0, scope: 'memory' })
+		state('reg-dup-warn', { default: 0, scope: 'memory' })
 
 		expect(spy).toHaveBeenCalledWith(expect.stringContaining('Duplicate state'))
 
@@ -427,12 +427,12 @@ describe('registry', () => {
 })
 
 // ---------------------------------------------------------------------------
-// 6. render adapter direct coverage
+// 6. memory adapter direct coverage
 // ---------------------------------------------------------------------------
 
-describe('createRenderAdapter', () => {
+describe('createMemoryAdapter', () => {
 	it('set notifies subscribed listeners', () => {
-		const adapter = createRenderAdapter(0)
+		const adapter = createMemoryAdapter(0)
 
 		const listener = vi.fn()
 
@@ -444,7 +444,7 @@ describe('createRenderAdapter', () => {
 	})
 
 	it('listener error is caught and does not break other listeners', () => {
-		const adapter = createRenderAdapter(0)
+		const adapter = createMemoryAdapter(0)
 
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -468,7 +468,7 @@ describe('createRenderAdapter', () => {
 	})
 
 	it('unsubscribe removes listener', () => {
-		const adapter = createRenderAdapter(0)
+		const adapter = createMemoryAdapter(0)
 
 		const listener = vi.fn()
 
@@ -483,7 +483,7 @@ describe('createRenderAdapter', () => {
 	})
 
 	it('destroy clears all listeners', () => {
-		const adapter = createRenderAdapter(0)
+		const adapter = createMemoryAdapter(0)
 
 		const listener = vi.fn()
 
@@ -497,7 +497,7 @@ describe('createRenderAdapter', () => {
 	})
 
 	it('ready resolves immediately', async () => {
-		const adapter = createRenderAdapter(0)
+		const adapter = createMemoryAdapter(0)
 
 		await expect(adapter.ready).resolves.toBeUndefined()
 	})

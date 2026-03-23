@@ -1,5 +1,5 @@
 import { createBucketAdapter } from './adapters/bucket.js'
-import { createRenderAdapter } from './adapters/render.js'
+import { createMemoryAdapter } from './adapters/memory.js'
 import { createStorageAdapter } from './adapters/storage.js'
 import { withSync } from './adapters/sync.js'
 import { createUrlAdapter } from './adapters/url.js'
@@ -35,8 +35,8 @@ const SYNCABLE_SCOPES = new Set<Scope>(['local', 'bucket'])
 // Shared resolved promise — avoids allocating a new one per instance
 const RESOLVED = Promise.resolve()
 
-// Shared no-op adapter shim for RenderStateImpl — allocated once, never per-instance
-const RENDER_SHIM: Adapter<unknown> = {
+// Shared no-op adapter shim for MemoryStateImpl — allocated once, never per-instance
+const MEMORY_SHIM: Adapter<unknown> = {
 	ready: RESOLVED,
 	get: () => undefined,
 	set: () => {},
@@ -67,12 +67,12 @@ function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptio
 	switch (scope) {
 		case 'memory':
 		case 'render':
-			return createRenderAdapter(options.default)
+			return createMemoryAdapter(options.default)
 
 		case 'session':
 			if (typeof sessionStorage === 'undefined') {
 				throw new Error(
-					'[gjendje] sessionStorage is not available. Use ssr: true or scope: "render" for server environments.',
+					'[gjendje] sessionStorage is not available. Use ssr: true or scope: "memory" for server environments.',
 				)
 			}
 
@@ -471,19 +471,19 @@ class StateImpl<T> implements StateInstance<T> {
 }
 
 // ---------------------------------------------------------------------------
-// RenderStateImpl — specialized subclass for render scope that skips the
+// MemoryStateImpl — specialized subclass for memory scope that skips the
 // adapter object entirely. State is stored directly on the instance.
 // ---------------------------------------------------------------------------
 
-interface RenderMutableState<T> extends MutableState<T> {
+interface MemoryMutableState<T> extends MutableState<T> {
 	current: T
-	renderListeners: Set<Listener<T>> | undefined
+	memoryListeners: Set<Listener<T>> | undefined
 	notifyFn: (() => void) | undefined
 }
 
-class RenderStateImpl<T> extends StateImpl<T> {
+class MemoryStateImpl<T> extends StateImpl<T> {
 	// Direct reference — avoids a getter cast on every get()/set() call
-	private _r: RenderMutableState<T>
+	private _r: MemoryMutableState<T>
 
 	private _hasIsEqual: boolean
 
@@ -493,13 +493,13 @@ class RenderStateImpl<T> extends StateImpl<T> {
 		options: StateOptions<T>,
 		config: Readonly<GjendjeConfig>,
 	) {
-		super(key, 'render', rKey, RENDER_SHIM as Adapter<T>, options, config)
+		super(key, 'memory', rKey, MEMORY_SHIM as Adapter<T>, options, config)
 
-		// Extend the mutable state with render-specific fields
-		const rs = this._s as RenderMutableState<T>
+		// Extend the mutable state with memory-specific fields
+		const rs = this._s as MemoryMutableState<T>
 
 		rs.current = options.default
-		rs.renderListeners = undefined
+		rs.memoryListeners = undefined
 
 		rs.notifyFn = undefined
 
@@ -565,10 +565,10 @@ class RenderStateImpl<T> extends StateImpl<T> {
 	override subscribe(listener: Listener<T>): Unsubscribe {
 		const s = this._r
 
-		if (!s.renderListeners) {
+		if (!s.memoryListeners) {
 			const listeners = new Set<Listener<T>>()
 
-			s.renderListeners = listeners
+			s.memoryListeners = listeners
 
 			s.notifyFn = () => {
 				for (const l of listeners) {
@@ -581,7 +581,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 			}
 		}
 
-		const set = s.renderListeners
+		const set = s.memoryListeners
 
 		set.add(listener)
 
@@ -690,7 +690,7 @@ class RenderStateImpl<T> extends StateImpl<T> {
 
 		s.watchUnsub?.()
 
-		s.renderListeners?.clear()
+		s.memoryListeners?.clear()
 
 		unregisterByKey(this._rKey)
 
@@ -715,16 +715,16 @@ class RenderStateImpl<T> extends StateImpl<T> {
  * This is the low-level factory used by both `state()` and `collection()`.
  */
 /**
- * Fast path for render-scope instances. Called directly from factory.ts
+ * Fast path for memory-scope instances. Called directly from factory.ts
  * to skip redundant config/registry lookups and adapter setup.
  */
-export function createRenderState<T>(
+export function createMemoryState<T>(
 	key: string,
 	rKey: string,
 	options: StateOptions<T>,
 	config: Readonly<GjendjeConfig>,
 ): StateInstance<T> {
-	return new RenderStateImpl(key, rKey, options, config)
+	return new MemoryStateImpl(key, rKey, options, config)
 }
 
 export function createBase<T>(key: string, options: StateOptions<T>): StateInstance<T> {
@@ -742,8 +742,8 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 	}
 
 	// Apply global defaults — per-instance options take precedence
-	const rawScope = options.scope ?? config.scope ?? 'render'
-	const scope = rawScope === 'memory' ? 'render' : rawScope
+	const rawScope = options.scope ?? config.scope ?? 'memory'
+	const scope = rawScope === 'render' ? 'memory' : rawScope
 
 	const rKey = scopedKey(key, scope)
 
@@ -761,9 +761,9 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 
 	const isSsrMode = (options.ssr ?? config.ssr) && BROWSER_SCOPES.has(scope)
 
-	const useRenderFallback = isSsrMode && isServer()
+	const useMemoryFallback = isSsrMode && isServer()
 
-	// --- Sync warning (must run before the render fast-path) ---
+	// --- Sync warning (must run before the memory fast-path) ---
 	const effectiveSync = options.sync ?? (config.sync && SYNCABLE_SCOPES.has(scope))
 
 	if (effectiveSync && !SYNCABLE_SCOPES.has(scope)) {
@@ -773,19 +773,19 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 		)
 	}
 
-	// --- Fast path: render scope (no SSR, no sync) — skip adapter object ---
+	// --- Fast path: memory scope (no SSR, no sync) — skip adapter object ---
 	let instance: StateImpl<T>
 
-	if (scope === 'render' && !isSsrMode) {
-		instance = new RenderStateImpl(key, rKey, options, config)
+	if (scope === 'memory' && !isSsrMode) {
+		instance = new MemoryStateImpl(key, rKey, options, config)
 	} else {
 		const storageKey = resolveStorageKey(key, options, config.prefix)
 
-		const baseAdapter = useRenderFallback
-			? createRenderAdapter(options.default)
+		const baseAdapter = useMemoryFallback
+			? createMemoryAdapter(options.default)
 			: resolveAdapter(storageKey, scope, options)
 
-		const shouldSync = effectiveSync && SYNCABLE_SCOPES.has(scope) && !useRenderFallback
+		const shouldSync = effectiveSync && SYNCABLE_SCOPES.has(scope) && !useMemoryFallback
 
 		const adapter = shouldSync ? withSync(baseAdapter, storageKey, scope) : baseAdapter
 
@@ -811,7 +811,7 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 
 					realAdapter.destroy?.()
 				} catch (err) {
-					log('debug', `Hydration adapter unavailable for state("${key}") — using render fallback.`)
+					log('debug', `Hydration adapter unavailable for state("${key}") — using memory fallback.`)
 
 					reportError(key, scope, err)
 				}

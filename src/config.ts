@@ -79,7 +79,7 @@ export interface ExpireContext {
 }
 
 export interface GjendjeConfig {
-	/** Default scope for all state instances. Defaults to `'render'`. */
+	/** Default scope for all state instances. Defaults to `'memory'`. */
 	scope?: Scope | undefined
 
 	/** Enforce a naming pattern for state keys. */

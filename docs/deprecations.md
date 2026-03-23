@@ -21,3 +21,13 @@ The standalone `local()`, `session()`, `url()`, `bucket()`, and `server()` expor
 **Removed in:** 1.0.0
 
 The `tab` scope alias has been removed. Use `session` instead — both referenced `sessionStorage`.
+
+---
+
+## Deprecated (not yet removed)
+
+### `render` scope name
+
+**Deprecated in:** 1.0.0
+
+The `render` scope name is deprecated in favor of `memory`. Both still work — `'render'` is silently normalized to `'memory'` — but new code should use `'memory'`. The `'render'` alias will be removed in a future major version.

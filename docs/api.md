@@ -187,7 +187,7 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `default` | `T` | required | Initial value and reset target |
-| `scope` | `Scope` | `'render'` | Where state lives |
+| `scope` | `Scope` | `'memory'` | Where state lives |
 | `isEqual` | `(a: T, b: T) => boolean` | — | Custom equality function. When provided, `set()` skips the update if `isEqual(next, prev)` returns `true` |
 | `migrate` | `Record<number, (old: unknown) => unknown>` | — | Migration functions keyed by source version |
 | `persist` | `Array<keyof T & string>` | — | Selectively persist only listed keys of an object value |
@@ -229,7 +229,7 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 |-------|---------|----------------|-----------|--------|-------|
 | `bucket` | Storage Buckets API | yes | no | no | yes |
 | `local` | localStorage | yes | passive | no | no |
-| `render` | Memory | no | no | no | no |
+| `memory` | Memory | no | no | no | no |
 | `server` | AsyncLocalStorage | per-request | no | yes | no |
 | `session` | sessionStorage | yes | no | no | no |
 | `url` | URLSearchParams | yes | via link | no | no |

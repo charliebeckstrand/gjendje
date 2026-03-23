@@ -3,8 +3,8 @@
 // ---------------------------------------------------------------------------
 
 export type Scope =
-	| 'memory' // in-memory, ephemeral (preferred name)
-	| 'render' // in-memory, ephemeral (alias for 'memory')
+	| 'memory' // in-memory, ephemeral
+	| 'render' // alias for 'memory' (deprecated)
 	| 'session' // sessionStorage — survives page reloads, gone when tab closes
 	| 'local' // localStorage — survives across tabs and restarts
 	| 'url' // URLSearchParams — lives in the address bar, shareable
@@ -163,7 +163,7 @@ export interface StateOptions<T> {
 	/** Initial / default value */
 	default: T
 
-	/** Where state should live. Defaults to 'render'. */
+	/** Where state should live. Defaults to 'memory'. */
 	scope?: Scope
 
 	/**
@@ -180,7 +180,7 @@ export interface StateOptions<T> {
 
 	/**
 	 * Enable SSR safety. When true:
-	 * - On server: silently falls back to 'render' scope
+	 * - On server: silently falls back to 'memory' scope
 	 * - On client before hydration: uses default value to match server output
 	 * - On client after hydration: reads real storage and emits update if different
 	 */

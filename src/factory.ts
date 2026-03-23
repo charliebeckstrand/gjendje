@@ -1,5 +1,5 @@
 import { getConfig, log } from './config.js'
-import { createBase, createRenderState } from './core.js'
+import { createBase, createMemoryState } from './core.js'
 import { getRegistered, registerByKey, scopedKey } from './registry.js'
 import type { StateInstance, StateOptions } from './types.js'
 
@@ -22,8 +22,8 @@ export function createState<T>(key: string, options: StateOptions<T>): StateInst
 		)
 	}
 
-	const rawScope = options.scope ?? config.scope ?? 'render'
-	const scope = rawScope === 'memory' ? 'render' : rawScope
+	const rawScope = options.scope ?? config.scope ?? 'memory'
+	const scope = rawScope === 'render' ? 'memory' : rawScope
 
 	const rKey = scopedKey(key, scope)
 
@@ -37,16 +37,16 @@ export function createState<T>(key: string, options: StateOptions<T>): StateInst
 		return existing
 	}
 
-	// Render scope fast path — single constructor, no adapter, no SSR checks
-	if (scope === 'render' && !options.ssr && !config.ssr) {
+	// Memory scope fast path — single constructor, no adapter, no SSR checks
+	if (scope === 'memory' && !options.ssr && !config.ssr) {
 		if (options.sync) {
 			log(
 				'warn',
-				`sync: true is ignored for scope "render". Only "local" and "bucket" scopes support cross-tab sync.`,
+				`sync: true is ignored for scope "memory". Only "local" and "bucket" scopes support cross-tab sync.`,
 			)
 		}
 
-		const instance = createRenderState(key, rKey, options, config)
+		const instance = createMemoryState(key, rKey, options, config)
 
 		registerByKey(rKey, key, scope, instance, config)
 

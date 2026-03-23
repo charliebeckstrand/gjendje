@@ -78,7 +78,7 @@ describe('isEqual option', () => {
 	it('skips set() when isEqual returns true', () => {
 		const s = state('eq-test', {
 			default: { x: 1, y: 2 },
-			scope: 'render',
+			scope: 'memory',
 			isEqual: (a, b) => a.x === b.x && a.y === b.y,
 		})
 
@@ -95,7 +95,7 @@ describe('isEqual option', () => {
 	it('allows set() when isEqual returns false', () => {
 		const s = state('eq-test-2', {
 			default: { x: 1, y: 2 },
-			scope: 'render',
+			scope: 'memory',
 			isEqual: (a, b) => a.x === b.x && a.y === b.y,
 		})
 
@@ -112,7 +112,7 @@ describe('isEqual option', () => {
 	it('skips reset() when isEqual returns true', () => {
 		const s = state('eq-reset', {
 			default: { x: 1 },
-			scope: 'render',
+			scope: 'memory',
 			isEqual: (a, b) => a.x === b.x,
 		})
 
@@ -129,7 +129,7 @@ describe('isEqual option', () => {
 	it('works without isEqual (normal behavior)', () => {
 		const s = state('eq-none', {
 			default: 0,
-			scope: 'render',
+			scope: 'memory',
 		})
 
 		const listener = vi.fn()

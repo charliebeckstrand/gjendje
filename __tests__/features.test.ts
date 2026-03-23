@@ -30,8 +30,8 @@ beforeEach(() => {
 
 describe('instance registry', () => {
 	it('returns the same instance for the same key and scope', () => {
-		const a = state('reg-theme', { default: 'light', scope: 'render' })
-		const b = state('reg-theme', { default: 'light', scope: 'render' })
+		const a = state('reg-theme', { default: 'light', scope: 'memory' })
+		const b = state('reg-theme', { default: 'light', scope: 'memory' })
 
 		expect(a).toBe(b)
 
@@ -39,7 +39,7 @@ describe('instance registry', () => {
 	})
 
 	it('returns different instances for different scopes', () => {
-		const a = state('reg-x', { default: 0, scope: 'render' })
+		const a = state('reg-x', { default: 0, scope: 'memory' })
 		const b = state('reg-x', { default: 0, scope: 'local' })
 
 		expect(a).not.toBe(b)

@@ -7,6 +7,7 @@
 - **Breaking:** Remove deprecated standalone scope shortcut exports (`local()`, `session()`, `url()`, `bucket()`, `server()`). Use `state.local()`, `state.session()`, `state.url()`, `state.bucket()`, `state.server()` instead.
 - **Breaking:** Remove deprecated `'tab'` scope alias. Use `'session'` instead.
 - **Breaking:** Remove `'tab'` from `BucketOptions.fallback` type. Use `'session'` instead.
+- **Breaking:** Rename `'render'` scope to `'memory'`. `'render'` is kept as a deprecated alias.
 
 ### Improvements
 
@@ -19,12 +20,6 @@
 - Rewrite README for scannability — highlights section, one-liner primitive/utility tables, simplified quick start.
 - Fix stale `use()` → `onChange()` references in docs/api.md and docs/primitives.md.
 - Rename `docs/derived.md` to `docs/primitives.md`.
-
-## 0.9.3
-
-### Patch Changes
-
-- f24d556: Fix inconsistent variable names in README state examples
 
 ## 0.9.3
 
