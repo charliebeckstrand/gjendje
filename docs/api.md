@@ -360,3 +360,8 @@ w.watch('name', (name) => console.log(name))
 w.set({ name: 'John', age: 30 })  // logs 'John'
 w.set({ name: 'John', age: 31 })  // nothing — name didn't change
 ```
+
+---
+
+**Next:** [Scopes](scopes.md) · [Persistence](persistence.md) · [Primitives](primitives.md) · [Configure](configure.md)
+**Previous:** [Quick start](quick-start.md) · [Examples](examples.md)

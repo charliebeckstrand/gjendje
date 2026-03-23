@@ -1,5 +1,11 @@
 # gjendje
 
+## Unreleased
+
+### Patch Changes
+
+- Improve documentation usability: add inline quick start and API methods table to README, remove misplaced utilities table from configure guide, add navigation links between all doc pages.
+
 ## 1.0.0
 
 ### Major Changes

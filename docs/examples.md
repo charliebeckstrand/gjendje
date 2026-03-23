@@ -292,3 +292,8 @@ const results = computed([query, category], ([q, cat]) => {
 ```
 
 Bookmarkable. Shareable. Back button works.
+
+---
+
+**Next:** [API reference](api.md) · [Scopes](scopes.md) · [Persistence](persistence.md) · [Primitives](primitives.md) · [Configure](configure.md)
+**Previous:** [Quick start](quick-start.md)

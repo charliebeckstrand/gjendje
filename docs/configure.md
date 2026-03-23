@@ -28,19 +28,6 @@ Everything above is optional. Without `configure()`, gjendje uses sensible defau
 
 ---
 
-## Utilities
-
-| Utility | Description |
-|---------|-------------|
-| `batch(fn)` | Group updates so subscribers are notified once. |
-| `withHistory(instance)` | Adds undo/redo to any state instance. |
-| `withWatch(instance)` | Adds per-key change tracking to any instance. |
-| `snapshot()` | Returns a read-only snapshot of all registered instances. |
-| `shallowEqual(a, b)` | Shallow equality check for primitives, arrays, and plain objects. |
-| `withServerSession(fn)` | Wraps a callback in `AsyncLocalStorage` context for `server` scope. |
-
----
-
 ## Options
 
 | Option | Type | Default | Description |
@@ -559,3 +546,7 @@ interface ValidationFailContext {
 ```
 
 Fires before falling back to the default value. The `value` is the rejected data as read from storage (after migration, if any).
+
+---
+
+**Previous:** [Quick start](quick-start.md) · [Examples](examples.md) · [API reference](api.md) · [Scopes](scopes.md) · [Persistence](persistence.md) · [Primitives](primitives.md)
