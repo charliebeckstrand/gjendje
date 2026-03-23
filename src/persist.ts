@@ -1,10 +1,11 @@
 import { getConfig, log } from './config.js'
 import type { Scope, StateOptions, VersionedValue } from './types.js'
+import { isRecord } from './utils.js'
 
 function isVersionedValue(value: unknown): value is VersionedValue<unknown> {
-	const hasShape = value !== null && typeof value === 'object' && 'v' in value && 'data' in value
+	if (!isRecord(value)) return false
 
-	return hasShape && Number.isSafeInteger((value as VersionedValue<unknown>).v)
+	return 'v' in value && 'data' in value && Number.isSafeInteger(value.v)
 }
 
 /**
@@ -99,13 +100,13 @@ export function wrapForStorage<T>(value: T, version?: number): string {
  * Returns the value unchanged when `keys` is undefined or the value is not an object.
  */
 export function pickKeys<T>(value: T, keys: string[] | undefined): T {
-	if (!keys || typeof value !== 'object' || value === null) return value
+	if (!keys || !isRecord(value)) return value
 
 	const partial: Record<string, unknown> = {}
 
 	for (const k of keys) {
-		if (Object.hasOwn(value as Record<string, unknown>, k)) {
-			partial[k] = (value as Record<string, unknown>)[k]
+		if (Object.hasOwn(value, k)) {
+			partial[k] = value[k]
 		}
 	}
 
@@ -117,7 +118,7 @@ export function pickKeys<T>(value: T, keys: string[] | undefined): T {
  * Returns the stored value unchanged when `keys` is undefined or the value is not an object.
  */
 export function mergeKeys<T>(stored: T, defaultValue: T, keys: string[] | undefined): T {
-	if (!keys || typeof stored !== 'object' || stored === null) return stored
+	if (!keys || !isRecord(stored)) return stored
 
 	return { ...(defaultValue as object), ...(stored as object) } as T
 }

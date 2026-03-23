@@ -1,14 +1,11 @@
 import { notify } from './batch.js'
 import { createListeners } from './listeners.js'
-import type { BaseInstance, ReadonlyInstance } from './types.js'
+import type { BaseInstance, DepValues, ReadonlyInstance } from './types.js'
+import { createLazyDestroyed } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-type DepValues<T extends ReadonlyArray<BaseInstance<unknown>>> = {
-	[K in keyof T]: T[K] extends BaseInstance<infer V> ? V : never
-}
 
 /**
  * A read-only reactive value derived from one or more dependencies.
@@ -115,10 +112,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	// Compute initial value eagerly so first get() is synchronous
 	recompute()
 
-	// Lazy destroyed promise — only allocated if someone awaits it
-	let destroyedPromise: Promise<void> | undefined
-
-	let resolveDestroyed: (() => void) | undefined
+	const lazyDestroyed = createLazyDestroyed()
 
 	// Cache promise properties — deps don't change after creation
 	const readyPromise = Promise.all(deps.map((d) => d.ready)).then(() => undefined)
@@ -127,7 +121,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 	return {
 		key: instanceKey,
-		scope: 'memory' as const,
+		scope: 'memory',
 
 		get ready(): Promise<void> {
 			return readyPromise
@@ -142,13 +136,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		get destroyed(): Promise<void> {
-			if (!destroyedPromise) {
-				destroyedPromise = new Promise<void>((resolve) => {
-					resolveDestroyed = resolve
-				})
-			}
-
-			return destroyedPromise
+			return lazyDestroyed.promise
 		},
 
 		get isDestroyed() {
@@ -176,11 +164,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 			listeners.clear()
 
-			if (resolveDestroyed) {
-				resolveDestroyed()
-			} else {
-				destroyedPromise = Promise.resolve()
-			}
+			lazyDestroyed.resolve()
 		},
 	}
 }

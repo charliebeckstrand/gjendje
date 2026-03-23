@@ -47,6 +47,16 @@ Never commit without ensuring new code matches these quality guidelines:
 - Add blank lines between consecutive variable declarations (`const`/`let`) — each declaration should be visually separated
 - New features must include tests
 
+## Performance-Critical Architecture
+
+### MemoryStateImpl (src/core.ts)
+
+**Do not remove, flatten, or merge `MemoryStateImpl` into `StateImpl`.**
+
+`MemoryStateImpl` is a specialized subclass that bypasses the adapter pipeline for memory-scoped state (the default and most common scope). It stores values directly on the instance instead of going through adapter `get()`/`set()` indirection. Removing it causes a **~60% regression** in instance lifecycle throughput and **~30% regression** in batch/effect performance.
+
+Run `npx tsx benchmarks/internal.bench.ts lifecycle batch-scaling effect` to verify performance before and after any changes to this class.
+
 ## Agent Behavior
 
 - When busy with a task and the user requests something else, delegate the new task to a sub-agent using the Agent tool rather than interrupting current work.

@@ -1,12 +1,8 @@
-import type { BaseInstance } from './types.js'
+import type { BaseInstance, DepValues } from './types.js'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-type DepValues<T extends ReadonlyArray<BaseInstance<unknown>>> = {
-	[K in keyof T]: T[K] extends BaseInstance<infer V> ? V : never
-}
 
 type Cleanup = () => void
 

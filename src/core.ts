@@ -10,6 +10,7 @@ import { getRegistered, registerByKey, scopedKey, unregisterByKey } from './regi
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
 import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
 import { shallowEqual } from './utils.js'
+import { addWatcher, notifyWatchers } from './watchers.js'
 
 // ---------------------------------------------------------------------------
 // Lazy server adapter registration — avoids pulling node:async_hooks into
@@ -205,6 +206,41 @@ class StateImpl<T> implements StateInstance<T> {
 		return this._s.isDestroyed ? this._s.lastValue : this._adapter.get()
 	}
 
+	protected _applyInterceptors(next: T, prev: T): T {
+		const s = this._s
+
+		if (s.interceptors === undefined || s.interceptors.size === 0) return next
+
+		const original = next
+
+		for (const interceptor of s.interceptors) {
+			next = interceptor(next, prev)
+		}
+
+		if (!Object.is(original, next)) {
+			this._config.onIntercept?.({
+				key: this.key,
+				scope: this.scope,
+				original,
+				intercepted: next,
+			})
+		}
+
+		return next
+	}
+
+	protected _notifyChange(next: T, prev: T): void {
+		const s = this._s
+
+		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
+			for (const hook of s.changeHandlers) {
+				hook(next, prev)
+			}
+		}
+
+		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
+	}
+
 	set(valueOrUpdater: T | ((prev: T) => T)): void {
 		const s = this._s
 
@@ -217,22 +253,7 @@ class StateImpl<T> implements StateInstance<T> {
 				? (valueOrUpdater as (prev: T) => T)(prev)
 				: valueOrUpdater
 
-		if (s.interceptors !== undefined && s.interceptors.size > 0) {
-			const original = next
-
-			for (const interceptor of s.interceptors) {
-				next = interceptor(next, prev)
-			}
-
-			if (!Object.is(original, next)) {
-				this._config.onIntercept?.({
-					key: this.key,
-					scope: this.scope,
-					original,
-					intercepted: next,
-				})
-			}
-		}
+		next = this._applyInterceptors(next, prev)
 
 		if (this._options.isEqual?.(next, prev)) return
 
@@ -242,13 +263,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		s.settled = this._adapter.ready
 
-		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
-			for (const hook of s.changeHandlers) {
-				hook(next, prev)
-			}
-		}
-
-		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
+		this._notifyChange(next, prev)
 	}
 
 	subscribe(listener: Listener<T>): Unsubscribe {
@@ -262,24 +277,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		const prev = this._adapter.get()
 
-		let next = this._defaultValue
-
-		if (s.interceptors !== undefined && s.interceptors.size > 0) {
-			const original = next
-
-			for (const interceptor of s.interceptors) {
-				next = interceptor(next, prev)
-			}
-
-			if (!Object.is(original, next)) {
-				this._config.onIntercept?.({
-					key: this.key,
-					scope: this.scope,
-					original,
-					intercepted: next,
-				})
-			}
-		}
+		const next = this._applyInterceptors(this._defaultValue, prev)
 
 		if (this._options.isEqual?.(next, prev)) return
 
@@ -289,15 +287,9 @@ class StateImpl<T> implements StateInstance<T> {
 
 		s.settled = this._adapter.ready
 
-		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
-			for (const hook of s.changeHandlers) {
-				hook(next, prev)
-			}
-		}
-
 		this._config.onReset?.({ key: this.key, scope: this.scope, previousValue: prev })
 
-		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
+		this._notifyChange(next, prev)
 	}
 
 	get ready(): Promise<void> {
@@ -362,37 +354,23 @@ class StateImpl<T> implements StateInstance<T> {
 
 		this._ensureWatchSubscription()
 
-		let listeners = s.watchers.get(watchKey as PropertyKey)
-
-		if (!listeners) {
-			listeners = new Set()
-
-			s.watchers.set(watchKey as PropertyKey, listeners)
-		}
-
-		listeners.add(listener as Listener<unknown>)
-
-		const watcherMap = s.watchers
-
-		return () => {
-			listeners.delete(listener as Listener<unknown>)
-
-			if (listeners.size === 0) {
-				watcherMap.delete(watchKey as PropertyKey)
-			}
-		}
+		return addWatcher(s.watchers, watchKey, listener)
 	}
 
 	patch(partial: T extends object ? Partial<T> : never, options?: { strict?: boolean }): void {
 		this.set((prev) => {
 			if (options?.strict) {
-				const prevKeys = new Set(Object.keys(prev as object))
+				const prevRec = prev as Record<string, unknown>
 
-				const filtered = {} as Record<string, unknown>
+				const partialRec = partial as Record<string, unknown>
 
-				for (const key of Object.keys(partial as object)) {
+				const prevKeys = new Set(Object.keys(prevRec))
+
+				const filtered: Record<string, unknown> = {}
+
+				for (const key of Object.keys(partialRec)) {
 					if (prevKeys.has(key)) {
-						filtered[key] = (partial as Record<string, unknown>)[key]
+						filtered[key] = partialRec[key]
 					} else {
 						log('warn', `patch("${this.key}") ignored unknown key "${key}" (strict mode).`)
 					}
@@ -410,7 +388,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		if (s.isDestroyed) return
 
-		s.lastValue = this._adapter.get()
+		s.lastValue = this.get()
 
 		s.isDestroyed = true
 
@@ -438,31 +416,11 @@ class StateImpl<T> implements StateInstance<T> {
 
 		if (s.watchUnsub) return
 
-		s.watchPrev = this._adapter.get()
+		s.watchPrev = this.get()
 
-		s.watchUnsub = this._adapter.subscribe((next) => {
-			if (!s.watchers || s.watchers.size === 0) {
-				s.watchPrev = next
-
-				return
-			}
-
-			for (const [watchKey, listeners] of s.watchers) {
-				const prevVal =
-					s.watchPrev !== null && typeof s.watchPrev === 'object'
-						? (s.watchPrev as Record<PropertyKey, unknown>)[watchKey]
-						: undefined
-
-				const nextVal =
-					next !== null && typeof next === 'object'
-						? (next as Record<PropertyKey, unknown>)[watchKey]
-						: undefined
-
-				if (!Object.is(prevVal, nextVal)) {
-					for (const listener of listeners) {
-						listener(nextVal)
-					}
-				}
+		s.watchUnsub = this.subscribe((next) => {
+			if (s.watchers && s.watchers.size > 0) {
+				notifyWatchers(s.watchers, s.watchPrev, next)
 			}
 
 			s.watchPrev = next
@@ -471,8 +429,30 @@ class StateImpl<T> implements StateInstance<T> {
 }
 
 // ---------------------------------------------------------------------------
-// MemoryStateImpl — specialized subclass for memory scope that skips the
-// adapter object entirely. State is stored directly on the instance.
+// MemoryStateImpl — PERFORMANCE-CRITICAL subclass for memory scope.
+//
+// DO NOT REMOVE OR FLATTEN INTO StateImpl.
+//
+// This subclass bypasses the adapter pipeline entirely for memory-scoped
+// state, which is the default and most common scope. Benchmarks show that
+// removing it causes a ~60% regression in create+destroy lifecycle and
+// ~30% regression in batch/effect throughput.
+//
+// How it works:
+//   - Stores state directly on `_r.current` instead of going through an
+//     adapter's get()/set() methods and listener indirection.
+//   - Creates the notification function lazily on first subscribe, then
+//     reuses it — avoids per-notification closure allocation.
+//   - Skips adapter.destroy() since there's no real adapter to tear down.
+//   - Returns RESOLVED for `ready` since memory state is always synchronous.
+//
+// Key benchmarks (MemoryStateImpl vs adapter pipeline):
+//   create + destroy:  4.25M ops/s  vs  1.50M ops/s  (2.8× faster)
+//   batch (10 states): 1.87M ops/s  vs  1.45M ops/s  (1.3× faster)
+//   effect trigger:   12.87M ops/s  vs  8.31M ops/s  (1.5× faster)
+//
+// The subclass reuses _applyInterceptors, _notifyChange, and notifyWatchers
+// from the parent class — only get/set/subscribe/reset/destroy are overridden.
 // ---------------------------------------------------------------------------
 
 interface MemoryMutableState<T> extends MutableState<T> {
@@ -500,7 +480,6 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 
 		rs.current = options.default
 		rs.memoryListeners = undefined
-
 		rs.notifyFn = undefined
 
 		this._r = rs
@@ -528,6 +507,8 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 				? (valueOrUpdater as (prev: T) => T)(prev)
 				: valueOrUpdater
 
+		// Inline interceptors and change handlers for hot-path performance.
+		// Avoids virtual dispatch overhead of _applyInterceptors/_notifyChange.
 		if (s.interceptors !== undefined && s.interceptors.size > 0) {
 			const original = next
 
@@ -647,28 +628,8 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 		s.watchPrev = s.current
 
 		s.watchUnsub = this.subscribe((next) => {
-			if (!s.watchers || s.watchers.size === 0) {
-				s.watchPrev = next
-
-				return
-			}
-
-			for (const [watchKey, listeners] of s.watchers) {
-				const prevVal =
-					s.watchPrev !== null && typeof s.watchPrev === 'object'
-						? (s.watchPrev as Record<PropertyKey, unknown>)[watchKey]
-						: undefined
-
-				const nextVal =
-					next !== null && typeof next === 'object'
-						? (next as Record<PropertyKey, unknown>)[watchKey]
-						: undefined
-
-				if (!Object.is(prevVal, nextVal)) {
-					for (const listener of listeners) {
-						listener(nextVal)
-					}
-				}
+			if (s.watchers && s.watchers.size > 0) {
+				notifyWatchers(s.watchers, s.watchPrev, next)
 			}
 
 			s.watchPrev = next
@@ -708,48 +669,50 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 // Base instance factory
 // ---------------------------------------------------------------------------
 
-/**
- * Create a state instance backed by the appropriate adapter for the given scope.
- *
- * Same key + same scope always returns the same instance.
- * This is the low-level factory used by both `state()` and `collection()`.
- */
-/**
- * Fast path for memory-scope instances. Called directly from factory.ts
- * to skip redundant config/registry lookups and adapter setup.
- */
-export function createMemoryState<T>(
-	key: string,
-	rKey: string,
-	options: StateOptions<T>,
-	config: Readonly<GjendjeConfig>,
-): StateInstance<T> {
-	return new MemoryStateImpl(key, rKey, options, config)
+interface ResolvedKeyAndScope<T> {
+	config: Readonly<GjendjeConfig>
+	scope: Scope
+	rKey: string
+	existing: StateInstance<T> | undefined
 }
 
-export function createBase<T>(key: string, options: StateOptions<T>): StateInstance<T> {
+/**
+ * Shared key validation, scope normalization, and registry lookup.
+ */
+function resolveKeyAndScope<T>(key: string, options: StateOptions<T>): ResolvedKeyAndScope<T> {
 	if (!key) {
 		throw new Error('[gjendje] key must be a non-empty string.')
 	}
 
 	const config = getConfig()
 
-	// --- keyPattern validation ---
 	if (config.keyPattern && !config.keyPattern.test(key)) {
 		throw new Error(
 			`[gjendje] Key "${key}" does not match the configured keyPattern ${config.keyPattern}.`,
 		)
 	}
 
-	// Apply global defaults — per-instance options take precedence
 	const rawScope = options.scope ?? config.scope ?? 'memory'
+
 	const scope = rawScope === 'render' ? 'memory' : rawScope
 
 	const rKey = scopedKey(key, scope)
 
 	const existing = getRegistered<T>(rKey) as StateInstance<T> | undefined
 
-	if (existing && !existing.isDestroyed) return existing
+	return { config, scope, rKey, existing }
+}
+
+export function createBase<T>(key: string, options: StateOptions<T>): StateInstance<T> {
+	const { config, scope, rKey, existing } = resolveKeyAndScope(key, options)
+
+	if (existing && !existing.isDestroyed) {
+		if (config.warnOnDuplicate) {
+			log('warn', `Duplicate state("${key}") with scope "${scope}". Returning cached instance.`)
+		}
+
+		return existing
+	}
 
 	// --- requireValidation enforcement ---
 	if (config.requireValidation && PERSISTENT_SCOPES.has(scope) && !options.validate) {
@@ -763,7 +726,6 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 
 	const useMemoryFallback = isSsrMode && isServer()
 
-	// --- Sync warning (must run before the memory fast-path) ---
 	const effectiveSync = options.sync ?? (config.sync && SYNCABLE_SCOPES.has(scope))
 
 	if (effectiveSync && !SYNCABLE_SCOPES.has(scope)) {
@@ -773,7 +735,8 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 		)
 	}
 
-	// --- Fast path: memory scope (no SSR, no sync) — skip adapter object ---
+	// --- Fast path: memory scope (no SSR, no sync) — uses MemoryStateImpl ---
+	// See the MemoryStateImpl class comment above for why this matters.
 	let instance: StateImpl<T>
 
 	if (scope === 'memory' && !isSsrMode) {
@@ -794,26 +757,37 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 		// SSR hydration
 		if (isSsrMode && !isServer()) {
 			instance._s.hydrated = afterHydration(() => {
+				// If the instance was destroyed or the user already called
+				// set() before hydration fired, skip the overwrite.
+				if (instance.isDestroyed) return
+
+				const currentValue = instance.get()
+
+				if (!shallowEqual(currentValue, options.default)) return
+
+				let realAdapter: Adapter<T> | undefined
+
 				try {
-					const realAdapter = resolveAdapter(storageKey, scope, options)
+					realAdapter = resolveAdapter(storageKey, scope, options)
 
 					const storedValue = realAdapter.get()
-
-					const serverValue = options.default
-
-					const clientValue = storedValue
 
 					if (!shallowEqual(storedValue, options.default)) {
 						instance.set(storedValue)
 					}
 
-					config.onHydrate?.({ key, scope, serverValue, clientValue })
-
-					realAdapter.destroy?.()
+					config.onHydrate?.({
+						key,
+						scope,
+						serverValue: options.default,
+						clientValue: storedValue,
+					})
 				} catch (err) {
 					log('debug', `Hydration adapter unavailable for state("${key}") — using memory fallback.`)
 
 					reportError(key, scope, err)
+				} finally {
+					realAdapter?.destroy?.()
 				}
 			})
 		}

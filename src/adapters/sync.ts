@@ -13,21 +13,27 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 
 	const listeners = createListeners<T>()
 
-	adapter.subscribe((value) => {
+	let isDestroyed = false
+
+	const unsubscribeAdapter = adapter.subscribe((value) => {
 		listeners.notify(value)
 	})
 
 	if (channel) {
 		channel.onmessage = (event: MessageEvent) => {
+			// Guard against messages queued before channel.close() completed
+			if (isDestroyed) return
+
 			// Validate message shape. BroadcastChannel is same-origin only,
 			// but a compromised tab could still send malformed data.
 			const msg = event.data
 
 			if (msg == null || typeof msg !== 'object' || !('value' in msg)) return
 
-			if (Object.keys(msg as object).length !== 1) return
+			// Already narrowed to non-null object above
+			if (Object.keys(msg).length !== 1) return
 
-			const value = msg.value as T
+			const value = (msg as Record<'value', T>).value
 
 			try {
 				// Write through the underlying adapter so versioning and custom
@@ -71,6 +77,10 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 		},
 
 		destroy() {
+			isDestroyed = true
+
+			unsubscribeAdapter()
+
 			listeners.clear()
 
 			channel?.close()

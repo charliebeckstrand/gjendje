@@ -1,4 +1,5 @@
 import type { BaseInstance, Listener, Unsubscribe } from '../types.js'
+import { addWatcher, notifyWatchers } from '../watchers.js'
 
 export interface WithWatch<T> {
 	/**
@@ -52,28 +53,8 @@ export function withWatch<TIn extends BaseInstance<any>>(
 		}
 
 		unsubscribe = instance.subscribe((next) => {
-			if (!watchers || watchers.size === 0) {
-				prev = next
-
-				return
-			}
-
-			for (const [watchKey, listeners] of watchers) {
-				const prevVal =
-					prev !== null && typeof prev === 'object'
-						? (prev as Record<PropertyKey, unknown>)[watchKey]
-						: undefined
-
-				const nextVal =
-					next !== null && typeof next === 'object'
-						? (next as Record<PropertyKey, unknown>)[watchKey]
-						: undefined
-
-				if (!Object.is(prevVal, nextVal)) {
-					for (const listener of listeners) {
-						listener(nextVal)
-					}
-				}
+			if (watchers && watchers.size > 0) {
+				notifyWatchers(watchers, prev, next)
 			}
 
 			prev = next
@@ -90,23 +71,7 @@ export function withWatch<TIn extends BaseInstance<any>>(
 
 		ensureSubscription()
 
-		let listeners = watchers.get(watchKey)
-
-		if (!listeners) {
-			listeners = new Set()
-
-			watchers.set(watchKey, listeners)
-		}
-
-		listeners.add(listener)
-
-		return () => {
-			listeners.delete(listener)
-
-			if (listeners.size === 0) {
-				watchers?.delete(watchKey)
-			}
-		}
+		return addWatcher(watchers, watchKey, listener)
 	}
 
 	result.destroy = () => {
