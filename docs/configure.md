@@ -546,7 +546,3 @@ interface ValidationFailContext {
 ```
 
 Fires before falling back to the default value. The `value` is the rejected data as read from storage (after migration, if any).
-
----
-
-**Previous:** [Quick start](quick-start.md) · [Examples](examples.md) · [API reference](api.md) · [Scopes](scopes.md) · [Persistence](persistence.md) · [Primitives](primitives.md)
