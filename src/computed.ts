@@ -1,7 +1,7 @@
 import { notify } from './batch.js'
 import { createListeners } from './listeners.js'
 import type { BaseInstance, DepValues, ReadonlyInstance } from './types.js'
-import { createLazyDestroyed } from './utils.js'
+import { createLazyDestroyed, RESOLVED } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -114,10 +114,18 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 	const lazyDestroyed = createLazyDestroyed()
 
-	// Cache promise properties — deps don't change after creation
-	const readyPromise = Promise.all(deps.map((d) => d.ready)).then(() => undefined)
+	// Short-circuit promise allocation when all deps are memory-scoped.
+	// Memory deps always return RESOLVED for ready/hydrated/settled,
+	// so we can skip Promise.all entirely in the common case.
+	const allDepsImmediate = deps.every((d) => d.ready === RESOLVED)
 
-	const hydratedPromise = Promise.all(deps.map((d) => d.hydrated)).then(() => undefined)
+	const readyPromise = allDepsImmediate
+		? RESOLVED
+		: Promise.all(deps.map((d) => d.ready)).then(() => undefined)
+
+	const hydratedPromise = allDepsImmediate
+		? RESOLVED
+		: Promise.all(deps.map((d) => d.hydrated)).then(() => undefined)
 
 	return {
 		key: instanceKey,
@@ -128,6 +136,8 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		get settled(): Promise<void> {
+			if (allDepsImmediate) return RESOLVED
+
 			return Promise.all(deps.map((d) => d.settled)).then(() => undefined)
 		},
 

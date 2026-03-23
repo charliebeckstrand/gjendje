@@ -78,6 +78,21 @@ export interface ExpireContext {
 	expiredAt: number
 }
 
+export interface MemoryConfig {
+	/**
+	 * Track memory-scoped state in the global registry. Defaults to `true`.
+	 *
+	 * When `true`, memory-scoped state is registered for duplicate detection
+	 * and enumeration via `getRegistry()`.
+	 *
+	 * When `false`, memory-scoped state skips registry lookup and insertion,
+	 * eliminating the primary bottleneck in high-throughput creation scenarios.
+	 * Each `state()` call with the same key will create a new instance instead
+	 * of returning the cached one.
+	 */
+	registry?: boolean | undefined
+}
+
 export interface GjendjeConfig {
 	/** Default scope for all state instances. Defaults to `'memory'`. */
 	scope?: Scope | undefined
@@ -102,6 +117,17 @@ export interface GjendjeConfig {
 
 	/** Enable cross-tab sync globally for all syncable scopes. */
 	sync?: boolean | undefined
+
+	/**
+	 * Options for memory-scoped state.
+	 *
+	 * ```ts
+	 * configure({
+	 *   memory: { registry: false }
+	 * })
+	 * ```
+	 */
+	memory?: MemoryConfig | undefined
 
 	/** Warn when two state() calls use the same key + scope. */
 	warnOnDuplicate?: boolean | undefined

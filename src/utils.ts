@@ -1,3 +1,8 @@
+// Shared resolved promise — avoids allocating a new one per instance.
+// Exported so that computed/select can short-circuit Promise.all when
+// all dependencies are memory-scoped (where ready/hydrated/settled === RESOLVED).
+export const RESOLVED: Promise<void> = Promise.resolve()
+
 /**
  * Type guard that narrows `unknown` to `Record<PropertyKey, unknown>`.
  * Useful anywhere you need to access dynamic properties on a value

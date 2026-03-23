@@ -1,7 +1,7 @@
 import { notify } from '../batch.js'
+import { safeCall } from '../listeners.js'
 import type { Adapter, Listener } from '../types.js'
-
-const RESOLVED = Promise.resolve()
+import { RESOLVED } from '../utils.js'
 
 export function createMemoryAdapter<T>(defaultValue: T): Adapter<T> {
 	let current = defaultValue
@@ -10,11 +10,7 @@ export function createMemoryAdapter<T>(defaultValue: T): Adapter<T> {
 
 	const notifyListeners = () => {
 		for (const listener of listeners) {
-			try {
-				listener(current)
-			} catch (err) {
-				console.error('[gjendje] Listener threw:', err)
-			}
+			safeCall(listener, current)
 		}
 	}
 

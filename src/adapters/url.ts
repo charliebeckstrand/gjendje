@@ -18,17 +18,35 @@ export function createUrlAdapter<T>(
 	// Cache serialized default once — avoids re-serializing on every write()
 	const defaultSerialized = serializer.stringify(defaultValue)
 
+	// Read cache — avoids re-constructing URLSearchParams + re-parsing when
+	// location.search hasn't changed. Same pattern as the storage adapter cache.
+	let cachedSearch: string | undefined
+	let cachedValue: T = defaultValue
+
 	function read(): T {
 		try {
-			const params = new URLSearchParams(window.location.search)
+			const search = window.location.search
+
+			if (search === cachedSearch) return cachedValue
+
+			const params = new URLSearchParams(search)
 
 			const raw = params.get(key)
 
-			if (raw === null) return defaultValue
+			if (raw === null) {
+				cachedSearch = search
+				cachedValue = defaultValue
+				return defaultValue
+			}
 
 			// URLSearchParams.get() already decodes percent-encoding,
 			// so no additional decodeURIComponent is needed.
-			return mergeKeys(serializer.parse(raw), defaultValue, persist)
+			const value = mergeKeys(serializer.parse(raw), defaultValue, persist)
+
+			cachedSearch = search
+			cachedValue = value
+
+			return value
 		} catch {
 			return defaultValue
 		}
@@ -59,9 +77,16 @@ export function createUrlAdapter<T>(
 				: `${window.location.pathname}${window.location.hash}`
 
 			window.history.pushState(null, '', newUrl)
+
+			// Pre-populate cache so the next read() hits the fast path.
+			// Use the new search string (with '?' prefix) to match location.search.
+			cachedSearch = search ? `?${search}` : ''
+			cachedValue = persist ? mergeKeys(toStore as T, defaultValue, persist) : value
 		} catch {
 			// Serialization or pushState can fail (e.g. sandboxed iframes,
 			// SecurityError). The in-memory value is still updated via set().
+			// Invalidate cache since URL state is uncertain.
+			cachedSearch = undefined
 		}
 	}
 
@@ -70,6 +95,9 @@ export function createUrlAdapter<T>(
 	const notifyListeners = () => listeners.notify(lastNotifiedValue)
 
 	function onPopState(): void {
+		// Invalidate cache — URL changed via browser navigation
+		cachedSearch = undefined
+
 		lastNotifiedValue = read()
 
 		notify(notifyListeners)
