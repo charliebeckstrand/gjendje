@@ -14,7 +14,7 @@
 ## `memory`
 
 ```ts
-const isOpen = state({ modal: false })
+const open = state({ modal: false })
 ```
 
 ---
