@@ -2,20 +2,6 @@
 
 Sets global defaults for all state instances.
 
-```ts
-import { configure } from 'gjendje'
-
-configure({
-  scope: 'local',
-})
-```
-
-```ts
-const theme = state({ theme: 'light' })
-
-theme.scope // 'local' — derived from configure
-```
-
 ---
 
 ## `scope`
