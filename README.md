@@ -49,7 +49,9 @@ Every instance shares the same core methods: `get`, `peek`, `set`, `patch`, `res
 
 [Primitives reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/primitives.md)
 
-[Configure & utilities guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
+## Configure
+
+[Configure guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
 ## License
 

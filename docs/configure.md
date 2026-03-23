@@ -1,4 +1,24 @@
-# Configure & Utilities
+# Configure
+
+`configure()` sets global defaults and event hooks for all state instances. Call it once at app startup, before creating any state.
+
+```ts
+import { configure } from 'gjendje'
+
+configure({
+  prefix: 'myapp',           // namespace all storage keys → "myapp:theme"
+  scope: 'local',            // default scope when omitted from state()
+  sync: true,                // broadcast changes across tabs (local/bucket)
+  ssr: true,                 // enable SSR safety for all instances
+  logLevel: 'silent',        // suppress internal warnings
+  requireValidation: true,   // enforce validate() on persisted scopes
+  onChange: ({ key, value }) => console.log(key, value),
+})
+```
+
+Everything above is optional. Without `configure()`, gjendje uses sensible defaults (`memory` scope, no prefix, warnings enabled).
+
+---
 
 ## Utilities
 
@@ -10,19 +30,8 @@
 | `snapshot()` | Returns a read-only snapshot of all registered instances. |
 | `shallowEqual(a, b)` | Shallow equality check for primitives, arrays, and plain objects. |
 | `withServerSession(fn)` | Wraps a callback in `AsyncLocalStorage` context for `server` scope. |
-| `configure(config)` | Set global defaults and event handlers. |
 
 ---
-
-## `configure()`
-
-```ts
-import { configure } from 'gjendje'
-
-configure(config: GjendjeConfig): void
-```
-
-Sets global defaults for all state instances. Call once at app startup before creating any state.
 
 ## Options
 
