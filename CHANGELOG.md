@@ -4,6 +4,16 @@
 
 ### Patch Changes
 
+- bceda12: Deduplicate and simplify internal code — extract shared helpers for interceptors, change handlers, watcher management, lazy destroyed promises, key validation, scope shortcuts, and unit parsing, reducing ~220 lines of duplicated logic with no behavioral changes
+- bf77d20: Fix subscription and adapter leaks on destroy — store and call unsubscribe in sync.ts and bucket.ts, move hydration adapter cleanup to finally block in core.ts
+- bf77d20: Fix race conditions in SSR hydration, cross-tab sync, and bucket adapter — prevent hydration from overwriting user-set values, guard sync message handler against post-destroy delivery, and clean up bucket delegate on mid-swap destroy
+- a047407: Rewrite API, primitives, and utilities docs with consistent formatting, type references, and code examples for every entry
+- cc49512: Improve type safety: extract shared DepValues type, add isRecord type guard, and reduce unsafe casts across the codebase
+
+## 1.0.1
+
+### Patch Changes
+
 - Fix race conditions in SSR hydration, cross-tab sync, and bucket adapter — prevent hydration from overwriting user-set values, guard sync message handler against post-destroy delivery, and clean up bucket delegate on mid-swap destroy
 - Fix subscription and adapter leaks on destroy — store and call unsubscribe in sync.ts and bucket.ts, move hydration adapter cleanup to `finally` block in core.ts
 - Improve type safety: extract shared `DepValues` type to `types.ts`, add `isRecord` type guard to `utils.ts`, replace unsafe double casts and inline type narrowing across watchers, collection, persist, batch, and sync modules, remove redundant `as const` and `as PropertyKey` casts
