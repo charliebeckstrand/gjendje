@@ -115,6 +115,34 @@ state.local({ theme: 'light' }, {
 
 ---
 
+## `registry`
+
+Track state instances in the global registry. Defaults to `true`.
+
+When `true`, calling `state()` twice with the same key + scope returns the cached instance, and instances appear in `getRegistry()`.
+
+When `false`, registry lookup and insertion are skipped for memory-scoped state. Each `state()` call creates a new instance regardless of key. This eliminates the primary bottleneck in high-throughput creation — V8's `Map` operations on a growing registry cap at ~1.5M ops/s, while skipping them reaches ~6M ops/s.
+
+> Useful for apps that create many short-lived or uniquely-keyed memory states (e.g. per-component state in React) and don't rely on duplicate detection.
+
+```ts
+configure({ registry: false })
+
+// Each call creates a new instance — no duplicate detection
+const a = state('counter', { default: 0 })
+const b = state('counter', { default: 0 })
+a !== b // true
+```
+
+Persistent scopes (`local`, `session`, `bucket`) require the registry for deduplication and storage coordination. If `registry: false` is set alongside a global `scope` that requires the registry, a warning is emitted and the registry remains enabled for that scope.
+
+```ts
+configure({ registry: false, scope: 'local' })
+// console.warn: [gjendje] registry: false has no effect on scope "local" — persistent scopes always use the registry.
+```
+
+---
+
 ## `ssr`
 
 Enable server-side rendering globally. All browser-scope instances get SSR safety automatically.
@@ -143,35 +171,6 @@ configure({ sync: true })
 
 const theme = state.local({ theme: 'light' })
 ```
-
----
-
-## `memory`
-
-Options for memory-scoped state.
-
-### `memory.registry`
-
-Track memory-scoped state in the global registry. Defaults to `true`.
-
-When `true`, calling `state()` twice with the same key returns the cached instance, and memory-scoped instances appear in `getRegistry()`.
-
-When `false`, registry lookup and insertion are skipped entirely for memory scope. Each `state()` call creates a new instance regardless of key. This eliminates the primary bottleneck in high-throughput creation — V8's `Map` operations on a growing registry cap at ~1.5M ops/s, while skipping them reaches ~6M ops/s.
-
-> Useful for apps that create many short-lived or uniquely-keyed memory states (e.g. per-component state in React) and don't rely on duplicate detection.
-
-```ts
-configure({
-  memory: { registry: false }
-})
-
-// Each call creates a new instance — no duplicate detection
-const a = state('counter', { default: 0 })
-const b = state('counter', { default: 0 })
-a !== b // true
-```
-
-Persistent scopes (`local`, `session`, `bucket`) are unaffected — they always use the registry.
 
 ---
 
