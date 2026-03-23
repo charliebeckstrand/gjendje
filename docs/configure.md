@@ -1,17 +1,16 @@
 # Configure
 
-Call once at app initialization. Sets global defaults for all state instances.
+Sets global defaults for all state instances.
+
+## Quick start
 
 ```ts
 import { configure } from 'gjendje'
 
 configure({
   scope: 'local',
-  onChange: ({ key, value }) => console.log(key, value),
 })
 ```
-
-Now every `state` call inherits those defaults:
 
 ```ts
 const theme = state({ theme: 'light' })
@@ -21,36 +20,22 @@ theme.scope // 'local' — derived from configure
 
 ---
 
-## Options
+## `scope`
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `scope` | `Scope` | `'memory'` | Default scope for all state instances |
-| `keyPattern` | `RegExp` | `undefined` | Enforce a naming pattern for state keys |
-| `logLevel` | `LogLevel` | `'warn'` | Control log verbosity |
-| `maxKeys` | `number` | `undefined` | Cap the total number of registered state instances |
-| `prefix` | `string` | `undefined` | Prepends to all storage keys |
-| `requireValidation` | `boolean` | `false` | Require a `validate` option for persisted scopes |
-| `ssr` | `boolean` | `false` | Enable SSR mode globally |
-| `sync` | `boolean` | `false` | Enable cross-tab sync globally for all syncable scopes |
-| `warnOnDuplicate` | `boolean` | `false` | Warn on duplicate key + scope |
+Sets a scope when `scope` is omitted from `state()`.
 
-## Events
+```ts
+configure({ scope: 'local' })
 
-| Event | Type | Description |
-|-------|------|-------------|
-| `onChange` | `(context: ChangeContext) => void` | Fires when any instance's value changes (via `set` or `reset`) |
-| `onDestroy` | `(context: DestroyContext) => void` | Fires when any instance is destroyed |
-| `onError` | `(context: ErrorContext) => void` | Global error handler |
-| `onExpire` | `(context: ExpireContext) => void` | Fires when a storage bucket's data has expired |
-| `onHydrate` | `(context: HydrateContext) => void` | Fires after SSR hydration completes |
-| `onIntercept` | `(context: InterceptContext) => void` | Fires when an interceptor modifies a value |
-| `onMigrate` | `(context: MigrateContext) => void` | Fires after a migration chain runs |
-| `onQuotaExceeded` | `(context: QuotaExceededContext) => void` | Fires when a storage write fails due to quota |
-| `onRegister` | `(context: RegisterContext) => void` | Fires when a new instance is registered |
-| `onReset` | `(context: ResetContext) => void` | Fires when any instance is reset to its default value |
-| `onSync` | `(context: SyncContext) => void` | Fires when a cross-tab sync event arrives |
-| `onValidationFail` | `(context: ValidationFailContext) => void` | Fires when a `validate` function rejects a stored value |
+const theme = state({ theme: 'light' })
+
+theme.scope // 'local'
+
+// Per-instance scope always takes precedence
+const temp = state({ temp: 0 }, { scope: 'memory' })
+
+temp.scope // 'memory'
+```
 
 ---
 
@@ -58,20 +43,19 @@ theme.scope // 'local' — derived from configure
 
 Enforce a naming convention for all state keys. Throws on `state()` if the key does not match.
 
+> Useful for preventing accidental spaces, special characters, or long keys that may break URL scope.
+
 ```ts
 configure({ keyPattern: /^[a-z][a-z0-9:_-]*$/ })
 
 state('user-prefs', { default: {} })  // ok
 state('User Prefs!', { default: {} }) // throws
 ```
-
-Useful for preventing accidental spaces, special characters, or overly long keys that may break URL scope.
-
 ---
 
 ## `logLevel`
 
-Control the verbosity of internal gjendje logs.
+Control the verbosity of internal logs.
 
 | Level | Behavior |
 |-------|----------|
@@ -89,7 +73,9 @@ configure({ logLevel: 'debug' })  // verbose — useful during development
 
 ## `maxKeys`
 
-Limit the total number of registered state instances. Throws when the limit is exceeded. Useful for catching dynamic key generation patterns that cause memory leaks.
+Limit the total number of registered state instances. Throws when the limit is exceeded.
+
+> Useful for catching dynamic key generation patterns that cause memory leaks.
 
 ```ts
 configure({ maxKeys: 100 })
@@ -102,7 +88,7 @@ state('key-101', 0) // Error: maxKeys limit (100) reached
 
 ## `prefix`
 
-Prepend a namespace to all storage keys. Prevents collisions between apps sharing the same storage.
+Prepend a namespace to all storage keys.
 
 ```ts
 configure({ prefix: 'myapp' })
@@ -124,7 +110,7 @@ state.local({ 'raw-key': 0 }, { prefix: false })
 
 ## `requireValidation`
 
-When enabled, any `state()` call with a persistent scope (`local`, `session`, `bucket`) must include a `validate` option. Throws otherwise.
+When enabled, any `state()` call with a persistent scope (`local`, `session`, `bucket`) must include a `validate` option.
 
 ```ts
 configure({ requireValidation: true })
@@ -140,33 +126,13 @@ state.local({ theme: 'light' }, {
 
 ---
 
-## `scope`
-
-Sets a scope when `scope` is omitted from `state()`. Without this, the default is `'memory'`.
-
-```ts
-configure({ scope: 'local' })
-
-const theme = state({ theme: 'light' })
-
-theme.scope // 'local'
-
-// Per-instance scope always takes precedence
-const temp = state({ temp: 0 }, { scope: 'memory' })
-
-temp.scope // 'memory'
-```
-
----
-
 ## `ssr`
 
-Enable SSR mode globally.
+Enable server-side rendering globally. All browser-scope instances get SSR safety automatically.
 
 ```ts
 configure({ ssr: true })
 
-// All browser-scope instances get SSR safety automatically
 const theme = state.local({ theme: 'light' })
 ```
 
@@ -179,22 +145,22 @@ When SSR is enabled:
 
 ## `sync`
 
-Enable cross-tab sync globally for all syncable scopes (`local`, `bucket`).
+Enable cross-tab sync for all syncable scopes (`local`, `bucket`). Non-syncable scopes (`memory`, `session`, `url`, `server`) emit a warning and ignore.
+
 
 ```ts
 configure({ sync: true })
 
-// All local/bucket instances automatically sync across tabs
 const theme = state.local({ theme: 'light' })
 ```
-
-Non-syncable scopes (`memory`, `session`, `url`, `server`) emit a warning and ignore.
 
 ---
 
 ## `warnOnDuplicate`
 
-Emit a console warning when `state()` is called with a key + scope combination that already exists. Helpful for catching accidental collisions during development.
+Emit a console warning when `state()` is called with a key + scope combination that already exists.
+
+> Useful for catching accidental collisions during development.
 
 ```ts
 configure({ warnOnDuplicate: true })
@@ -210,17 +176,9 @@ state.local({ theme: 'light' })
 
 ### `onChange`
 
-Fires whenever any state instance's value changes, whether via `set()` or `reset()`. Useful for global devtools, analytics, or debugging.
+Fires whenever any state instance's value changes, whether via `set()` or `reset()`.
 
-```ts
-configure({
-  onChange: ({ key, scope, value, previousValue }) => {
-    console.log(`[${key}] changed:`, previousValue, '→', value)
-  },
-})
-```
-
-The `ChangeContext` shape:
+> Useful for global devtools, analytics, or debugging.
 
 ```ts
 interface ChangeContext {
@@ -231,13 +189,28 @@ interface ChangeContext {
 }
 ```
 
-Fires after the value has been written to the adapter and after per-instance `onChange` handlers. Does not fire when `isEqual` prevents the update.
+```ts
+configure({
+  onChange: ({ key, scope, value, previousValue }) => {
+    console.log(`[${key}] changed:`, previousValue, '→', value)
+  },
+})
+```
 
 ---
 
 ### `onDestroy`
 
-Fires when any state instance is destroyed. Useful for cleanup analytics, debugging memory leaks, or ensuring dependent systems are notified.
+Fires when any state instance is destroyed.
+
+> Useful for cleanup analytics, debugging memory leaks, or ensuring dependent systems are notified.
+
+```ts
+interface DestroyContext {
+  key: string
+  scope: Scope
+}
+```
 
 ```ts
 configure({
@@ -247,20 +220,21 @@ configure({
 })
 ```
 
-The `DestroyContext` shape:
-
-```ts
-interface DestroyContext {
-  key: string
-  scope: Scope
-}
-```
-
 ---
 
 ### `onError`
 
-Register a global error handler that fires on storage, migration, and hydration failures. Useful for reporting to error tracking services.
+Register a global error handler that fires on storage, migration, and hydration failures.
+
+> Useful for reporting to error tracking services.
+
+```ts
+interface ErrorContext {
+  key: string
+  scope: Scope
+  error: unknown
+}
+```
 
 ```ts
 configure({
@@ -272,32 +246,13 @@ configure({
 })
 ```
 
-The `ErrorContext` shape:
-
-```ts
-interface ErrorContext {
-  key: string
-  scope: Scope
-  error: unknown
-}
-```
-
 ---
 
 ### `onExpire`
 
-Fires when a storage bucket's data has expired. Detected when the bucket is opened and contains no data, but the fallback storage still has a value from a previous session. Useful for tracking cache lifetimes and triggering data refetches.
+Fires when a storage bucket's data has expired. Only fires for `bucket` scope instances when the Storage Buckets API is available and the bucket's data has been evicted.
 
-```ts
-configure({
-  onExpire: ({ key, scope, expiredAt }) => {
-    console.log(`Bucket data for "${key}" expired at`, new Date(expiredAt))
-    refetchData(key)
-  },
-})
-```
-
-The `ExpireContext` shape:
+> Useful for tracking cache lifetimes and triggering data refetches.
 
 ```ts
 interface ExpireContext {
@@ -307,13 +262,34 @@ interface ExpireContext {
 }
 ```
 
-Only fires for `bucket` scope instances when the Storage Buckets API is available and the bucket's data has been evicted.
+```ts
+configure({
+  onExpire: ({ key, scope, expiredAt }) => {
+    console.log(`Bucket data for "${key}" expired at`, new Date(expiredAt))
+
+    refetchData(key)
+  },
+})
+```
 
 ---
 
 ### `onHydrate`
 
-Fires after SSR hydration completes for an instance. Receives both the server-rendered value and the client-side storage value. Useful for detecting mismatches and debugging hydration issues.
+Fires after SSR hydration completes for an instance. Receives both the server-rendered value and the client-side storage value. 
+
+> Only fires for instances with SSR enabled on browser scopes.
+
+> Useful for detecting mismatches and debugging hydration issues.
+
+```ts
+interface HydrateContext {
+  key: string
+  scope: Scope
+  serverValue: unknown
+  clientValue: unknown
+}
+```
 
 ```ts
 configure({
@@ -325,34 +301,15 @@ configure({
 })
 ```
 
-The `HydrateContext` shape:
-
-```ts
-interface HydrateContext {
-  key: string
-  scope: Scope
-  serverValue: unknown
-  clientValue: unknown
-}
-```
-
-Only fires for instances with SSR enabled on browser scopes.
-
 ---
 
 ### `onIntercept`
 
-Fires when an interceptor modifies a value during `set()` or `reset()`. Only fires when the intercepted value differs from the original (using `Object.is`). Useful for debugging and logging interceptor activity.
+Fires when an interceptor modifies a value during `set()` or `reset()`. Only fires when the intercepted value differs from the original (using `Object.is`).
 
-```ts
-configure({
-  onIntercept: ({ key, scope, original, intercepted }) => {
-    console.log(`[${key}] intercepted:`, original, '→', intercepted)
-  },
-})
-```
+> Does not fire when interceptors return the same value they received.
 
-The `InterceptContext` shape:
+> Useful for debugging and logging interceptor activity.
 
 ```ts
 interface InterceptContext {
@@ -363,23 +320,21 @@ interface InterceptContext {
 }
 ```
 
-Does not fire when interceptors return the same value they received.
+```ts
+configure({
+  onIntercept: ({ key, scope, original, intercepted }) => {
+    console.log(`[${key}] intercepted:`, original, '→', intercepted)
+  },
+})
+```
 
 ---
 
 ### `onMigrate`
 
-Fires after a migration chain runs during a read from storage. Receives the version range and the final migrated data. Useful for tracking schema migrations in production.
+Fires after a migration chain runs during a read from storage. Receives the version range and the final migrated data.
 
-```ts
-configure({
-  onMigrate: ({ key, scope, fromVersion, toVersion, data }) => {
-    analytics.track('state_migrated', { key, fromVersion, toVersion })
-  },
-})
-```
-
-The `MigrateContext` shape:
+> Useful for tracking schema migrations in production.
 
 ```ts
 interface MigrateContext {
@@ -391,22 +346,21 @@ interface MigrateContext {
 }
 ```
 
----
-
-### `onQuotaExceeded`
-
-Fires specifically when a storage write fails due to quota limits (`QuotaExceededError`). More targeted than `onError` — lets apps react by evicting old keys or showing a notification.
-
 ```ts
 configure({
-  onQuotaExceeded: ({ key, scope, error }) => {
-    showToast('Storage is full. Some preferences may not be saved.')
-    evictOldKeys()
+  onMigrate: ({ key, scope, fromVersion, toVersion, data }) => {
+    analytics.track('state_migrated', { key, fromVersion, toVersion })
   },
 })
 ```
 
-The `QuotaExceededContext` shape:
+---
+
+### `onQuotaExceeded`
+
+Fires specifically when a storage write fails due to quota limits (`QuotaExceededError`).
+
+> Only fires for `DOMException` with `name === 'QuotaExceededError'`.
 
 ```ts
 interface QuotaExceededContext {
@@ -416,13 +370,32 @@ interface QuotaExceededContext {
 }
 ```
 
-Only fires for `DOMException` with `name === 'QuotaExceededError'`.
+```ts
+configure({
+  onQuotaExceeded: ({ key, scope, error }) => {
+    showToast('Storage is full. Some preferences may not be saved.')
+
+    evictOldKeys()
+  },
+})
+```
 
 ---
 
 ### `onRegister`
 
-Fires when a new state instance is registered in the global registry. Does not fire for duplicate key + scope lookups that return a cached instance.
+Fires when a new state instance is registered in the global registry. 
+
+> Does not fire for duplicate key + scope lookups that return a cached instance.
+
+> Fires again if an instance is destroyed and re-created with the same key + scope.
+
+```ts
+interface RegisterContext {
+  key: string
+  scope: Scope
+}
+```
 
 ```ts
 configure({
@@ -432,33 +405,11 @@ configure({
 })
 ```
 
-The `RegisterContext` shape:
-
-```ts
-interface RegisterContext {
-  key: string
-  scope: Scope
-}
-```
-
-Fires again if an instance is destroyed and re-created with the same key + scope.
-
 ---
 
 ### `onReset`
 
-Fires when any state instance's `reset()` method is called. Distinct from `onChange` because it signals intent — the user explicitly reset state to its default. Useful for audit trails and clearing dependent caches.
-
-```ts
-configure({
-  onReset: ({ key, scope, previousValue }) => {
-    console.log(`State reset: ${key} (was ${JSON.stringify(previousValue)})`)
-    clearDependentCache(key)
-  },
-})
-```
-
-The `ResetContext` shape:
+Fires when any state instance's `reset()` method is called.
 
 ```ts
 interface ResetContext {
@@ -468,21 +419,25 @@ interface ResetContext {
 }
 ```
 
----
-
-### `onSync`
-
-Fires when a cross-tab sync event updates a value from another tab. Useful for conflict resolution or showing "updated in another tab" notifications.
-
 ```ts
 configure({
-  onSync: ({ key, scope, value, source }) => {
-    showToast(`"${key}" was updated in another tab`)
+  onReset: ({ key, scope, previousValue }) => {
+    console.log(`State reset: ${key} (was ${JSON.stringify(previousValue)})`)
+
+    clearDependentCache(key)
   },
 })
 ```
 
-The `SyncContext` shape:
+---
+
+### `onSync`
+
+Fires when a cross-tab sync event updates a value from another tab.
+
+> Only fires for instances with `sync: true` on syncable scopes (`local`, `bucket`).
+
+> Useful for conflict resolution or showing "updated in another tab" notifications.
 
 ```ts
 interface SyncContext {
@@ -493,11 +448,21 @@ interface SyncContext {
 }
 ```
 
-Only fires for instances with `sync: true` on syncable scopes (`local`, `bucket`).
+```ts
+configure({
+  onSync: ({ key, scope, value, source }) => {
+    showToast(`"${key}" was updated in another tab`)
+  },
+})
+```
 
 ---
 
 ### `onValidationFail`
+
+Fires when a `validate` function rejects a value read from storage.
+
+> Useful for detecting schema drift and tracking how often stored data fails validation.
 
 ```ts
 interface ValidationFailContext {
@@ -507,8 +472,6 @@ interface ValidationFailContext {
 }
 ```
 
-Fires when a `validate` function rejects a value read from storage. More targeted than `onError` — lets you distinguish corrupted or stale storage data from other error types. Useful for detecting schema drift and tracking how often stored data fails validation.
-
 ```ts
 configure({
   onValidationFail: ({ key, scope, value }) => {
@@ -516,4 +479,3 @@ configure({
   },
 })
 ```
-
