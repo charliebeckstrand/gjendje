@@ -1,6 +1,6 @@
 # Configure
 
-`configure()` sets global defaults and event hooks for all state instances. Call it once at app startup, before creating any state.
+Call once at app initialization. Sets global defaults for all state instances.
 
 ```ts
 import { configure } from 'gjendje'
@@ -14,6 +14,14 @@ configure({
   requireValidation: true,   // enforce validate() on persisted scopes
   onChange: ({ key, value }) => console.log(key, value),
 })
+```
+
+Now every `state` call inherits those defaults:
+
+```ts
+const theme = state({ theme: 'light' })
+
+theme.scope // 'local' — derived from configure
 ```
 
 Everything above is optional. Without `configure()`, gjendje uses sensible defaults (`memory` scope, no prefix, warnings enabled).
