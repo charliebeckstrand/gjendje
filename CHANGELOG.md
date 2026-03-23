@@ -4,8 +4,10 @@
 
 ### Patch Changes
 
-- Improve type safety: extract shared `DepValues` type to `types.ts`, add `isRecord` type guard to `utils.ts`, replace unsafe double casts and inline type narrowing across watchers, collection, persist, batch, and sync modules
-- Flatten MemoryStateImpl subclass into StateImpl — all scopes now go through the adapter pipeline, eliminating the parallel memory class, MEMORY_SHIM, and three memory-specific MutableState fields
+- Fix race conditions in SSR hydration, cross-tab sync, and bucket adapter — prevent hydration from overwriting user-set values, guard sync message handler against post-destroy delivery, and clean up bucket delegate on mid-swap destroy
+- Fix subscription and adapter leaks on destroy — store and call unsubscribe in sync.ts and bucket.ts, move hydration adapter cleanup to `finally` block in core.ts
+- Improve type safety: extract shared `DepValues` type to `types.ts`, add `isRecord` type guard to `utils.ts`, replace unsafe double casts and inline type narrowing across watchers, collection, persist, batch, and sync modules, remove redundant `as const` and `as PropertyKey` casts
+- Restore `MemoryStateImpl` fast path for memory-scoped state after benchmarks showed 60% lifecycle regression without it — now uses shared `_applyInterceptors`, `_notifyChange`, and `notifyWatchers` helpers to avoid code duplication
 - Merge factory.ts into shortcuts.ts — remove the intermediate factory module and fold duplicate-check warning into createBase, reducing the state creation pipeline from 3 files to 2
 - Deduplicate and simplify internal code — extract shared helpers for interceptors, change handlers, watcher management, lazy destroyed promises, key validation, scope shortcuts, and unit parsing, reducing ~220 lines of duplicated logic with no behavioral changes
 - Rewrite API, primitives, and utilities docs with consistent formatting, type references, and code examples for every entry
