@@ -2,7 +2,7 @@
 
 # gjendje
 
-Every app juggles localStorage, URL params, sessionStorage, and in-memory state. **gjendje** replaces storage backends with a unified API. Choose where state lives. The rest is handled.
+Replaces storage backends with a unified API. Choose where state lives. The rest is handled.
 
 - Zero runtime dependencies
 - ~5 kB core (minified + brotli)
@@ -14,6 +14,8 @@ Every app juggles localStorage, URL params, sessionStorage, and in-memory state.
 ```sh
 npm install gjendje
 ```
+
+## Quick start
 
 [Quick start guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/quick-start.md) · [Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
 
