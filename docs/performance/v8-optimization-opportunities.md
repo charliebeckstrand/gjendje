@@ -15,8 +15,8 @@ Identified during the V8 performance audit (March 2026). Each section is a self-
 | 3 | [Promise.all short-circuit for memory deps](#3-promiseall-short-circuit-for-memory-deps) | **Done** | `claude/audit-v8-performance-xWIn6` |
 | 4 | [Computed settled getter caching](#4-computed-settled-getter-caching) | **Done** (merged into #3) | `claude/audit-v8-performance-xWIn6` |
 | 5 | [Listener notification try/catch extraction](#5-listener-notification-trycatch-extraction) | **Done** | `claude/audit-v8-performance-xWIn6` |
-| 6 | [Subscribe closure allocation](#6-subscribe-closure-allocation) | Exploratory | — |
-| 7 | [scopedKey template literal](#7-scopedkey-template-literal) | Low priority | — |
+| 6 | [Subscribe closure allocation](#6-subscribe-closure-allocation) | **Won't fix** | — |
+| 7 | [scopedKey template literal](#7-scopedkey-template-literal) | **Won't fix** | — |
 
 ---
 
@@ -431,7 +431,7 @@ However, this **changes the return type** from `() => void` to an object with a 
 
 Not viable — WeakRef adds more overhead than it saves for this use case.
 
-**Verdict:** This optimization is **exploratory**. The API change cost likely outweighs the GC benefit for most applications. Revisit if profiling shows subscribe/unsubscribe as a top GC contributor in a real app.
+**Verdict: Won't fix.** The cost is ~64 bytes per subscribe — at realistic churn rates (~100/sec during heavy interaction), that's ~6.4KB/sec of short-lived garbage, which V8's generational GC handles trivially (young generation collections are <1ms and short-lived closures are exactly the pattern they're optimized for). Every viable fix either requires a breaking API change (return type `() => void` → object), or adds complexity that costs more than it saves (Proxy-based callable objects, WeakRef finalization). The standard `() => void` return type is also what zustand, valtio, and jotai use — changing it would break React integration patterns like `useEffect` cleanup. If subscribe/unsubscribe ever shows up as a GC bottleneck in a real app profile, the right fix would be at the React integration layer (batching subscriptions, single listener per component tree) rather than at the state library level.
 
 **Risk:** Medium — requires API change or complex callable-object pattern.
 
@@ -468,19 +468,10 @@ return scope + ':' + key
 
 But the difference is likely under 5% and unmeasurable in practice.
 
-**Verdict:** Not worth changing. Documenting for completeness.
+**Verdict: Won't fix.** Benchmarked at 3.14M create+destroy ops/s (~318ns per lifecycle). `scopedKey` is one template literal within that — estimated 2-5ns. Even a 50% improvement (unlikely) would yield 0.3-0.6% total improvement, well within JIT noise. V8's TurboFan already optimizes template literals efficiently. Not on any hot read/write path.
 
 ---
 
-## How to work through this list
+## Summary
 
-1. Pick an optimization from the table above
-2. Create a branch from `main`
-3. Write a **before** benchmark (if one doesn't exist for the specific path)
-4. Implement the change
-5. Run the **after** benchmark — verify measurable improvement
-6. Run `pnpm test` — all tests must pass
-7. Run `pnpm lint` — no new warnings
-8. Update the status table at the top of this document
-9. Create a changeset (`pnpm changeset`) describing the optimization
-10. Commit and open a PR with before/after numbers
+Optimizations #1-5 have been implemented. #6 and #7 were evaluated and closed — the cost/benefit doesn't justify the changes. The biggest wins came from applying the string-comparison cache pattern (#1, #2) and eliminating unnecessary Promise allocations (#3, #4).
