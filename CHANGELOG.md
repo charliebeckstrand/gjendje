@@ -5,6 +5,7 @@
 ### Patch Changes
 
 - Pre-populate storage adapter read cache after writes — eliminates redundant `getItem()` + `JSON.parse()` on read-after-write paths (subscriber chains, computed, effects). Benchmarks show ~41% improvement on single read-after-write and ~92% improvement on many-reads-per-write scenarios.
+- Add read cache to URL adapter — caches parsed value keyed on `location.search` string, skipping URLSearchParams construction and re-parsing when the URL hasn't changed. Also pre-populates cache after writes. Benchmarks show 16x faster repeated reads and 26x faster many-reads-per-write.
 
 ## 1.0.1
 
