@@ -1,4 +1,5 @@
 import type { Listener, Unsubscribe } from './types.js'
+import { isRecord } from './utils.js'
 
 /**
  * Register a listener for a specific key in a watcher map.
@@ -38,11 +39,9 @@ export function notifyWatchers(
 	prev: unknown,
 	next: unknown,
 ): void {
-	const prevObj =
-		prev !== null && typeof prev === 'object' ? (prev as Record<PropertyKey, unknown>) : undefined
+	const prevObj = isRecord(prev) ? prev : undefined
 
-	const nextObj =
-		next !== null && typeof next === 'object' ? (next as Record<PropertyKey, unknown>) : undefined
+	const nextObj = isRecord(next) ? next : undefined
 
 	for (const [watchKey, listeners] of watchers) {
 		const prevVal = prevObj?.[watchKey]

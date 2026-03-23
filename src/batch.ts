@@ -4,8 +4,9 @@ let depth = 0
 
 const queue = new Set<Notification>()
 
-// Pre-allocated flush buffer — grows as needed, never shrinks
-let flushBuf: Notification[] = new Array(16)
+// Pre-allocated flush buffer — grows as needed, never shrinks.
+// Typed as a union so cleared slots don't require an unsafe double cast.
+let flushBuf: (Notification | undefined)[] = new Array(16)
 
 /**
  * Runs all state updates inside fn as a single batch.
@@ -72,14 +73,16 @@ function flush(): void {
 
 		try {
 			for (let j = 0; j < size; j++) {
-				;(flushBuf[j] as Notification)()
+				const fn = flushBuf[j]
+
+				if (fn) fn()
 			}
 		} finally {
 			depth--
 
 			// Clear references to avoid retaining closures
 			for (let j = 0; j < size; j++) {
-				flushBuf[j] = undefined as unknown as Notification
+				flushBuf[j] = undefined
 			}
 		}
 	}

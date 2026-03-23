@@ -1,15 +1,11 @@
 import { notify } from './batch.js'
 import { createListeners } from './listeners.js'
-import type { BaseInstance, ReadonlyInstance } from './types.js'
+import type { BaseInstance, DepValues, ReadonlyInstance } from './types.js'
 import { createLazyDestroyed } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-type DepValues<T extends ReadonlyArray<BaseInstance<unknown>>> = {
-	[K in keyof T]: T[K] extends BaseInstance<infer V> ? V : never
-}
 
 /**
  * A read-only reactive value derived from one or more dependencies.

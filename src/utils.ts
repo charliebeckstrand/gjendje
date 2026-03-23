@@ -1,4 +1,13 @@
 /**
+ * Type guard that narrows `unknown` to `Record<PropertyKey, unknown>`.
+ * Useful anywhere you need to access dynamic properties on a value
+ * without an unsafe inline `as` cast.
+ */
+export function isRecord(value: unknown): value is Record<PropertyKey, unknown> {
+	return value !== null && typeof value === 'object'
+}
+
+/**
  * Shallow equality check for primitives, arrays, and plain objects.
  * Returns true if the two values are structurally equal at one level deep.
  */
@@ -25,9 +34,10 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 
 	if (Array.isArray(b)) return false
 
-	const objA = a as Record<string, unknown>
+	// Already narrowed to non-null objects above — safe to index
+	const objA = a as Record<PropertyKey, unknown>
 
-	const objB = b as Record<string, unknown>
+	const objB = b as Record<PropertyKey, unknown>
 
 	const keysA = Object.keys(objA)
 

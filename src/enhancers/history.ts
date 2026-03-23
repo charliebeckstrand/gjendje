@@ -74,6 +74,8 @@ export function withHistory<T>(
 		if (past.length === 0) return
 
 		const current = instance.get()
+
+		// Length is checked above — pop() always returns T here
 		const prev = past.pop() as T
 
 		future.push(current)
@@ -91,6 +93,8 @@ export function withHistory<T>(
 		if (future.length === 0) return
 
 		const current = instance.get()
+
+		// Length is checked above — pop() always returns T here
 		const next = future.pop() as T
 
 		past.push(current)

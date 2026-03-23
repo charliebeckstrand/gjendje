@@ -1,5 +1,6 @@
 import { createBase } from './core.js'
 import type { BaseInstance, Listener, StateOptions, Unsubscribe } from './types.js'
+import { isRecord } from './utils.js'
 import { addWatcher } from './watchers.js'
 
 // ---------------------------------------------------------------------------
@@ -111,10 +112,11 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 				if (prev === curr) continue
 
-				const isObj =
-					prev !== null && curr !== null && typeof prev === 'object' && typeof curr === 'object'
+				const p = isRecord(prev) ? prev : undefined
 
-				if (!isObj) {
+				const n = isRecord(curr) ? curr : undefined
+
+				if (!p || !n) {
 					// Non-object items changed — flag all watched keys
 					for (const watchKey of watchers.keys()) {
 						changedKeys.add(watchKey)
@@ -122,10 +124,6 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 					break
 				}
-
-				const p = prev as Record<PropertyKey, unknown>
-
-				const n = curr as Record<PropertyKey, unknown>
 
 				for (const watchKey of watchers.keys()) {
 					if (!changedKeys.has(watchKey) && !Object.is(p[watchKey], n[watchKey])) {

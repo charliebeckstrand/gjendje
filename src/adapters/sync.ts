@@ -25,9 +25,10 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 
 			if (msg == null || typeof msg !== 'object' || !('value' in msg)) return
 
-			if (Object.keys(msg as object).length !== 1) return
+			// Already narrowed to non-null object above
+			if (Object.keys(msg).length !== 1) return
 
-			const value = msg.value as T
+			const value = (msg as Record<'value', T>).value
 
 			try {
 				// Write through the underlying adapter so versioning and custom
