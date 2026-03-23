@@ -76,7 +76,7 @@ export function previous<T>(
 
 	return {
 		key: instanceKey,
-		scope: 'memory' as const,
+		scope: 'memory',
 
 		get ready(): Promise<void> {
 			return source.ready

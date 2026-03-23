@@ -345,7 +345,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		this._ensureWatchSubscription()
 
-		return addWatcher(s.watchers, watchKey as PropertyKey, listener as Listener<unknown>)
+		return addWatcher(s.watchers, watchKey, listener)
 	}
 
 	patch(partial: T extends object ? Partial<T> : never, options?: { strict?: boolean }): void {
