@@ -1,5 +1,6 @@
 import { createBase } from './core.js'
 import type { BaseInstance, Listener, StateOptions, Unsubscribe } from './types.js'
+import { addWatcher } from './watchers.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -158,23 +159,7 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 	const col = Object.create(base) as CollectionInstance<T>
 
 	col.watch = (watchKey: PropertyKey, listener: Listener<T[]>) => {
-		let listeners = watchers.get(watchKey)
-
-		if (!listeners) {
-			listeners = new Set()
-
-			watchers.set(watchKey, listeners)
-		}
-
-		listeners.add(listener)
-
-		return () => {
-			listeners.delete(listener)
-
-			if (listeners.size === 0) {
-				watchers.delete(watchKey)
-			}
-		}
+		return addWatcher(watchers, watchKey, listener)
 	}
 
 	col.add = (...items: T[]) => {

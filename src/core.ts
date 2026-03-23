@@ -10,6 +10,7 @@ import { getRegistered, registerByKey, scopedKey, unregisterByKey } from './regi
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
 import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
 import { shallowEqual } from './utils.js'
+import { addWatcher, notifyWatchers } from './watchers.js'
 
 // ---------------------------------------------------------------------------
 // Lazy server adapter registration — avoids pulling node:async_hooks into
@@ -359,25 +360,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		this._ensureWatchSubscription()
 
-		let listeners = s.watchers.get(watchKey as PropertyKey)
-
-		if (!listeners) {
-			listeners = new Set()
-
-			s.watchers.set(watchKey as PropertyKey, listeners)
-		}
-
-		listeners.add(listener as Listener<unknown>)
-
-		const watcherMap = s.watchers
-
-		return () => {
-			listeners.delete(listener as Listener<unknown>)
-
-			if (listeners.size === 0) {
-				watcherMap.delete(watchKey as PropertyKey)
-			}
-		}
+		return addWatcher(s.watchers, watchKey as PropertyKey, listener as Listener<unknown>)
 	}
 
 	patch(partial: T extends object ? Partial<T> : never, options?: { strict?: boolean }): void {
@@ -439,28 +422,8 @@ class StateImpl<T> implements StateInstance<T> {
 		s.watchPrev = this.get()
 
 		s.watchUnsub = this.subscribe((next) => {
-			if (!s.watchers || s.watchers.size === 0) {
-				s.watchPrev = next
-
-				return
-			}
-
-			for (const [watchKey, listeners] of s.watchers) {
-				const prevVal =
-					s.watchPrev !== null && typeof s.watchPrev === 'object'
-						? (s.watchPrev as Record<PropertyKey, unknown>)[watchKey]
-						: undefined
-
-				const nextVal =
-					next !== null && typeof next === 'object'
-						? (next as Record<PropertyKey, unknown>)[watchKey]
-						: undefined
-
-				if (!Object.is(prevVal, nextVal)) {
-					for (const listener of listeners) {
-						listener(nextVal)
-					}
-				}
+			if (s.watchers && s.watchers.size > 0) {
+				notifyWatchers(s.watchers, s.watchPrev, next)
 			}
 
 			s.watchPrev = next

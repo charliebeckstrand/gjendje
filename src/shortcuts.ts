@@ -1,5 +1,5 @@
 import { createState } from './factory.js'
-import type { StateInstance, StateOptions } from './types.js'
+import type { Scope, StateInstance, StateOptions } from './types.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -39,34 +39,14 @@ function extractEntry<T>(entry: Record<string, T>): [string, T] {
 // Core scope shortcut implementations (shared by state.* and standalone)
 // ---------------------------------------------------------------------------
 
-function _local<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
+function scopeShortcut<T>(
+	scope: Scope,
+	entry: Record<string, T>,
+	options?: Omit<StateOptions<T>, 'default' | 'scope'>,
+): StateInstance<T> {
 	const [key, defaultValue] = extractEntry(entry)
 
-	return createState(key, { ...options, default: defaultValue, scope: 'local' })
-}
-
-function _session<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
-	const [key, defaultValue] = extractEntry(entry)
-
-	return createState(key, { ...options, default: defaultValue, scope: 'session' })
-}
-
-function _url<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
-	const [key, defaultValue] = extractEntry(entry)
-
-	return createState(key, { ...options, default: defaultValue, scope: 'url' })
-}
-
-function _server<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
-	const [key, defaultValue] = extractEntry(entry)
-
-	return createState(key, { ...options, default: defaultValue, scope: 'server' })
-}
-
-function _bucket<T>(entry: Record<string, T>, options: BucketShortcutOptions<T>): StateInstance<T> {
-	const [key, defaultValue] = extractEntry(entry)
-
-	return createState(key, { ...options, default: defaultValue, scope: 'bucket' })
+	return createState(key, { ...options, default: defaultValue, scope })
 }
 
 // ---------------------------------------------------------------------------
@@ -155,10 +135,11 @@ function _state<T>(
 }
 
 // Attach scope shortcuts as dot-notation properties
-_state.local = _local
-_state.session = _session
-_state.url = _url
-_state.bucket = _bucket
-_state.server = _server
+_state.local = <T>(e: Record<string, T>, o?: ShortcutOptions<T>) => scopeShortcut('local', e, o)
+_state.session = <T>(e: Record<string, T>, o?: ShortcutOptions<T>) => scopeShortcut('session', e, o)
+_state.url = <T>(e: Record<string, T>, o?: ShortcutOptions<T>) => scopeShortcut('url', e, o)
+_state.bucket = <T>(e: Record<string, T>, o: BucketShortcutOptions<T>) =>
+	scopeShortcut('bucket', e, o)
+_state.server = <T>(e: Record<string, T>, o?: ShortcutOptions<T>) => scopeShortcut('server', e, o)
 
 export const state: StateFunction = _state as StateFunction
