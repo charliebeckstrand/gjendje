@@ -6,6 +6,7 @@ import { createUrlAdapter } from './adapters/url.js'
 import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
 import { getConfig, log, reportError } from './config.js'
+import { safeCall } from './listeners.js'
 import { getRegistered, registerByKey, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
 import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
@@ -550,11 +551,7 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 
 			s.notifyFn = () => {
 				for (const l of listeners) {
-					try {
-						l(s.current)
-					} catch (err) {
-						console.error('[gjendje] Listener threw:', err)
-					}
+					safeCall(l, s.current)
 				}
 			}
 		}

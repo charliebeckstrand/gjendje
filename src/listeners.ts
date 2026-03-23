@@ -1,6 +1,20 @@
 import type { Listener, Unsubscribe } from './types.js'
 
 /**
+ * Invoke a listener inside a try/catch so that one faulty subscriber
+ * cannot silence the rest. Extracted from the notification loop so V8
+ * can optimize the loop body independently (simple for-of without
+ * exception handling metadata).
+ */
+export function safeCall<T>(listener: Listener<T>, value: T): void {
+	try {
+		listener(value)
+	} catch (err) {
+		console.error('[gjendje] Listener threw:', err)
+	}
+}
+
+/**
  * Create a lightweight listener set with subscribe, notify, and clear.
  * Used internally by adapters and computed to avoid duplicating
  * the same Set + iterate + add/delete boilerplate.
@@ -15,13 +29,7 @@ export function createListeners<T>() {
 	return {
 		notify(value: T): void {
 			for (const listener of set) {
-				try {
-					listener(value)
-				} catch (err) {
-					// A single listener should never break others, but the
-					// error must remain visible for debugging.
-					console.error('[gjendje] Listener threw:', err)
-				}
+				safeCall(listener, value)
 			}
 		},
 
