@@ -1,0 +1,18 @@
+version: 2
+projectIgnorePaths:
+  - node_modules
+  - dist
+  - coverage
+  - benchmarks
+issueRules:
+  installScripts: true
+  networkAccess: true
+  envVars: true
+  filesystemAccess: true
+  shellAccess: true
+  unmaintained: true
+  deprecated: true
+  noLicense: true
+  tooManyAuthors: true
+  trivialPackage: true
+  unresolved: true
