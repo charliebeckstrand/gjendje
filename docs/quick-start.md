@@ -1,46 +1,69 @@
 # Quick start
 
+## State
+
 ```ts
 import { state } from 'gjendje'
 
-// Pass scope as an option
-const theme = state({ theme: 'light' }, { scope: 'local' })
-
-// Or use dot notation
-const theme = state.local({ theme: 'light' })
+const store = state({ count: 0 })
 ```
 
-For in-memory state that doesn't persist, use `state` without a scope:
+### Persist
 
 ```ts
-const user = state({ name: 'John', age: 30 })
+const store = state({ theme: 'light' }, { scope: 'local' })
 ```
 
-## Getting values
-
-Return the full state or destructure specific values:
-
 ```ts
-user.get()
-const { name } = user.get()
+// Optional dot notation shorthand
+const store = state.local({ theme: 'light' })
 ```
 
-## Updating values
+### Getting values
 
-Replace the entire state with `set`, or use an updater function:
+Return the full state:
 
 ```ts
-user.set({ name: 'Jane', age: 25 })
-user.set((prev) => ({ ...prev, age: prev.age + 1 }))
+store.get()
 ```
 
-For object stores, `patch` lets you update specific properties without spreading:
+Destructure specific values:
 
 ```ts
-const form = state({ name: '', email: '', age: 0 })
+const { theme } = store.get()
+```
 
-form.patch({ name: 'Alice' })          // Only updates name
-form.patch({ name: 'Bob', age: 30 })   // Update multiple properties at once
+### Updating values
+
+Replace the entire state:
+
+```ts
+store.set({ count: 1 })
+```
+Use an updater function:
+
+```ts
+store.set((prev) => ({ ...prev, count: prev.count + 1 }))
+```
+
+Update a property without spreading:
+
+```ts
+const user = state({
+  name: 'John',
+  age: 30,
+  city: '',
+  state: 'NY',
+  zip: '12345'
+})
+
+user.patch({ city: 'Schenectady' })
+```
+
+Update specific properties:
+
+```ts
+user.patch({ name: 'Jane', age: 25 })
 ```
 
 ---
