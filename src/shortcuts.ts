@@ -1,4 +1,4 @@
-import { createState } from './factory.js'
+import { createBase } from './core.js'
 import type { Scope, StateInstance, StateOptions } from './types.js'
 
 // ---------------------------------------------------------------------------
@@ -46,7 +46,7 @@ function scopeShortcut<T>(
 ): StateInstance<T> {
 	const [key, defaultValue] = extractEntry(entry)
 
-	return createState(key, { ...options, default: defaultValue, scope })
+	return createBase(key, { ...options, default: defaultValue, scope })
 }
 
 // ---------------------------------------------------------------------------
@@ -131,7 +131,7 @@ function _state<T>(
 				: ({ default: optionsOrDefault } as StateOptions<T>)
 	}
 
-	return createState(key, options)
+	return createBase(key, options)
 }
 
 // Attach scope shortcuts as dot-notation properties

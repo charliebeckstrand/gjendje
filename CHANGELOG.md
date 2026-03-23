@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Flatten MemoryStateImpl subclass into StateImpl — all scopes now go through the adapter pipeline, eliminating the parallel memory class, MEMORY_SHIM, and three memory-specific MutableState fields
+- Merge factory.ts into shortcuts.ts — remove the intermediate factory module and fold duplicate-check warning into createBase, reducing the state creation pipeline from 3 files to 2
 - Deduplicate and simplify internal code — extract shared helpers for interceptors, change handlers, watcher management, lazy destroyed promises, key validation, scope shortcuts, and unit parsing, reducing ~220 lines of duplicated logic with no behavioral changes
 - Rewrite API, primitives, and utilities docs with consistent formatting, type references, and code examples for every entry
 

@@ -3,7 +3,6 @@ import { createMemoryAdapter } from './adapters/memory.js'
 import { createStorageAdapter } from './adapters/storage.js'
 import { withSync } from './adapters/sync.js'
 import { createUrlAdapter } from './adapters/url.js'
-import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
 import { getConfig, log, reportError } from './config.js'
 import { getRegistered, registerByKey, scopedKey, unregisterByKey } from './registry.js'
@@ -35,14 +34,6 @@ const SYNCABLE_SCOPES = new Set<Scope>(['local', 'bucket'])
 
 // Shared resolved promise — avoids allocating a new one per instance
 const RESOLVED = Promise.resolve()
-
-// Shared no-op adapter shim for MemoryStateImpl — allocated once, never per-instance
-const MEMORY_SHIM: Adapter<unknown> = {
-	ready: RESOLVED,
-	get: () => undefined,
-	set: () => {},
-	subscribe: () => () => {},
-}
 
 // ---------------------------------------------------------------------------
 // Key prefixing
@@ -150,9 +141,6 @@ interface MutableState<T> {
 	watchers: Map<PropertyKey, Set<Listener<unknown>>> | undefined
 	watchUnsub: Unsubscribe | undefined
 	watchPrev: unknown
-	memoryListeners: Set<Listener<T>> | undefined
-	notifyFn: (() => void) | undefined
-	current: T | undefined
 }
 
 // ---------------------------------------------------------------------------
@@ -198,9 +186,6 @@ class StateImpl<T> implements StateInstance<T> {
 			watchers: undefined,
 			watchUnsub: undefined,
 			watchPrev: undefined,
-			memoryListeners: undefined,
-			notifyFn: undefined,
-			current: undefined,
 		}
 	}
 
@@ -397,7 +382,6 @@ class StateImpl<T> implements StateInstance<T> {
 		s.interceptors?.clear()
 		s.changeHandlers?.clear()
 		s.watchers?.clear()
-		s.memoryListeners?.clear()
 
 		s.watchUnsub?.()
 
@@ -432,119 +416,10 @@ class StateImpl<T> implements StateInstance<T> {
 }
 
 // ---------------------------------------------------------------------------
-// MemoryStateImpl — specialized subclass for memory scope that skips the
-// adapter object entirely. State is stored directly on the instance.
-// ---------------------------------------------------------------------------
-
-class MemoryStateImpl<T> extends StateImpl<T> {
-	private _hasIsEqual: boolean
-
-	constructor(
-		key: string,
-		rKey: string,
-		options: StateOptions<T>,
-		config: Readonly<GjendjeConfig>,
-	) {
-		super(key, 'memory', rKey, MEMORY_SHIM as Adapter<T>, options, config)
-
-		this._s.current = options.default
-
-		this._hasIsEqual = options.isEqual !== undefined
-	}
-
-	override get(): T {
-		return this._s.current as T
-	}
-
-	override peek(): T {
-		return this._s.current as T
-	}
-
-	override set(valueOrUpdater: T | ((prev: T) => T)): void {
-		const s = this._s
-
-		if (s.isDestroyed) return
-
-		const prev = s.current as T
-
-		let next =
-			typeof valueOrUpdater === 'function'
-				? (valueOrUpdater as (prev: T) => T)(prev)
-				: valueOrUpdater
-
-		next = this._applyInterceptors(next, prev)
-
-		if (this._hasIsEqual && this._options.isEqual?.(next, prev)) return
-
-		s.current = next
-
-		if (s.notifyFn !== undefined) {
-			notify(s.notifyFn)
-		}
-
-		this._notifyChange(next, prev)
-	}
-
-	override subscribe(listener: Listener<T>): Unsubscribe {
-		const s = this._s
-
-		if (!s.memoryListeners) {
-			const listeners = new Set<Listener<T>>()
-
-			s.memoryListeners = listeners
-
-			s.notifyFn = () => {
-				for (const l of listeners) {
-					try {
-						l(s.current as T)
-					} catch (err) {
-						console.error('[gjendje] Listener threw:', err)
-					}
-				}
-			}
-		}
-
-		const set = s.memoryListeners
-
-		set.add(listener)
-
-		return () => {
-			set.delete(listener)
-		}
-	}
-
-	override reset(): void {
-		const s = this._s
-
-		if (s.isDestroyed) return
-
-		const prev = s.current as T
-
-		const next = this._applyInterceptors(this._defaultValue, prev)
-
-		if (this._hasIsEqual && this._options.isEqual?.(next, prev)) return
-
-		s.current = next
-
-		if (s.notifyFn !== undefined) {
-			notify(s.notifyFn)
-		}
-
-		this._config.onReset?.({ key: this.key, scope: this.scope, previousValue: prev })
-
-		this._notifyChange(next, prev)
-	}
-
-	override get ready(): Promise<void> {
-		return RESOLVED
-	}
-}
-
-// ---------------------------------------------------------------------------
 // Base instance factory
 // ---------------------------------------------------------------------------
 
-export interface ResolvedKeyAndScope<T> {
+interface ResolvedKeyAndScope<T> {
 	config: Readonly<GjendjeConfig>
 	scope: Scope
 	rKey: string
@@ -553,13 +428,8 @@ export interface ResolvedKeyAndScope<T> {
 
 /**
  * Shared key validation, scope normalization, and registry lookup.
- * Used by both `createState()` (factory.ts) and `createBase()` to avoid
- * duplicating the same checks in two places.
  */
-export function resolveKeyAndScope<T>(
-	key: string,
-	options: StateOptions<T>,
-): ResolvedKeyAndScope<T> {
+function resolveKeyAndScope<T>(key: string, options: StateOptions<T>): ResolvedKeyAndScope<T> {
 	if (!key) {
 		throw new Error('[gjendje] key must be a non-empty string.')
 	}
@@ -583,27 +453,16 @@ export function resolveKeyAndScope<T>(
 	return { config, scope, rKey, existing }
 }
 
-/**
- * Fast path for memory-scope instances. Called directly from factory.ts
- * to skip redundant config/registry lookups and adapter setup.
- */
-export function createMemoryState<T>(
-	key: string,
-	rKey: string,
-	options: StateOptions<T>,
-	config: Readonly<GjendjeConfig>,
-): StateInstance<T> {
-	return new MemoryStateImpl(key, rKey, options, config)
-}
+export function createBase<T>(key: string, options: StateOptions<T>): StateInstance<T> {
+	const { config, scope, rKey, existing } = resolveKeyAndScope(key, options)
 
-export function createBase<T>(
-	key: string,
-	options: StateOptions<T>,
-	ctx?: ResolvedKeyAndScope<T>,
-): StateInstance<T> {
-	const { config, scope, rKey, existing } = ctx ?? resolveKeyAndScope(key, options)
+	if (existing && !existing.isDestroyed) {
+		if (config.warnOnDuplicate) {
+			log('warn', `Duplicate state("${key}") with scope "${scope}". Returning cached instance.`)
+		}
 
-	if (existing && !existing.isDestroyed) return existing
+		return existing
+	}
 
 	// --- requireValidation enforcement ---
 	if (config.requireValidation && PERSISTENT_SCOPES.has(scope) && !options.validate) {
@@ -617,7 +476,6 @@ export function createBase<T>(
 
 	const useMemoryFallback = isSsrMode && isServer()
 
-	// --- Sync warning (must run before the memory fast-path) ---
 	const effectiveSync = options.sync ?? (config.sync && SYNCABLE_SCOPES.has(scope))
 
 	if (effectiveSync && !SYNCABLE_SCOPES.has(scope)) {
@@ -627,51 +485,44 @@ export function createBase<T>(
 		)
 	}
 
-	// --- Fast path: memory scope (no SSR, no sync) — skip adapter object ---
-	let instance: StateImpl<T>
+	const storageKey = resolveStorageKey(key, options, config.prefix)
 
-	if (scope === 'memory' && !isSsrMode) {
-		instance = new MemoryStateImpl(key, rKey, options, config)
-	} else {
-		const storageKey = resolveStorageKey(key, options, config.prefix)
+	const baseAdapter = useMemoryFallback
+		? createMemoryAdapter(options.default)
+		: resolveAdapter(storageKey, scope, options)
 
-		const baseAdapter = useMemoryFallback
-			? createMemoryAdapter(options.default)
-			: resolveAdapter(storageKey, scope, options)
+	const shouldSync = effectiveSync && SYNCABLE_SCOPES.has(scope) && !useMemoryFallback
 
-		const shouldSync = effectiveSync && SYNCABLE_SCOPES.has(scope) && !useMemoryFallback
+	const adapter = shouldSync ? withSync(baseAdapter, storageKey, scope) : baseAdapter
 
-		const adapter = shouldSync ? withSync(baseAdapter, storageKey, scope) : baseAdapter
+	const instance = new StateImpl(key, scope, rKey, adapter, options, config)
 
-		instance = new StateImpl(key, scope, rKey, adapter, options, config)
+	// SSR hydration
+	if (isSsrMode && !isServer()) {
+		instance._s.hydrated = afterHydration(() => {
+			try {
+				const realAdapter = resolveAdapter(storageKey, scope, options)
 
-		// SSR hydration
-		if (isSsrMode && !isServer()) {
-			instance._s.hydrated = afterHydration(() => {
-				try {
-					const realAdapter = resolveAdapter(storageKey, scope, options)
+				const storedValue = realAdapter.get()
 
-					const storedValue = realAdapter.get()
-
-					if (!shallowEqual(storedValue, options.default)) {
-						instance.set(storedValue)
-					}
-
-					config.onHydrate?.({
-						key,
-						scope,
-						serverValue: options.default,
-						clientValue: storedValue,
-					})
-
-					realAdapter.destroy?.()
-				} catch (err) {
-					log('debug', `Hydration adapter unavailable for state("${key}") — using memory fallback.`)
-
-					reportError(key, scope, err)
+				if (!shallowEqual(storedValue, options.default)) {
+					instance.set(storedValue)
 				}
-			})
-		}
+
+				config.onHydrate?.({
+					key,
+					scope,
+					serverValue: options.default,
+					clientValue: storedValue,
+				})
+
+				realAdapter.destroy?.()
+			} catch (err) {
+				log('debug', `Hydration adapter unavailable for state("${key}") — using memory fallback.`)
+
+				reportError(key, scope, err)
+			}
+		})
 	}
 
 	registerByKey(rKey, key, scope, instance, config)
