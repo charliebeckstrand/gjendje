@@ -1,9 +1,5 @@
 # Scopes
 
-Every `state()` call targets a scope — the storage backend that holds the value. Pick the scope that matches the lifetime you need.
-
----
-
 ## Which scope should I use?
 
 **Does this value need to survive a page reload?**
