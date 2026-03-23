@@ -9,7 +9,7 @@ import { getConfig, log, reportError } from './config.js'
 import { getRegistered, registerByKey, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
 import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
-import { shallowEqual } from './utils.js'
+import { RESOLVED, shallowEqual } from './utils.js'
 import { addWatcher, notifyWatchers } from './watchers.js'
 
 // ---------------------------------------------------------------------------
@@ -32,9 +32,6 @@ export function registerServerAdapter(factory: ServerAdapterFactory): void {
 
 const PERSISTENT_SCOPES = new Set<Scope>(['local', 'session', 'bucket'])
 const SYNCABLE_SCOPES = new Set<Scope>(['local', 'bucket'])
-
-// Shared resolved promise — avoids allocating a new one per instance
-const RESOLVED = Promise.resolve()
 
 // Shared no-op adapter shim for MemoryStateImpl — allocated once, never per-instance
 const MEMORY_SHIM: Adapter<unknown> = {

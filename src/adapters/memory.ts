@@ -1,7 +1,6 @@
 import { notify } from '../batch.js'
 import type { Adapter, Listener } from '../types.js'
-
-const RESOLVED = Promise.resolve()
+import { RESOLVED } from '../utils.js'
 
 export function createMemoryAdapter<T>(defaultValue: T): Adapter<T> {
 	let current = defaultValue

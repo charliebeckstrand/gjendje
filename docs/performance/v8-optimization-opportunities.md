@@ -12,8 +12,8 @@ Identified during the V8 performance audit (March 2026). Each section is a self-
 |---|-------------|--------|-------------|
 | 1 | [Storage write cache pre-population](#1-storage-write-cache-pre-population) | **Done** | `claude/audit-v8-performance-xWIn6` |
 | 2 | [URL adapter search-string cache](#2-url-adapter-search-string-cache) | **Done** | `claude/audit-v8-performance-xWIn6` |
-| 3 | [Promise.all short-circuit for memory deps](#3-promiseall-short-circuit-for-memory-deps) | Planned | — |
-| 4 | [Computed settled getter caching](#4-computed-settled-getter-caching) | Planned | — |
+| 3 | [Promise.all short-circuit for memory deps](#3-promiseall-short-circuit-for-memory-deps) | **Done** | `claude/audit-v8-performance-xWIn6` |
+| 4 | [Computed settled getter caching](#4-computed-settled-getter-caching) | **Done** (merged into #3) | `claude/audit-v8-performance-xWIn6` |
 | 5 | [Listener notification try/catch extraction](#5-listener-notification-trycatch-extraction) | Planned | — |
 | 6 | [Subscribe closure allocation](#6-subscribe-closure-allocation) | Exploratory | — |
 | 7 | [scopedKey template literal](#7-scopedkey-template-literal) | Low priority | — |
