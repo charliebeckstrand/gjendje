@@ -438,31 +438,85 @@ class StateImpl<T> implements StateInstance<T> {
 // ~30% regression in batch/effect throughput.
 //
 // How it works:
-//   - Stores state directly on `_r.current` instead of going through an
-//     adapter's get()/set() methods and listener indirection.
+//   - Stores state in a lean MemoryCore (5 fields) instead of the full
+//     MutableState (11 fields). Feature-gated fields (interceptors,
+//     watchers, change handlers, destroyed promise) live in MemoryExtras
+//     and are allocated lazily on first use via getExt().
 //   - Creates the notification function lazily on first subscribe, then
 //     reuses it — avoids per-notification closure allocation.
 //   - Skips adapter.destroy() since there's no real adapter to tear down.
-//   - Returns RESOLVED for `ready` since memory state is always synchronous.
+//   - Returns RESOLVED for `ready`/`settled`/`hydrated` since memory
+//     state is always synchronous.
+//   - Overrides all StateImpl methods to use MemoryCore directly —
+//     the shared MEMORY_MUTABLE_SHIM passed to super() is never read.
 //
 // Key benchmarks (MemoryStateImpl vs adapter pipeline):
 //   create + destroy:  4.25M ops/s  vs  1.50M ops/s  (2.8× faster)
 //   batch (10 states): 1.87M ops/s  vs  1.45M ops/s  (1.3× faster)
 //   effect trigger:   12.87M ops/s  vs  8.31M ops/s  (1.5× faster)
-//
-// The subclass reuses _applyInterceptors, _notifyChange, and notifyWatchers
-// from the parent class — only get/set/subscribe/reset/destroy are overridden.
 // ---------------------------------------------------------------------------
 
-interface MemoryMutableState<T> extends MutableState<T> {
+// Lean core — only the fields touched on every get()/set()/subscribe() call.
+// Feature-gated fields (interceptors, watchers, change handlers, destroyed
+// promise, etc.) live in MemoryExtras and are allocated lazily on first use.
+// This cuts per-instance allocation from 14 property slots to 5, closing the
+// gap with closure-based libraries like Zustand.
+
+interface MemoryCore<T> {
 	current: T
-	memoryListeners: Set<Listener<T>> | undefined
+	isDestroyed: boolean
+	listeners: Set<Listener<T>> | undefined
 	notifyFn: (() => void) | undefined
+	ext: MemoryExtras<T> | undefined
+}
+
+interface MemoryExtras<T> {
+	lastValue: T
+	interceptors: Set<(next: T, prev: T) => T> | undefined
+	changeHandlers: Set<(next: T, prev: T) => void> | undefined
+	watchers: Map<PropertyKey, Set<Listener<unknown>>> | undefined
+	watchUnsub: Unsubscribe | undefined
+	watchPrev: unknown
+	resolveDestroyed: (() => void) | undefined
+	destroyed: Promise<void> | undefined
+}
+
+function getExt<T>(c: MemoryCore<T>): MemoryExtras<T> {
+	if (c.ext === undefined) {
+		c.ext = {
+			lastValue: undefined as T,
+			interceptors: undefined,
+			changeHandlers: undefined,
+			watchers: undefined,
+			watchUnsub: undefined,
+			watchPrev: undefined,
+			resolveDestroyed: undefined,
+			destroyed: undefined,
+		}
+	}
+
+	return c.ext
+}
+
+// Minimal MutableState shim passed to super() — MemoryStateImpl overrides
+// every method that touches _s, so these fields are never actually read.
+// Allocated once, shared across all instances.
+const MEMORY_MUTABLE_SHIM: MutableState<unknown> = {
+	lastValue: undefined,
+	isDestroyed: false,
+	interceptors: undefined,
+	changeHandlers: undefined,
+	settled: RESOLVED,
+	resolveDestroyed: undefined,
+	destroyed: undefined,
+	hydrated: undefined,
+	watchers: undefined,
+	watchUnsub: undefined,
+	watchPrev: undefined,
 }
 
 class MemoryStateImpl<T> extends StateImpl<T> {
-	// Direct reference — avoids a getter cast on every get()/set() call
-	private _r: MemoryMutableState<T>
+	private _c: MemoryCore<T>
 
 	private _hasIsEqual: boolean
 
@@ -472,46 +526,41 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 		options: StateOptions<T>,
 		config: Readonly<GjendjeConfig>,
 	) {
-		// Build the complete mutable state in one shot to avoid hidden class
-		// transitions from post-hoc property additions.
-		const rs: MemoryMutableState<T> = {
-			lastValue: undefined as T,
-			isDestroyed: false,
-			interceptors: undefined,
-			changeHandlers: undefined,
-			settled: RESOLVED,
-			resolveDestroyed: undefined,
-			destroyed: undefined,
-			hydrated: undefined,
-			watchers: undefined,
-			watchUnsub: undefined,
-			watchPrev: undefined,
+		super(
+			key,
+			'memory',
+			rKey,
+			MEMORY_SHIM as Adapter<T>,
+			options,
+			config,
+			MEMORY_MUTABLE_SHIM as MutableState<T>,
+		)
+
+		this._c = {
 			current: options.default,
-			memoryListeners: undefined,
+			isDestroyed: false,
+			listeners: undefined,
 			notifyFn: undefined,
+			ext: undefined,
 		}
-
-		super(key, 'memory', rKey, MEMORY_SHIM as Adapter<T>, options, config, rs)
-
-		this._r = rs
 
 		this._hasIsEqual = options.isEqual !== undefined
 	}
 
 	override get(): T {
-		return this._r.current
+		return this._c.current
 	}
 
 	override peek(): T {
-		return this._r.current
+		return this._c.current
 	}
 
 	override set(valueOrUpdater: T | ((prev: T) => T)): void {
-		const s = this._r
+		const c = this._c
 
-		if (s.isDestroyed) return
+		if (c.isDestroyed) return
 
-		const prev = s.current
+		const prev = c.current
 
 		let next =
 			typeof valueOrUpdater === 'function'
@@ -520,10 +569,12 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 
 		// Inline interceptors and change handlers for hot-path performance.
 		// Avoids virtual dispatch overhead of _applyInterceptors/_notifyChange.
-		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+		const ext = c.ext
+
+		if (ext !== undefined && ext.interceptors !== undefined && ext.interceptors.size > 0) {
 			const original = next
 
-			for (const interceptor of s.interceptors) {
+			for (const interceptor of ext.interceptors) {
 				next = interceptor(next, prev)
 			}
 
@@ -539,14 +590,14 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 
 		if (this._hasIsEqual && this._options.isEqual?.(next, prev)) return
 
-		s.current = next
+		c.current = next
 
-		if (s.notifyFn !== undefined) {
-			notify(s.notifyFn)
+		if (c.notifyFn !== undefined) {
+			notify(c.notifyFn)
 		}
 
-		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
-			for (const hook of s.changeHandlers) {
+		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
+			for (const hook of ext.changeHandlers) {
 				hook(next, prev)
 			}
 		}
@@ -555,21 +606,21 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 	}
 
 	override subscribe(listener: Listener<T>): Unsubscribe {
-		const s = this._r
+		const c = this._c
 
-		if (!s.memoryListeners) {
+		if (!c.listeners) {
 			const listeners = new Set<Listener<T>>()
 
-			s.memoryListeners = listeners
+			c.listeners = listeners
 
-			s.notifyFn = () => {
+			c.notifyFn = () => {
 				for (const l of listeners) {
-					safeCall(l, s.current)
+					safeCall(l, c.current)
 				}
 			}
 		}
 
-		const set = s.memoryListeners
+		const set = c.listeners
 
 		set.add(listener)
 
@@ -579,18 +630,20 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 	}
 
 	override reset(): void {
-		const s = this._r
+		const c = this._c
 
-		if (s.isDestroyed) return
+		if (c.isDestroyed) return
 
-		const prev = s.current
+		const prev = c.current
 
 		let next = this._defaultValue
 
-		if (s.interceptors !== undefined && s.interceptors.size > 0) {
+		const ext = c.ext
+
+		if (ext !== undefined && ext.interceptors !== undefined && ext.interceptors.size > 0) {
 			const original = next
 
-			for (const interceptor of s.interceptors) {
+			for (const interceptor of ext.interceptors) {
 				next = interceptor(next, prev)
 			}
 
@@ -606,14 +659,14 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 
 		if (this._hasIsEqual && this._options.isEqual?.(next, prev)) return
 
-		s.current = next
+		c.current = next
 
-		if (s.notifyFn !== undefined) {
-			notify(s.notifyFn)
+		if (c.notifyFn !== undefined) {
+			notify(c.notifyFn)
 		}
 
-		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
-			for (const hook of s.changeHandlers) {
+		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
+			for (const hook of ext.changeHandlers) {
 				hook(next, prev)
 			}
 		}
@@ -627,47 +680,112 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 		return RESOLVED
 	}
 
+	override get settled(): Promise<void> {
+		return RESOLVED
+	}
+
+	override get hydrated(): Promise<void> {
+		return RESOLVED
+	}
+
+	override get isDestroyed(): boolean {
+		return this._c.isDestroyed
+	}
+
+	override get destroyed(): Promise<void> {
+		if (this._c.isDestroyed) return RESOLVED
+
+		const ext = getExt(this._c)
+
+		if (!ext.destroyed) {
+			ext.destroyed = new Promise<void>((resolve) => {
+				ext.resolveDestroyed = resolve
+			})
+		}
+
+		return ext.destroyed
+	}
+
+	override intercept(fn: (next: T, prev: T) => T): Unsubscribe {
+		const ext = getExt(this._c)
+
+		if (!ext.interceptors) ext.interceptors = new Set()
+
+		ext.interceptors.add(fn)
+
+		return () => {
+			ext.interceptors?.delete(fn)
+		}
+	}
+
+	override onChange(fn: (next: T, prev: T) => void): Unsubscribe {
+		const ext = getExt(this._c)
+
+		if (!ext.changeHandlers) ext.changeHandlers = new Set()
+
+		ext.changeHandlers.add(fn)
+
+		return () => {
+			ext.changeHandlers?.delete(fn)
+		}
+	}
+
+	override watch<K extends T extends object ? keyof T : never>(
+		watchKey: K,
+		listener: (value: T[K & keyof T]) => void,
+	): Unsubscribe {
+		const ext = getExt(this._c)
+
+		if (!ext.watchers) ext.watchers = new Map()
+
+		this._ensureWatchSubscription()
+
+		return addWatcher(ext.watchers, watchKey, listener)
+	}
+
 	protected override _ensureWatchSubscription(): void {
-		const s = this._r
+		const ext = getExt(this._c)
 
-		if (s.watchUnsub) return
+		if (ext.watchUnsub) return
 
-		s.watchPrev = s.current
+		ext.watchPrev = this._c.current
 
-		s.watchUnsub = this.subscribe((next) => {
-			if (s.watchers && s.watchers.size > 0) {
-				notifyWatchers(s.watchers, s.watchPrev, next)
+		ext.watchUnsub = this.subscribe((next) => {
+			if (ext.watchers && ext.watchers.size > 0) {
+				notifyWatchers(ext.watchers, ext.watchPrev, next)
 			}
 
-			s.watchPrev = next
+			ext.watchPrev = next
 		})
 	}
 
 	override destroy(): void {
-		const s = this._r
+		const c = this._c
 
-		if (s.isDestroyed) return
+		if (c.isDestroyed) return
 
-		s.lastValue = s.current
+		c.isDestroyed = true
 
-		s.isDestroyed = true
+		const ext = c.ext
 
-		s.interceptors?.clear()
-		s.changeHandlers?.clear()
-		s.watchers?.clear()
+		if (ext !== undefined) {
+			ext.lastValue = c.current
+			ext.interceptors?.clear()
+			ext.changeHandlers?.clear()
+			ext.watchers?.clear()
+			ext.watchUnsub?.()
+		}
 
-		s.watchUnsub?.()
-
-		s.memoryListeners?.clear()
+		c.listeners?.clear()
 
 		if (this._rKey) unregisterByKey(this._rKey)
 
 		this._config.onDestroy?.({ key: this.key, scope: this.scope })
 
-		if (s.resolveDestroyed) {
-			s.resolveDestroyed()
-		} else {
-			s.destroyed = RESOLVED
+		if (ext?.resolveDestroyed) {
+			ext.resolveDestroyed()
+		} else if (ext !== undefined) {
+			ext.destroyed = RESOLVED
 		}
 	}
 }
