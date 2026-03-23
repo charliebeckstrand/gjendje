@@ -146,6 +146,35 @@ const theme = state.local({ theme: 'light' })
 
 ---
 
+## `memory`
+
+Options for memory-scoped state.
+
+### `memory.registry`
+
+Track memory-scoped state in the global registry. Defaults to `true`.
+
+When `true`, calling `state()` twice with the same key returns the cached instance, and memory-scoped instances appear in `getRegistry()`.
+
+When `false`, registry lookup and insertion are skipped entirely for memory scope. Each `state()` call creates a new instance regardless of key. This eliminates the primary bottleneck in high-throughput creation — V8's `Map` operations on a growing registry cap at ~1.5M ops/s, while skipping them reaches ~6M ops/s.
+
+> Useful for apps that create many short-lived or uniquely-keyed memory states (e.g. per-component state in React) and don't rely on duplicate detection.
+
+```ts
+configure({
+  memory: { registry: false }
+})
+
+// Each call creates a new instance — no duplicate detection
+const a = state('counter', { default: 0 })
+const b = state('counter', { default: 0 })
+a !== b // true
+```
+
+Persistent scopes (`local`, `session`, `bucket`) are unaffected — they always use the registry.
+
+---
+
 ## `warnOnDuplicate`
 
 Emit a console warning when `state()` is called with a key + scope combination that already exists.
