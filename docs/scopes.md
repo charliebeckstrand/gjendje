@@ -64,6 +64,8 @@ const cache = state.bucket({ 'api-cache': null }, {
 
 ## `server` (AsyncLocalStorage)
 
+Every `server` scoped `state()` must run inside [`withServerSession`](https://github.com/charliebeckstrand/gjendje/blob/main/docs/utilities#withServerSession.md).
+
 ```ts
 import { state, withServerSession } from 'gjendje'
 
@@ -74,5 +76,3 @@ await withServerSession(async () => {
   // ... handle request
 })
 ```
-
-Every `server` scoped `state()` must run inside [`withServerSession`](https://github.com/charliebeckstrand/gjendje/blob/main/docs/utilities#withServerSession.md).
