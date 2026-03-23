@@ -134,8 +134,9 @@ When SSR is enabled:
 
 ## `sync`
 
-Enable cross-tab sync for all syncable scopes (`local`, `bucket`). Non-syncable scopes (`memory`, `session`, `url`, `server`) emit a warning and ignore.
+Enable cross-tab sync for all syncable scopes (`local`, `bucket`).
 
+Non-syncable scopes (`memory`, `session`, `url`, `server`) emit a warning and ignore.
 
 ```ts
 configure({ sync: true })
@@ -165,10 +166,6 @@ state.local({ theme: 'light' })
 
 ### `onChange`
 
-Fires whenever any state instance's value changes, whether via `set()` or `reset()`.
-
-> Useful for global devtools, analytics, or debugging.
-
 ```ts
 interface ChangeContext {
   key: string
@@ -177,6 +174,10 @@ interface ChangeContext {
   previousValue: unknown
 }
 ```
+
+Fires whenever any state instance's value changes, whether via `set()` or `reset()`.
+
+> Useful for global devtools, analytics, or debugging.
 
 ```ts
 configure({
@@ -190,16 +191,16 @@ configure({
 
 ### `onDestroy`
 
-Fires when any state instance is destroyed.
-
-> Useful for cleanup analytics, debugging memory leaks, or ensuring dependent systems are notified.
-
 ```ts
 interface DestroyContext {
   key: string
   scope: Scope
 }
 ```
+
+Fires when any state instance is destroyed.
+
+> Useful for cleanup analytics, debugging memory leaks, or ensuring dependent systems are notified.
 
 ```ts
 configure({
@@ -213,10 +214,6 @@ configure({
 
 ### `onError`
 
-Register a global error handler that fires on storage, migration, and hydration failures.
-
-> Useful for reporting to error tracking services.
-
 ```ts
 interface ErrorContext {
   key: string
@@ -224,6 +221,10 @@ interface ErrorContext {
   error: unknown
 }
 ```
+
+Register a global error handler that fires on storage, migration, and hydration failures.
+
+> Useful for reporting to error tracking services.
 
 ```ts
 configure({
@@ -239,10 +240,6 @@ configure({
 
 ### `onExpire`
 
-Fires when a storage bucket's data has expired. Only fires for `bucket` scope instances when the Storage Buckets API is available and the bucket's data has been evicted.
-
-> Useful for tracking cache lifetimes and triggering data refetches.
-
 ```ts
 interface ExpireContext {
   key: string
@@ -250,6 +247,12 @@ interface ExpireContext {
   expiredAt: number
 }
 ```
+
+Fires when a storage bucket's data has expired.
+
+> Useful for tracking cache lifetimes and triggering data refetches.
+
+_Only fires for `bucket` scope instances when the Storage Buckets API is available and the bucket's data has been evicted._
 
 ```ts
 configure({
@@ -265,12 +268,6 @@ configure({
 
 ### `onHydrate`
 
-Fires after SSR hydration completes for an instance. Receives both the server-rendered value and the client-side storage value. 
-
-> Only fires for instances with SSR enabled on browser scopes.
-
-> Useful for detecting mismatches and debugging hydration issues.
-
 ```ts
 interface HydrateContext {
   key: string
@@ -279,6 +276,12 @@ interface HydrateContext {
   clientValue: unknown
 }
 ```
+
+Fires after SSR hydration completes for an instance. Receives both the server-rendered value and the client-side storage value. 
+
+> Useful for detecting mismatches and debugging hydration issues.
+
+_Only fires for instances with SSR enabled on browser scopes._
 
 ```ts
 configure({
@@ -294,12 +297,6 @@ configure({
 
 ### `onIntercept`
 
-Fires when an interceptor modifies a value during `set()` or `reset()`. Only fires when the intercepted value differs from the original (using `Object.is`).
-
-> Does not fire when interceptors return the same value they received.
-
-> Useful for debugging and logging interceptor activity.
-
 ```ts
 interface InterceptContext {
   key: string
@@ -308,6 +305,12 @@ interface InterceptContext {
   intercepted: unknown
 }
 ```
+
+Fires when an interceptor modifies a value during `set()` or `reset()`. 
+
+> Useful for debugging and logging interceptor activity.
+
+_Only fires when the intercepted value differs from the original (using `Object.is`). Does not fire when interceptors return the same value they received._
 
 ```ts
 configure({
@@ -321,10 +324,6 @@ configure({
 
 ### `onMigrate`
 
-Fires after a migration chain runs during a read from storage. Receives the version range and the final migrated data.
-
-> Useful for tracking schema migrations in production.
-
 ```ts
 interface MigrateContext {
   key: string
@@ -334,6 +333,10 @@ interface MigrateContext {
   data: unknown
 }
 ```
+
+Fires after a migration chain runs during a read from storage. Receives the version range and the final migrated data.
+
+> Useful for tracking schema migrations in production.
 
 ```ts
 configure({
@@ -347,10 +350,6 @@ configure({
 
 ### `onQuotaExceeded`
 
-Fires specifically when a storage write fails due to quota limits (`QuotaExceededError`).
-
-> Only fires for `DOMException` with `name === 'QuotaExceededError'`.
-
 ```ts
 interface QuotaExceededContext {
   key: string
@@ -358,6 +357,10 @@ interface QuotaExceededContext {
   error: unknown
 }
 ```
+
+Fires specifically when a storage write fails due to quota limits (`QuotaExceededError`).
+
+_Only fires for `DOMException` with `name === 'QuotaExceededError'`._
 
 ```ts
 configure({
@@ -373,18 +376,16 @@ configure({
 
 ### `onRegister`
 
-Fires when a new state instance is registered in the global registry. 
-
-> Does not fire for duplicate key + scope lookups that return a cached instance.
-
-> Fires again if an instance is destroyed and re-created with the same key + scope.
-
 ```ts
 interface RegisterContext {
   key: string
   scope: Scope
 }
 ```
+
+Fires when a new state instance is registered in the global registry. Fires again if an instance is destroyed and re-created with the same key + scope.
+
+_Does not fire for duplicate key + scope lookups that return a cached instance._
 
 ```ts
 configure({
@@ -398,8 +399,6 @@ configure({
 
 ### `onReset`
 
-Fires when any state instance's `reset()` method is called.
-
 ```ts
 interface ResetContext {
   key: string
@@ -407,6 +406,8 @@ interface ResetContext {
   previousValue: unknown
 }
 ```
+
+Fires when any state instance's `reset()` method is called.
 
 ```ts
 configure({
@@ -422,12 +423,6 @@ configure({
 
 ### `onSync`
 
-Fires when a cross-tab sync event updates a value from another tab.
-
-> Only fires for instances with `sync: true` on syncable scopes (`local`, `bucket`).
-
-> Useful for conflict resolution or showing "updated in another tab" notifications.
-
 ```ts
 interface SyncContext {
   key: string
@@ -436,6 +431,12 @@ interface SyncContext {
   source: 'remote'
 }
 ```
+
+Fires when a cross-tab sync event updates a value from another tab.
+
+> Useful for conflict resolution or showing "updated in another tab" notifications.
+
+_Only fires for instances with `sync: true` on syncable scopes (`local`, `bucket`)._
 
 ```ts
 configure({
@@ -449,10 +450,6 @@ configure({
 
 ### `onValidationFail`
 
-Fires when a `validate` function rejects a value read from storage.
-
-> Useful for detecting schema drift and tracking how often stored data fails validation.
-
 ```ts
 interface ValidationFailContext {
   key: string
@@ -460,6 +457,10 @@ interface ValidationFailContext {
   value: unknown
 }
 ```
+
+Fires when a `validate` function rejects a value read from storage.
+
+> Useful for detecting schema drift and tracking how often stored data fails validation.
 
 ```ts
 configure({
