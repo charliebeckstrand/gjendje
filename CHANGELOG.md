@@ -1,5 +1,19 @@
 # gjendje
 
+## 1.0.0
+
+### Major Changes
+
+- **Breaking:** Remove deprecated standalone scope shortcut exports (`local()`, `session()`, `url()`, `bucket()`, `server()`). Use `state.local()`, `state.session()`, `state.url()`, `state.bucket()`, `state.server()` instead.
+- **Breaking:** Remove deprecated `'tab'` scope alias. Use `'session'` instead.
+- **Breaking:** Remove `'tab'` from `BucketOptions.fallback` type. Use `'session'` instead.
+
+### Improvements
+
+- Promote `noNonNullAssertion` and `noExplicitAny` lint rules from warnings to errors.
+- Fix size-limit config referencing `withServerSession` from the wrong entry point.
+- Update all tests and documentation to use the new API surface.
+
 ## 0.9.3
 
 ### Patch Changes

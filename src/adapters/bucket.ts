@@ -110,7 +110,7 @@ export function createBucketAdapter<T>(
 	const notifyListeners = () => listeners.notify(lastNotifiedValue)
 
 	// Start with the fallback storage synchronously so get()/set() work immediately
-	const fallbackStorage = fallbackScope === 'tab' ? sessionStorage : localStorage
+	const fallbackStorage = fallbackScope === 'session' ? sessionStorage : localStorage
 	let delegate: Adapter<T> = createStorageAdapter(fallbackStorage, key, options)
 
 	let isDestroyed = false

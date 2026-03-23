@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { server, state } from '../src/index.js'
+import { state } from '../src/index.js'
 import { withServerSession } from '../src/server.js'
 
 describe('server scope', () => {
@@ -92,9 +92,9 @@ describe('server scope', () => {
 	})
 })
 
-describe('server() shortcut', () => {
+describe('state.server() shortcut', () => {
 	it('creates state with server scope', () => {
-		const s = server({ user: null as string | null })
+		const s = state.server({ user: null as string | null })
 
 		expect(s.get()).toBeNull()
 		expect(s.scope).toBe('server')
@@ -104,7 +104,7 @@ describe('server() shortcut', () => {
 	})
 
 	it('reads and writes within a session', async () => {
-		const s = server({ lang: 'en' })
+		const s = state.server({ lang: 'en' })
 
 		await withServerSession(async () => {
 			s.set('fr')
@@ -116,7 +116,7 @@ describe('server() shortcut', () => {
 	})
 
 	it('passes through extra options', async () => {
-		const s = server({ count: 0 }, { isEqual: (a, b) => a === b })
+		const s = state.server({ count: 0 }, { isEqual: (a, b) => a === b })
 
 		expect(s.get()).toBe(0)
 		expect(s.scope).toBe('server')

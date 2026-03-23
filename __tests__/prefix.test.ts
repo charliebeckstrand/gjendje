@@ -42,11 +42,11 @@ describe('global prefix', () => {
 	it('prepends global prefix to sessionStorage key', () => {
 		configure({ prefix: 'myapp' })
 
-		const step = state('pfx-tab', { default: 1, scope: 'tab' })
+		const step = state('pfx-session', { default: 1, scope: 'session' })
 
 		step.set(2)
 
-		expect(sessionStorage.getItem('myapp:pfx-tab')).toBe('2')
+		expect(sessionStorage.getItem('myapp:pfx-session')).toBe('2')
 
 		step.destroy()
 	})

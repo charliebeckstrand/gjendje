@@ -123,16 +123,16 @@ describe('persist option', () => {
 		reloaded.destroy()
 	})
 
-	it('works with tab scope (sessionStorage)', () => {
-		const settings = state('sp-tab', {
+	it('works with session scope (sessionStorage)', () => {
+		const settings = state('sp-session', {
 			default: { a: 1, b: 2, c: 3 },
-			scope: 'tab' as const,
+			scope: 'session' as const,
 			persist: ['a', 'b'],
 		})
 
 		settings.set({ a: 10, b: 20, c: 30 })
 
-		const raw = sessionStorage.getItem('sp-tab')
+		const raw = sessionStorage.getItem('sp-session')
 		const stored = JSON.parse(raw as string)
 
 		expect(stored).toEqual({ a: 10, b: 20 })

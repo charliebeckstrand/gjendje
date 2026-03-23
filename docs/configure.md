@@ -184,7 +184,7 @@ configure({ sync: true })
 const theme = state.local({ theme: 'light' })
 ```
 
-Non-syncable scopes (`render`, `tab`, `url`, `server`) emit a warning and ignore the setting.
+Non-syncable scopes (`render`, `session`, `url`, `server`) emit a warning and ignore the setting.
 
 Per-instance `sync: false` overrides the global setting.
 

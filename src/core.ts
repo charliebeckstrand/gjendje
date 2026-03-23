@@ -29,7 +29,7 @@ export function registerServerAdapter(factory: ServerAdapterFactory): void {
 // Scope sets (module-level to avoid per-instance allocation)
 // ---------------------------------------------------------------------------
 
-const PERSISTENT_SCOPES = new Set<Scope>(['local', 'session', 'tab', 'bucket'])
+const PERSISTENT_SCOPES = new Set<Scope>(['local', 'session', 'bucket'])
 const SYNCABLE_SCOPES = new Set<Scope>(['local', 'bucket'])
 
 // Shared resolved promise — avoids allocating a new one per instance
@@ -70,7 +70,6 @@ function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptio
 			return createRenderAdapter(options.default)
 
 		case 'session':
-		case 'tab':
 			if (typeof sessionStorage === 'undefined') {
 				throw new Error(
 					'[state] sessionStorage is not available. Use ssr: true or scope: "render" for server environments.',
@@ -744,7 +743,7 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 
 	// Apply global defaults — per-instance options take precedence
 	const rawScope = options.scope ?? config.scope ?? 'render'
-	const scope = rawScope === 'memory' ? 'render' : rawScope === 'session' ? 'tab' : rawScope
+	const scope = rawScope === 'memory' ? 'render' : rawScope
 
 	const rKey = scopedKey(key, scope)
 

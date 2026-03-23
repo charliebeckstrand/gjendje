@@ -35,7 +35,7 @@ export { readonly } from './readonly.js'
 export type { SelectInstance, SelectOptions } from './select.js'
 export { select } from './select.js'
 export type { StateFunction } from './shortcuts.js'
-export { bucket, local, server, session, state, url } from './shortcuts.js'
+export { state } from './shortcuts.js'
 export type {
 	Adapter,
 	BaseInstance,

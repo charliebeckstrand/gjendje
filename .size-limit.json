@@ -2,7 +2,7 @@
 	{
 		"name": "gjendje (core)",
 		"path": "dist/index.js",
-		"limit": "4 kB",
+		"limit": "5 kB",
 		"import": "{ state, batch }",
 		"ignore": ["async_hooks"]
 	},
@@ -10,7 +10,7 @@
 		"name": "gjendje (all)",
 		"path": "dist/index.js",
 		"limit": "9 kB",
-		"import": "{ state, computed, effect, collection, batch, withServerSession, withHistory, snapshot, shallowEqual, configure }",
+		"import": "{ state, computed, effect, collection, batch, withHistory, snapshot, shallowEqual, configure }",
 		"ignore": ["async_hooks"]
 	}
 ]

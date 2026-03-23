@@ -9,7 +9,7 @@ export function isServer(): boolean {
  * The browser scopes that require window/localStorage/sessionStorage.
  * These will throw on the server without SSR handling.
  */
-export const BROWSER_SCOPES = new Set(['session', 'tab', 'local', 'url', 'bucket'])
+export const BROWSER_SCOPES = new Set(['session', 'local', 'url', 'bucket'])
 
 /**
  * Runs a callback after the browser has hydrated.
