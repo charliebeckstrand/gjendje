@@ -3,7 +3,7 @@ import type { Adapter, Listener } from '../types.js'
 
 const RESOLVED = Promise.resolve()
 
-export function createRenderAdapter<T>(defaultValue: T): Adapter<T> {
+export function createMemoryAdapter<T>(defaultValue: T): Adapter<T> {
 	let current = defaultValue
 
 	const listeners = new Set<Listener<T>>()

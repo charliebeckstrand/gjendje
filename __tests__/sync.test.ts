@@ -175,10 +175,10 @@ describe('sync option', () => {
 			calls.push(args)
 		}
 
-		const x = state('sync-warn-render', { default: 0, scope: 'render', sync: true })
+		const x = state('sync-warn-memory', { default: 0, scope: 'memory', sync: true })
 
 		expect(calls.length).toBeGreaterThan(0)
-		expect(String(calls[0]?.[0])).toContain('sync: true is ignored for scope "render"')
+		expect(String(calls[0]?.[0])).toContain('sync: true is ignored for scope "memory"')
 
 		x.destroy()
 		console.warn = originalWarn
@@ -192,10 +192,10 @@ describe('sync option', () => {
 			calls.push(args)
 		}
 
-		const x = state('sync-warn-tab', { default: 0, scope: 'tab', sync: true })
+		const x = state('sync-warn-session', { default: 0, scope: 'session', sync: true })
 
 		expect(calls.length).toBeGreaterThan(0)
-		expect(String(calls[0]?.[0])).toContain('sync: true is ignored for scope "tab"')
+		expect(String(calls[0]?.[0])).toContain('sync: true is ignored for scope "session"')
 
 		// No BroadcastChannel should be created
 		const channels = MockBroadcastChannel.channels.get('state:sync-warn-tab')

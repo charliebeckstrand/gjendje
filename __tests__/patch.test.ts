@@ -153,8 +153,8 @@ describe('patch', () => {
 	// Scope coverage
 	// ---------------------------------------------------------------------------
 
-	it('works with render scope (RenderStateImpl)', () => {
-		const store = state('patch-render', { default: { x: 'a', y: 'b' }, scope: 'render' })
+	it('works with memory scope (RenderStateImpl)', () => {
+		const store = state('patch-memory', { default: { x: 'a', y: 'b' }, scope: 'memory' })
 
 		store.patch({ x: 'z' })
 

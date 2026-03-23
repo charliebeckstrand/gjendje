@@ -8,7 +8,7 @@ Every `state()` call targets a scope — the storage backend that holds the valu
 
 **Does this value need to survive a page reload?**
 
-- **No** → `render`
+- **No** → `memory`
 
 **Should it be visible in the URL (bookmarkable, shareable)?**
 

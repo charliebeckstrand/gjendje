@@ -39,7 +39,7 @@ export function createServerAdapter<T>(key: string, defaultValue: T): Adapter<T>
 
 			if (!store) {
 				throw new Error(
-					'[state] Cannot set server-scoped state outside of a server session. ' +
+					'[gjendje] Cannot set server-scoped state outside of a server session. ' +
 						'Wrap your request handler with withServerSession().',
 				)
 			}

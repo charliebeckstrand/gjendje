@@ -233,24 +233,24 @@ describe('read cache', () => {
 })
 
 // ---------------------------------------------------------------------------
-// tab scope
+// session scope
 // ---------------------------------------------------------------------------
 
-describe('tab scope', () => {
+describe('session scope', () => {
 	it('persists value to sessionStorage', () => {
-		const modal = state('stor-tab-persist', { default: false, scope: 'tab' })
+		const modal = state('stor-session-persist', { default: false, scope: 'session' })
 
 		modal.set(true)
 
-		expect(sessionStorage.getItem('stor-tab-persist')).toBe('true')
+		expect(sessionStorage.getItem('stor-session-persist')).toBe('true')
 
 		modal.destroy()
 	})
 
 	it('reads existing value from sessionStorage on init', () => {
-		sessionStorage.setItem('stor-tab-read', '3')
+		sessionStorage.setItem('stor-session-read', '3')
 
-		const step = state('stor-tab-read', { default: 1, scope: 'tab' })
+		const step = state('stor-session-read', { default: 1, scope: 'session' })
 
 		expect(step.get()).toBe(3)
 
@@ -258,7 +258,7 @@ describe('tab scope', () => {
 	})
 
 	it('notifies subscribers on set', () => {
-		const step = state('stor-tab-notify', { default: 1, scope: 'tab' })
+		const step = state('stor-session-notify', { default: 1, scope: 'session' })
 		const listener = vi.fn()
 
 		step.subscribe(listener)

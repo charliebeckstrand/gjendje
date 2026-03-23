@@ -36,21 +36,6 @@ function extractEntry<T>(entry: Record<string, T>): [string, T] {
 }
 
 // ---------------------------------------------------------------------------
-// Deprecation helper
-// ---------------------------------------------------------------------------
-
-const _deprecationWarned = new Set<string>()
-
-function warnDeprecated(name: string): void {
-	if (_deprecationWarned.has(name)) return
-	_deprecationWarned.add(name)
-	console.warn(
-		`[gjendje] ${name}() is deprecated and will be removed in the next major version. ` +
-			`Use state.${name}() instead. Example: state.${name}({ key: value })`,
-	)
-}
-
-// ---------------------------------------------------------------------------
 // Core scope shortcut implementations (shared by state.* and standalone)
 // ---------------------------------------------------------------------------
 
@@ -177,86 +162,3 @@ _state.bucket = _bucket
 _state.server = _server
 
 export const state: StateFunction = _state as StateFunction
-
-// ---------------------------------------------------------------------------
-// Deprecated standalone scope shortcuts
-// ---------------------------------------------------------------------------
-
-/**
- * @deprecated Use `state.local()` instead. Will be removed in the next major version.
- *
- * Create state stored in `localStorage`.
- *
- * ```ts
- * const theme = state.local({ theme: 'light' })
- * ```
- */
-export function local<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
-	warnDeprecated('local')
-	return _local(entry, options)
-}
-
-/**
- * @deprecated Use `state.session()` instead. Will be removed in the next major version.
- *
- * Create state stored in `sessionStorage`.
- *
- * ```ts
- * const draft = state.session({ draft: '' })
- * ```
- */
-export function session<T>(
-	entry: Record<string, T>,
-	options?: ShortcutOptions<T>,
-): StateInstance<T> {
-	warnDeprecated('session')
-	return _session(entry, options)
-}
-
-/**
- * @deprecated Use `state.url()` instead. Will be removed in the next major version.
- *
- * Create state stored in `URLSearchParams`.
- *
- * ```ts
- * const filters = state.url({ q: '' })
- * ```
- */
-export function url<T>(entry: Record<string, T>, options?: ShortcutOptions<T>): StateInstance<T> {
-	warnDeprecated('url')
-	return _url(entry, options)
-}
-
-/**
- * @deprecated Use `state.server()` instead. Will be removed in the next major version.
- *
- * Create state stored in server-side `AsyncLocalStorage`.
- *
- * ```ts
- * const user = state.server({ user: null })
- * ```
- */
-export function server<T>(
-	entry: Record<string, T>,
-	options?: ShortcutOptions<T>,
-): StateInstance<T> {
-	warnDeprecated('server')
-	return _server(entry, options)
-}
-
-/**
- * @deprecated Use `state.bucket()` instead. Will be removed in the next major version.
- *
- * Create state stored in a Storage Bucket.
- *
- * ```ts
- * const data = state.bucket({ cache: [] }, { bucket: { name: 'my-bucket' } })
- * ```
- */
-export function bucket<T>(
-	entry: Record<string, T>,
-	options: BucketShortcutOptions<T>,
-): StateInstance<T> {
-	warnDeprecated('bucket')
-	return _bucket(entry, options)
-}

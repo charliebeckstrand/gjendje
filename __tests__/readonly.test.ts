@@ -3,14 +3,14 @@ import { readonly, state } from '../src/index.js'
 
 describe('readonly', () => {
 	it('exposes get() from the source', () => {
-		const base = state('ro-get', { default: 42, scope: 'render' })
+		const base = state('ro-get', { default: 42, scope: 'memory' })
 		const ro = readonly(base)
 
 		expect(ro.get()).toBe(42)
 	})
 
 	it('reflects source changes', () => {
-		const base = state('ro-reflect', { default: 'a', scope: 'render' })
+		const base = state('ro-reflect', { default: 'a', scope: 'memory' })
 		const ro = readonly(base)
 
 		base.set('b')
@@ -18,7 +18,7 @@ describe('readonly', () => {
 	})
 
 	it('shadows set, reset, intercept, and use as undefined', () => {
-		const base = state('ro-no-write', { default: 0, scope: 'render' })
+		const base = state('ro-no-write', { default: 0, scope: 'memory' })
 		const ro = readonly(base)
 
 		// Write methods are shadowed with undefined on the wrapper —
@@ -30,7 +30,7 @@ describe('readonly', () => {
 	})
 
 	it('supports subscribe', () => {
-		const base = state('ro-sub', { default: 0, scope: 'render' })
+		const base = state('ro-sub', { default: 0, scope: 'memory' })
 		const ro = readonly(base)
 
 		const listener = vi.fn()
@@ -42,23 +42,23 @@ describe('readonly', () => {
 	})
 
 	it('supports peek', () => {
-		const base = state('ro-peek', { default: 'hello', scope: 'render' })
+		const base = state('ro-peek', { default: 'hello', scope: 'memory' })
 		const ro = readonly(base)
 
 		expect(ro.peek()).toBe('hello')
 	})
 
 	it('delegates lifecycle properties', () => {
-		const base = state('ro-lifecycle', { default: 0, scope: 'render' })
+		const base = state('ro-lifecycle', { default: 0, scope: 'memory' })
 		const ro = readonly(base)
 
 		expect(ro.key).toBe('ro-lifecycle')
-		expect(ro.scope).toBe('render')
+		expect(ro.scope).toBe('memory')
 		expect(ro.isDestroyed).toBe(false)
 	})
 
 	it('destroy delegates to source', () => {
-		const base = state('ro-destroy', { default: 0, scope: 'render' })
+		const base = state('ro-destroy', { default: 0, scope: 'memory' })
 		const ro = readonly(base)
 
 		ro.destroy()

@@ -49,10 +49,10 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('scope', () => {
-	it('uses render scope when no scope is set', () => {
-		const x = state('cfg-default-render', { default: 0 })
+	it('uses memory scope when no scope is set', () => {
+		const x = state('cfg-default-memory', { default: 0 })
 
-		expect(x.scope).toBe('render')
+		expect(x.scope).toBe('memory')
 
 		x.destroy()
 	})
@@ -70,9 +70,9 @@ describe('scope', () => {
 	it('per-instance scope overrides scope', () => {
 		configure({ scope: 'local' })
 
-		const x = state('cfg-override-scope', { default: 0, scope: 'render' })
+		const x = state('cfg-override-scope', { default: 0, scope: 'memory' })
 
-		expect(x.scope).toBe('render')
+		expect(x.scope).toBe('memory')
 
 		x.destroy()
 	})
@@ -87,7 +87,7 @@ describe('global ssr', () => {
 		configure({ ssr: true })
 
 		// ssr: false on instance should work without SSR behavior
-		const x = state('cfg-ssr-override', { default: 'a', scope: 'render', ssr: false })
+		const x = state('cfg-ssr-override', { default: 'a', scope: 'memory', ssr: false })
 
 		expect(x.get()).toBe('a')
 
@@ -103,8 +103,8 @@ describe('warnOnDuplicate', () => {
 	it('does not warn by default on duplicate key+scope', () => {
 		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-		const a = state('cfg-dup-nowarn', { default: 0, scope: 'render' })
-		const b = state('cfg-dup-nowarn', { default: 0, scope: 'render' })
+		const a = state('cfg-dup-nowarn', { default: 0, scope: 'memory' })
+		const b = state('cfg-dup-nowarn', { default: 0, scope: 'memory' })
 
 		expect(a).toBe(b)
 		expect(spy).not.toHaveBeenCalledWith(expect.stringContaining('[gjendje]'))
@@ -118,8 +118,8 @@ describe('warnOnDuplicate', () => {
 
 		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-		const a = state('cfg-dup-warn', { default: 0, scope: 'render' })
-		const b = state('cfg-dup-warn', { default: 0, scope: 'render' })
+		const a = state('cfg-dup-warn', { default: 0, scope: 'memory' })
+		const b = state('cfg-dup-warn', { default: 0, scope: 'memory' })
 
 		expect(a).toBe(b)
 		expect(spy).toHaveBeenCalledWith(expect.stringContaining('Duplicate state("cfg-dup-warn")'))
@@ -164,10 +164,10 @@ describe('requireValidation', () => {
 		x.destroy()
 	})
 
-	it('does not throw for render scope even with requireValidation', () => {
+	it('does not throw for memory scope even with requireValidation', () => {
 		configure({ requireValidation: true })
 
-		const x = state('cfg-req-val-render', { default: 0, scope: 'render' })
+		const x = state('cfg-req-val-memory', { default: 0, scope: 'memory' })
 
 		expect(x.get()).toBe(0)
 
@@ -310,7 +310,7 @@ describe('global sync', () => {
 
 		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-		const x = state('cfg-sync-render', { default: 0, scope: 'render' })
+		const x = state('cfg-sync-memory', { default: 0, scope: 'memory' })
 
 		expect(x.get()).toBe(0)
 
@@ -339,13 +339,13 @@ describe('onDestroy', () => {
 
 		configure({ onDestroy: handler })
 
-		const x = state('cfg-ondestroy', { default: 0, scope: 'render' })
+		const x = state('cfg-ondestroy', { default: 0, scope: 'memory' })
 
 		x.destroy()
 
 		expect(handler).toHaveBeenCalledTimes(1)
 		expect(handler).toHaveBeenCalledWith(
-			expect.objectContaining({ key: 'cfg-ondestroy', scope: 'render' }),
+			expect.objectContaining({ key: 'cfg-ondestroy', scope: 'memory' }),
 		)
 	})
 
@@ -354,7 +354,7 @@ describe('onDestroy', () => {
 
 		configure({ onDestroy: handler })
 
-		const x = state('cfg-ondestroy-double', { default: 0, scope: 'render' })
+		const x = state('cfg-ondestroy-double', { default: 0, scope: 'memory' })
 
 		x.destroy()
 		x.destroy()
@@ -363,7 +363,7 @@ describe('onDestroy', () => {
 	})
 
 	it('does not fire when handler is not configured', () => {
-		const x = state('cfg-ondestroy-none', { default: 0, scope: 'render' })
+		const x = state('cfg-ondestroy-none', { default: 0, scope: 'memory' })
 
 		// Should not throw
 		x.destroy()
@@ -504,11 +504,11 @@ describe('onRegister', () => {
 
 		configure({ onRegister: handler })
 
-		const x = state('cfg-onregister', { default: 0, scope: 'render' })
+		const x = state('cfg-onregister', { default: 0, scope: 'memory' })
 
 		expect(handler).toHaveBeenCalledTimes(1)
 		expect(handler).toHaveBeenCalledWith(
-			expect.objectContaining({ key: 'cfg-onregister', scope: 'render' }),
+			expect.objectContaining({ key: 'cfg-onregister', scope: 'memory' }),
 		)
 
 		x.destroy()
@@ -519,8 +519,8 @@ describe('onRegister', () => {
 
 		configure({ onRegister: handler })
 
-		const a = state('cfg-onregister-dup', { default: 0, scope: 'render' })
-		const b = state('cfg-onregister-dup', { default: 0, scope: 'render' })
+		const a = state('cfg-onregister-dup', { default: 0, scope: 'memory' })
+		const b = state('cfg-onregister-dup', { default: 0, scope: 'memory' })
 
 		expect(a).toBe(b)
 		expect(handler).toHaveBeenCalledTimes(1)
@@ -533,11 +533,11 @@ describe('onRegister', () => {
 
 		configure({ onRegister: handler })
 
-		const a = state('cfg-onregister-recreate', { default: 0, scope: 'render' })
+		const a = state('cfg-onregister-recreate', { default: 0, scope: 'memory' })
 
 		a.destroy()
 
-		const b = state('cfg-onregister-recreate', { default: 0, scope: 'render' })
+		const b = state('cfg-onregister-recreate', { default: 0, scope: 'memory' })
 
 		expect(handler).toHaveBeenCalledTimes(2)
 
@@ -555,7 +555,7 @@ describe('onChange', () => {
 
 		configure({ onChange: handler })
 
-		const x = state('cfg-onchange-set', { default: 0, scope: 'render' })
+		const x = state('cfg-onchange-set', { default: 0, scope: 'memory' })
 
 		x.set(1)
 
@@ -563,7 +563,7 @@ describe('onChange', () => {
 		expect(handler).toHaveBeenCalledWith(
 			expect.objectContaining({
 				key: 'cfg-onchange-set',
-				scope: 'render',
+				scope: 'memory',
 				value: 1,
 				previousValue: 0,
 			}),
@@ -577,7 +577,7 @@ describe('onChange', () => {
 
 		configure({ onChange: handler })
 
-		const x = state('cfg-onchange-reset', { default: 0, scope: 'render' })
+		const x = state('cfg-onchange-reset', { default: 0, scope: 'memory' })
 
 		x.set(5)
 		handler.mockClear()
@@ -588,7 +588,7 @@ describe('onChange', () => {
 		expect(handler).toHaveBeenCalledWith(
 			expect.objectContaining({
 				key: 'cfg-onchange-reset',
-				scope: 'render',
+				scope: 'memory',
 				value: 0,
 				previousValue: 5,
 			}),
@@ -604,7 +604,7 @@ describe('onChange', () => {
 
 		const x = state('cfg-onchange-equal', {
 			default: 0,
-			scope: 'render',
+			scope: 'memory',
 			isEqual: (a: number, b: number) => a === b,
 		})
 
@@ -648,7 +648,7 @@ describe('onReset', () => {
 
 		configure({ onReset: handler })
 
-		const x = state('cfg-onreset', { default: 0, scope: 'render' })
+		const x = state('cfg-onreset', { default: 0, scope: 'memory' })
 
 		x.set(42)
 		x.reset()
@@ -657,7 +657,7 @@ describe('onReset', () => {
 		expect(handler).toHaveBeenCalledWith(
 			expect.objectContaining({
 				key: 'cfg-onreset',
-				scope: 'render',
+				scope: 'memory',
 				previousValue: 42,
 			}),
 		)
@@ -670,7 +670,7 @@ describe('onReset', () => {
 
 		configure({ onReset: handler })
 
-		const x = state('cfg-onreset-noset', { default: 0, scope: 'render' })
+		const x = state('cfg-onreset-noset', { default: 0, scope: 'memory' })
 
 		x.set(1)
 
@@ -686,7 +686,7 @@ describe('onReset', () => {
 
 		const x = state('cfg-onreset-equal', {
 			default: 0,
-			scope: 'render',
+			scope: 'memory',
 			isEqual: (a: number, b: number) => a === b,
 		})
 
@@ -731,7 +731,7 @@ describe('onIntercept', () => {
 
 		configure({ onIntercept: handler })
 
-		const x = state('cfg-onintercept', { default: 0, scope: 'render' })
+		const x = state('cfg-onintercept', { default: 0, scope: 'memory' })
 
 		x.intercept((next) => next * 2)
 
@@ -741,7 +741,7 @@ describe('onIntercept', () => {
 		expect(handler).toHaveBeenCalledWith(
 			expect.objectContaining({
 				key: 'cfg-onintercept',
-				scope: 'render',
+				scope: 'memory',
 				original: 5,
 				intercepted: 10,
 			}),
@@ -755,7 +755,7 @@ describe('onIntercept', () => {
 
 		configure({ onIntercept: handler })
 
-		const x = state('cfg-onintercept-noop', { default: 0, scope: 'render' })
+		const x = state('cfg-onintercept-noop', { default: 0, scope: 'memory' })
 
 		x.intercept((next) => next)
 
@@ -771,7 +771,7 @@ describe('onIntercept', () => {
 
 		configure({ onIntercept: handler })
 
-		const x = state('cfg-onintercept-reset', { default: 0, scope: 'render' })
+		const x = state('cfg-onintercept-reset', { default: 0, scope: 'memory' })
 
 		x.intercept((next) => next + 1)
 

@@ -141,13 +141,13 @@ intercept(fn: (next: T, prev: T) => T): Unsubscribe
 
 Registers a pre-set interceptor. Receives `(next, prev)` and returns the value to store. Return `prev` to reject. Multiple interceptors run in registration order.
 
-### `use(fn)`
+### `onChange(fn)`
 
 ```ts
-use(fn: (next: T, prev: T) => void): Unsubscribe
+onChange(fn: (next: T, prev: T) => void): Unsubscribe
 ```
 
-Registers a post-set hook. Receives `(next, prev)`. Return value is ignored. Multiple hooks run in registration order.
+Registers a post-set handler. Receives `(next, prev)`. Return value is ignored. Multiple handlers run in registration order.
 
 ### `destroy()`
 
@@ -187,7 +187,7 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `default` | `T` | required | Initial value and reset target |
-| `scope` | `Scope` | `'render'` | Where state lives |
+| `scope` | `Scope` | `'memory'` | Where state lives |
 | `isEqual` | `(a: T, b: T) => boolean` | — | Custom equality function. When provided, `set()` skips the update if `isEqual(next, prev)` returns `true` |
 | `migrate` | `Record<number, (old: unknown) => unknown>` | — | Migration functions keyed by source version |
 | `persist` | `Array<keyof T & string>` | — | Selectively persist only listed keys of an object value |
@@ -216,7 +216,7 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 ## Type hierarchy
 
 - **`ReadonlyInstance<T>`** — `get`, `peek`, `subscribe`, `ready`, identity, `destroy`
-- **`BaseInstance<T>`** — extends `ReadonlyInstance` with `set`, `reset`, `intercept`, `use`
+- **`BaseInstance<T>`** — extends `ReadonlyInstance` with `set`, `reset`, `intercept`, `onChange`
 - **`StateInstance<T>`** — extends `BaseInstance` with `watch`, `patch`
 
 `computed` returns a `ReadonlyInstance`. `collection` returns a `CollectionInstance` (extends `BaseInstance`).
@@ -229,7 +229,7 @@ Tears down all listeners, interceptors, hooks, and storage resources. After dest
 |-------|---------|----------------|-----------|--------|-------|
 | `bucket` | Storage Buckets API | yes | no | no | yes |
 | `local` | localStorage | yes | passive | no | no |
-| `render` | Memory | no | no | no | no |
+| `memory` | Memory | no | no | no | no |
 | `server` | AsyncLocalStorage | per-request | no | yes | no |
 | `session` | sessionStorage | yes | no | no | no |
 | `url` | URLSearchParams | yes | via link | no | no |

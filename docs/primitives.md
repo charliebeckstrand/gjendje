@@ -1,6 +1,6 @@
-# Derived State
+# Primitives
 
-Primitives that build on top of `state` to handle computed values, collections, and side effects.
+Reactive primitives that build on top of `state` to handle computed values, collections, and side effects.
 
 ---
 
@@ -131,7 +131,7 @@ Tracks the previous value of a source instance. Returns `undefined` until the so
 function readonly<T>(instance: ReadonlyInstance<T>): ReadonlyInstance<T>
 ```
 
-Creates a read-only view of any state or computed instance. The returned instance exposes `get`, `peek`, `subscribe`, and lifecycle properties — but no `set`, `reset`, `intercept`, or `use`. Zero runtime cost.
+Creates a read-only view of any state or computed instance. The returned instance exposes `get`, `peek`, `subscribe`, and lifecycle properties — but no `set`, `reset`, `intercept`, or `onChange`. Zero runtime cost.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -150,7 +150,7 @@ Creates a read-only view of any state or computed instance. The returned instanc
 
 ### Behavior
 - **Pure delegation** — all reads and subscriptions go through to the source.
-- **Type safety** — write methods (`set`, `reset`, `intercept`, `use`) are stripped from the type.
+- **Type safety** — write methods (`set`, `reset`, `intercept`, `onChange`) are stripped from the type.
 - **Lifecycle** — `key`, `scope`, `isDestroyed`, `ready`, `settled`, `hydrated`, `destroyed` all delegate to the source.
 
 ---
@@ -199,7 +199,7 @@ Reactive array with first-class mutation methods.
 | `subscribe(fn)` | `(fn: (value: T[]) => void) => Unsubscribe` | Listen for any change |
 | `watch(key, fn)` | `(key: keyof T, fn: (items: T[]) => void) => Unsubscribe` | Listen for changes to a specific key across all items |
 | `intercept(fn)` | `(fn: (next: T[], prev: T[]) => T[]) => Unsubscribe` | Pre-set interceptor |
-| `use(fn)` | `(fn: (next: T[], prev: T[]) => void) => Unsubscribe` | Post-set hook |
+| `onChange(fn)` | `(fn: (next: T[], prev: T[]) => void) => Unsubscribe` | Post-set handler |
 
 ### Lifecycle
 

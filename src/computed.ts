@@ -127,7 +127,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 	return {
 		key: instanceKey,
-		scope: 'render' as const,
+		scope: 'memory' as const,
 
 		get ready(): Promise<void> {
 			return readyPromise

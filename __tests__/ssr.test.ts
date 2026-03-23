@@ -99,13 +99,13 @@ describe('ssr: true', () => {
 		}
 	})
 
-	it('does not throw for tab scope on server', () => {
+	it('does not throw for session scope on server', () => {
 		const restore = simulateServer()
 
 		try {
-			const step = state('ssr-tab', {
+			const step = state('ssr-session', {
 				default: 1,
-				scope: 'tab',
+				scope: 'session',
 				ssr: true,
 			})
 

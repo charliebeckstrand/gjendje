@@ -79,7 +79,7 @@ export interface ExpireContext {
 }
 
 export interface GjendjeConfig {
-	/** Default scope for all state instances. Defaults to `'render'`. */
+	/** Default scope for all state instances. Defaults to `'memory'`. */
 	scope?: Scope | undefined
 
 	/** Enforce a naming pattern for state keys. */
@@ -94,7 +94,7 @@ export interface GjendjeConfig {
 	/** Prepends to all storage keys (e.g. `myapp:theme`) */
 	prefix?: string | undefined
 
-	/** Require a validate option for persisted scopes (local, tab, bucket). */
+	/** Require a validate option for persisted scopes (local, session, bucket). */
 	requireValidation?: boolean | undefined
 
 	/** Enable SSR mode globally for all instances. */

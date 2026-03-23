@@ -73,18 +73,18 @@ describe('bucket scope — fallback', () => {
 		prefs.destroy()
 	})
 
-	it('falls back to sessionStorage when fallback is tab', async () => {
-		const prefs = state('bkt-tab-fallback', {
+	it('falls back to sessionStorage when fallback is session', async () => {
+		const prefs = state('bkt-session-fallback', {
 			default: 'light',
 			scope: 'bucket',
-			bucket: { name: 'test-bucket', fallback: 'tab' },
+			bucket: { name: 'test-bucket', fallback: 'session' },
 		})
 
 		await prefs.ready
 
 		prefs.set('dark')
 
-		expect(sessionStorage.getItem('bkt-tab-fallback')).toBe('"dark"')
+		expect(sessionStorage.getItem('bkt-session-fallback')).toBe('"dark"')
 
 		prefs.destroy()
 	})
@@ -292,7 +292,7 @@ describe('bucket scope — native Storage Buckets', () => {
 				default: 'light',
 				scope: 'bucket',
 			})
-		}).toThrow('[state]')
+		}).toThrow('[gjendje]')
 	})
 
 	it('warns on invalid expires format', async () => {

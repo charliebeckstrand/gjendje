@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { state } from '../src/index.js'
 
-describe('render scope', () => {
+describe('memory scope', () => {
 	it('returns the default value', () => {
-		const count = state('render-default', { default: 0 })
+		const count = state('memory-default', { default: 0 })
 
 		expect(count.get()).toBe(0)
 
@@ -11,7 +11,7 @@ describe('render scope', () => {
 	})
 
 	it('updates the value with set', () => {
-		const count = state('render-set', { default: 0 })
+		const count = state('memory-set', { default: 0 })
 
 		count.set(5)
 
@@ -21,7 +21,7 @@ describe('render scope', () => {
 	})
 
 	it('supports updater function', () => {
-		const count = state('render-updater', { default: 0 })
+		const count = state('memory-updater', { default: 0 })
 
 		count.set((prev) => prev + 1)
 		count.set((prev) => prev + 1)
@@ -32,7 +32,7 @@ describe('render scope', () => {
 	})
 
 	it('resets to default', () => {
-		const count = state('render-reset', { default: 10 })
+		const count = state('memory-reset', { default: 10 })
 
 		count.set(99)
 		count.reset()
@@ -43,7 +43,7 @@ describe('render scope', () => {
 	})
 
 	it('notifies subscribers on change', () => {
-		const theme = state('render-notify', { default: 'light' as 'light' | 'dark' })
+		const theme = state('memory-notify', { default: 'light' as 'light' | 'dark' })
 		const listener = vi.fn()
 
 		theme.subscribe(listener)
@@ -56,7 +56,7 @@ describe('render scope', () => {
 	})
 
 	it('unsubscribes cleanly', () => {
-		const theme = state('render-unsub', { default: 'light' })
+		const theme = state('memory-unsub', { default: 'light' })
 		const listener = vi.fn()
 
 		const unsub = theme.subscribe(listener)
@@ -71,7 +71,7 @@ describe('render scope', () => {
 	})
 
 	it('supports multiple subscribers', () => {
-		const value = state('render-multi-sub', { default: 0 })
+		const value = state('memory-multi-sub', { default: 0 })
 		const a = vi.fn()
 		const b = vi.fn()
 
@@ -88,16 +88,16 @@ describe('render scope', () => {
 	})
 
 	it('exposes scope and key', () => {
-		const x = state('render-meta', { default: '' })
+		const x = state('memory-meta', { default: '' })
 
-		expect(x.scope).toBe('render')
-		expect(x.key).toBe('render-meta')
+		expect(x.scope).toBe('memory')
+		expect(x.key).toBe('memory-meta')
 
 		x.destroy()
 	})
 
 	it('works with object values', () => {
-		const user = state('render-object', { default: { name: 'Alice', age: 30 } })
+		const user = state('memory-object', { default: { name: 'Alice', age: 30 } })
 
 		user.set((prev) => ({ ...prev, age: 31 }))
 
@@ -107,7 +107,7 @@ describe('render scope', () => {
 	})
 
 	it('works with array values', () => {
-		const items = state('render-array', { default: [] as string[] })
+		const items = state('memory-array', { default: [] as string[] })
 
 		items.set(['a', 'b'])
 		items.set((prev) => [...prev, 'c'])
@@ -118,7 +118,7 @@ describe('render scope', () => {
 	})
 
 	it('stops notifying after destroy', () => {
-		const x = state('render-post-destroy', { default: 0 })
+		const x = state('memory-post-destroy', { default: 0 })
 		const listener = vi.fn()
 
 		x.subscribe(listener)

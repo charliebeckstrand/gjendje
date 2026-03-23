@@ -3,16 +3,16 @@ import { state } from '../src/index.js'
 
 describe('state three-argument overload', () => {
 	it('accepts default value and options as separate arguments', () => {
-		const s = state('ta-basic', 'light', { scope: 'render' })
+		const s = state('ta-basic', 'light', { scope: 'memory' })
 
 		expect(s.get()).toBe('light')
-		expect(s.scope).toBe('render')
+		expect(s.scope).toBe('memory')
 
 		s.destroy()
 	})
 
 	it('works with number default', () => {
-		const s = state('ta-number', 42, { scope: 'render' })
+		const s = state('ta-number', 42, { scope: 'memory' })
 
 		expect(s.get()).toBe(42)
 
@@ -24,7 +24,7 @@ describe('state three-argument overload', () => {
 	})
 
 	it('works with object default', () => {
-		const s = state('ta-object', { name: 'alice' }, { scope: 'render' })
+		const s = state('ta-object', { name: 'alice' }, { scope: 'memory' })
 
 		expect(s.get()).toEqual({ name: 'alice' })
 
@@ -32,7 +32,7 @@ describe('state three-argument overload', () => {
 	})
 
 	it('resets to the three-arg default', () => {
-		const s = state('ta-reset', 'initial', { scope: 'render' })
+		const s = state('ta-reset', 'initial', { scope: 'memory' })
 
 		s.set('changed')
 
@@ -49,7 +49,7 @@ describe('state three-argument overload', () => {
 		const values: [string, string][] = []
 
 		const s = state('ta-opts', 'a', {
-			scope: 'render',
+			scope: 'memory',
 			isEqual: (a, b) => a === b,
 		})
 

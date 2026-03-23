@@ -3,10 +3,9 @@
 // ---------------------------------------------------------------------------
 
 export type Scope =
-	| 'memory' // in-memory, ephemeral (preferred name)
-	| 'render' // in-memory, ephemeral (alias for 'memory')
-	| 'session' // sessionStorage — survives page reloads, gone when tab closes (preferred name)
-	| 'tab' // sessionStorage — survives page reloads, gone when tab closes (deprecated alias for 'session')
+	| 'memory' // in-memory, ephemeral
+	| 'render' // alias for 'memory' (deprecated)
+	| 'session' // sessionStorage — survives page reloads, gone when tab closes
 	| 'local' // localStorage — survives across tabs and restarts
 	| 'url' // URLSearchParams — lives in the address bar, shareable
 	| 'server' // AsyncLocalStorage — server-side session scoped
@@ -157,14 +156,14 @@ export interface BucketOptions {
 	 * Scope to use if the Storage Buckets API is not available.
 	 * Defaults to 'local'.
 	 */
-	fallback?: 'local' | 'session' | 'tab'
+	fallback?: 'local' | 'session'
 }
 
 export interface StateOptions<T> {
 	/** Initial / default value */
 	default: T
 
-	/** Where state should live. Defaults to 'render'. */
+	/** Where state should live. Defaults to 'memory'. */
 	scope?: Scope
 
 	/**
@@ -181,7 +180,7 @@ export interface StateOptions<T> {
 
 	/**
 	 * Enable SSR safety. When true:
-	 * - On server: silently falls back to 'render' scope
+	 * - On server: silently falls back to 'memory' scope
 	 * - On client before hydration: uses default value to match server output
 	 * - On client after hydration: reads real storage and emits update if different
 	 */
@@ -217,7 +216,7 @@ export interface StateOptions<T> {
 	 * When true, any set() call is also sent to other open tabs,
 	 * and incoming changes from other tabs update this instance.
 	 *
-	 * Works with any persistent scope (local, tab, bucket).
+	 * Works with `local` and `bucket` scopes only.
 	 */
 	sync?: boolean
 

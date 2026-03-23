@@ -1,18 +1,51 @@
 # Configure
 
+Call once at app initialization. Sets global defaults for all state instances.
+
 ```ts
 import { configure } from 'gjendje'
 
-configure(config: GjendjeConfig): void
+configure({
+  prefix: 'myapp',           // namespace all storage keys → "myapp:theme"
+  scope: 'local',            // default scope when omitted from state()
+  sync: true,                // broadcast changes across tabs (local/bucket)
+  ssr: true,                 // enable SSR safety for all instances
+  logLevel: 'silent',        // suppress internal warnings
+  requireValidation: true,   // enforce validate() on persisted scopes
+  onChange: ({ key, value }) => console.log(key, value),
+})
 ```
 
-Sets global defaults for all state instances. Call once at app startup before creating any state.
+Now every `state` call inherits those defaults:
+
+```ts
+const theme = state({ theme: 'light' })
+
+theme.scope // 'local' — derived from configure
+```
+
+Everything above is optional. Without `configure()`, gjendje uses sensible defaults (`memory` scope, no prefix, warnings enabled).
+
+---
+
+## Utilities
+
+| Utility | Description |
+|---------|-------------|
+| `batch(fn)` | Group updates so subscribers are notified once. |
+| `withHistory(instance)` | Adds undo/redo to any state instance. |
+| `withWatch(instance)` | Adds per-key change tracking to any instance. |
+| `snapshot()` | Returns a read-only snapshot of all registered instances. |
+| `shallowEqual(a, b)` | Shallow equality check for primitives, arrays, and plain objects. |
+| `withServerSession(fn)` | Wraps a callback in `AsyncLocalStorage` context for `server` scope. |
+
+---
 
 ## Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `scope` | `Scope` | `'render'` | Default scope for all state instances |
+| `scope` | `Scope` | `'memory'` | Default scope for all state instances |
 | `keyPattern` | `RegExp` | `undefined` | Enforce a naming pattern for state keys |
 | `logLevel` | `LogLevel` | `'warn'` | Control log verbosity |
 | `maxKeys` | `number` | `undefined` | Cap the total number of registered state instances |
@@ -130,13 +163,13 @@ state.local({ theme: 'light' }, {
 })
 ```
 
-Non-persistent scopes (`render`, `url`, `server`) are not affected.
+Non-persistent scopes (`memory`, `url`, `server`) are not affected.
 
 ---
 
 ## `scope`
 
-Sets a scope when `scope` is omitted from `state()`. Without this, the default is `'render'`.
+Sets a scope when `scope` is omitted from `state()`. Without this, the default is `'memory'`.
 
 ```ts
 configure({ scope: 'local' })
@@ -146,9 +179,9 @@ const theme = state({ theme: 'light' })
 theme.scope // 'local'
 
 // Per-instance scope always takes precedence
-const temp = state({ temp: 0 }, { scope: 'render' })
+const temp = state({ temp: 0 }, { scope: 'memory' })
 
-temp.scope // 'render'
+temp.scope // 'memory'
 ```
 
 ---
@@ -165,7 +198,7 @@ const theme = state.local({ theme: 'light' })
 ```
 
 When SSR is enabled:
-- On the server: browser scopes silently fall back to `render`
+- On the server: browser scopes silently fall back to `memory`
 - On the client before hydration: uses the default value to match server output
 - On the client after hydration: reads real storage and emits an update if different
 
@@ -184,7 +217,7 @@ configure({ sync: true })
 const theme = state.local({ theme: 'light' })
 ```
 
-Non-syncable scopes (`render`, `tab`, `url`, `server`) emit a warning and ignore the setting.
+Non-syncable scopes (`memory`, `session`, `url`, `server`) emit a warning and ignore the setting.
 
 Per-instance `sync: false` overrides the global setting.
 

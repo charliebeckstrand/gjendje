@@ -10,7 +10,7 @@ export function createUrlAdapter<T>(
 	persist?: string[],
 ): Adapter<T> {
 	if (typeof window === 'undefined') {
-		throw new Error('[state] URL scope is not available in this environment.')
+		throw new Error('[gjendje] URL scope is not available in this environment.')
 	}
 
 	const listeners = createListeners<T>()

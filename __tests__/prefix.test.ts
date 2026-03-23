@@ -42,11 +42,11 @@ describe('global prefix', () => {
 	it('prepends global prefix to sessionStorage key', () => {
 		configure({ prefix: 'myapp' })
 
-		const step = state('pfx-tab', { default: 1, scope: 'tab' })
+		const step = state('pfx-session', { default: 1, scope: 'session' })
 
 		step.set(2)
 
-		expect(sessionStorage.getItem('myapp:pfx-tab')).toBe('2')
+		expect(sessionStorage.getItem('myapp:pfx-session')).toBe('2')
 
 		step.destroy()
 	})
@@ -63,10 +63,10 @@ describe('global prefix', () => {
 		theme.destroy()
 	})
 
-	it('does not prefix render scope', () => {
+	it('does not prefix memory scope', () => {
 		configure({ prefix: 'myapp' })
 
-		const x = state('pfx-render', { default: 0, scope: 'render' })
+		const x = state('pfx-memory', { default: 0, scope: 'memory' })
 
 		x.set(42)
 
