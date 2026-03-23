@@ -711,6 +711,14 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 		// SSR hydration
 		if (isSsrMode && !isServer()) {
 			instance._s.hydrated = afterHydration(() => {
+				// If the instance was destroyed or the user already called
+				// set() before hydration fired, skip the overwrite.
+				if (instance.isDestroyed) return
+
+				const currentValue = instance.get()
+
+				if (!shallowEqual(currentValue, options.default)) return
+
 				let realAdapter: Adapter<T> | undefined
 
 				try {

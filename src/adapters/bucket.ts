@@ -178,6 +178,14 @@ export function createBucketAdapter<T>(
 			delegate.destroy?.()
 			delegate = createStorageAdapter(storage, key, options)
 
+			// If destroy() was called during the synchronous swap above,
+			// clean up the newly created delegate and bail out.
+			if (isDestroyed) {
+				delegate.destroy?.()
+
+				return
+			}
+
 			// Check if bucket data expired — fallback had data but bucket is empty
 			const bucketValue = delegate.get()
 
