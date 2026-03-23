@@ -6,12 +6,7 @@ Call once at app initialization. Sets global defaults for all state instances.
 import { configure } from 'gjendje'
 
 configure({
-  prefix: 'myapp',           // namespace all storage keys → "myapp:theme"
-  scope: 'local',            // default scope when omitted from state()
-  sync: true,                // broadcast changes across tabs (local/bucket)
-  ssr: true,                 // enable SSR safety for all instances
-  logLevel: 'silent',        // suppress internal warnings
-  requireValidation: true,   // enforce validate() on persisted scopes
+  scope: 'local',
   onChange: ({ key, value }) => console.log(key, value),
 })
 ```
@@ -23,8 +18,6 @@ const theme = state({ theme: 'light' })
 
 theme.scope // 'local' — derived from configure
 ```
-
-Everything above is optional. Without `configure()`, gjendje uses sensible defaults (`memory` scope, no prefix, warnings enabled).
 
 ---
 
@@ -105,8 +98,6 @@ configure({ maxKeys: 100 })
 state('key-101', 0) // Error: maxKeys limit (100) reached
 ```
 
-Slots are freed when instances are destroyed.
-
 ---
 
 ## `prefix`
@@ -117,7 +108,6 @@ Prepend a namespace to all storage keys. Prevents collisions between apps sharin
 configure({ prefix: 'myapp' })
 
 const theme = state.local({ theme: 'light' })
-// Stored under key "myapp:theme" in localStorage
 ```
 
 Per-instance override:
@@ -125,11 +115,9 @@ Per-instance override:
 ```ts
 // Use a different prefix
 state.local({ theme: 'light' }, { prefix: 'other' })
-// Stored under "other:theme"
 
 // Disable prefix entirely
 state.local({ 'raw-key': 0 }, { prefix: false })
-// Stored under "raw-key"
 ```
 
 ---
@@ -149,8 +137,6 @@ state.local({ theme: 'light' }, {
   validate: (v): v is string => typeof v === 'string',
 })
 ```
-
-Non-persistent scopes (`memory`, `url`, `server`) are not affected.
 
 ---
 
@@ -175,7 +161,7 @@ temp.scope // 'memory'
 
 ## `ssr`
 
-Enable SSR mode globally. Equivalent to passing `ssr: true` on every `state()` call.
+Enable SSR mode globally.
 
 ```ts
 configure({ ssr: true })
@@ -189,13 +175,11 @@ When SSR is enabled:
 - On the client before hydration: uses the default value to match server output
 - On the client after hydration: reads real storage and emits an update if different
 
-Per-instance `ssr: false` overrides the global setting.
-
 ---
 
 ## `sync`
 
-Enable cross-tab sync globally for all syncable scopes (`local`, `bucket`). Equivalent to passing `sync: true` on every `state()` call.
+Enable cross-tab sync globally for all syncable scopes (`local`, `bucket`).
 
 ```ts
 configure({ sync: true })
@@ -204,9 +188,7 @@ configure({ sync: true })
 const theme = state.local({ theme: 'light' })
 ```
 
-Non-syncable scopes (`memory`, `session`, `url`, `server`) emit a warning and ignore the setting.
-
-Per-instance `sync: false` overrides the global setting.
+Non-syncable scopes (`memory`, `session`, `url`, `server`) emit a warning and ignore.
 
 ---
 
@@ -221,8 +203,6 @@ state.local({ theme: 'light' })
 state.local({ theme: 'light' })
 // console.warn: [gjendje] Duplicate state("theme") with scope "local". Returning cached instance.
 ```
-
-The duplicate still returns the cached instance — this is purely a development aid.
 
 ---
 
@@ -301,8 +281,6 @@ interface ErrorContext {
   error: unknown
 }
 ```
-
-This handler is called in addition to the normal fallback behavior (falling back to defaults, etc.). It does not prevent the fallback.
 
 ---
 
@@ -413,8 +391,6 @@ interface MigrateContext {
 }
 ```
 
-This fires each time a stored value is read that requires migration. If you want to track only the first migration per session, debounce on the caller side.
-
 ---
 
 ### `onQuotaExceeded`
@@ -492,8 +468,6 @@ interface ResetContext {
 }
 ```
 
-Does not fire when `isEqual` prevents the update. Both `onReset` and `onChange` fire on a successful reset — `onReset` fires first.
-
 ---
 
 ### `onSync`
@@ -525,6 +499,14 @@ Only fires for instances with `sync: true` on syncable scopes (`local`, `bucket`
 
 ### `onValidationFail`
 
+```ts
+interface ValidationFailContext {
+  key: string
+  scope: Scope
+  value: unknown
+}
+```
+
 Fires when a `validate` function rejects a value read from storage. More targeted than `onError` — lets you distinguish corrupted or stale storage data from other error types. Useful for detecting schema drift and tracking how often stored data fails validation.
 
 ```ts
@@ -535,14 +517,3 @@ configure({
 })
 ```
 
-The `ValidationFailContext` shape:
-
-```ts
-interface ValidationFailContext {
-  key: string
-  scope: Scope
-  value: unknown
-}
-```
-
-Fires before falling back to the default value. The `value` is the rejected data as read from storage (after migration, if any).
