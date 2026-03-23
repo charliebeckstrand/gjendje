@@ -7,7 +7,7 @@ beforeEach(() => {
 		prefix: undefined,
 		scope: undefined,
 		ssr: undefined,
-		memory: undefined,
+		registry: undefined,
 		warnOnDuplicate: undefined,
 		requireValidation: undefined,
 		logLevel: undefined,
@@ -900,10 +900,10 @@ describe('onValidationFail', () => {
 })
 
 // ---------------------------------------------------------------------------
-// memory
+// registry
 // ---------------------------------------------------------------------------
 
-describe('memory', () => {
+describe('registry', () => {
 	it('tracks memory-scoped state by default (duplicate detection)', () => {
 		const a = state('cfg-track-default', { default: 0, scope: 'memory' })
 
@@ -914,8 +914,8 @@ describe('memory', () => {
 		a.destroy()
 	})
 
-	it('skips registry when memory.registry is false', () => {
-		configure({ memory: { registry: false } })
+	it('skips registry when registry is false', () => {
+		configure({ registry: false })
 
 		const a = state('cfg-track-off', { default: 0, scope: 'memory' })
 
@@ -928,8 +928,8 @@ describe('memory', () => {
 		b.destroy()
 	})
 
-	it('still works correctly for get/set/subscribe when memory.registry is false', () => {
-		configure({ memory: { registry: false } })
+	it('still works correctly for get/set/subscribe when registry is false', () => {
+		configure({ registry: false })
 
 		const x = state('cfg-track-off-ops', { default: 0, scope: 'memory' })
 
@@ -946,8 +946,8 @@ describe('memory', () => {
 		x.destroy()
 	})
 
-	it('does not affect persistent scopes when memory.registry is false', () => {
-		configure({ memory: { registry: false } })
+	it('does not affect persistent scopes when registry is false', () => {
+		configure({ registry: false })
 
 		const a = state('cfg-track-off-local', { default: 'a', scope: 'local' })
 
@@ -959,8 +959,8 @@ describe('memory', () => {
 		a.destroy()
 	})
 
-	it('destroy works correctly when memory.registry is false', () => {
-		configure({ memory: { registry: false } })
+	it('destroy works correctly when registry is false', () => {
+		configure({ registry: false })
 
 		const x = state('cfg-track-off-destroy', { default: 42, scope: 'memory' })
 
@@ -970,5 +970,17 @@ describe('memory', () => {
 		x.destroy()
 
 		expect(x.isDestroyed).toBe(true)
+	})
+
+	it('warns when registry: false is set with a persistent global scope', () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		configure({ registry: false, scope: 'local' })
+
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining('registry: false has no effect on scope "local"'),
+		)
+
+		warnSpy.mockRestore()
 	})
 })

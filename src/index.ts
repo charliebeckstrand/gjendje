@@ -12,7 +12,6 @@ export type {
 	HydrateContext,
 	InterceptContext,
 	LogLevel,
-	MemoryConfig,
 	MigrateContext,
 	QuotaExceededContext,
 	RegisterContext,

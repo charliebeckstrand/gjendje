@@ -709,10 +709,10 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 			)
 		}
 
-		// Ultra-fast path: skip registry entirely when memory.registry is false.
+		// Ultra-fast path: skip registry entirely when registry is false.
 		// Map operations are the dominant cost in high-throughput creation
 		// (~1.5M ops/s ceiling due to V8's hash table growth).
-		if (config.memory?.registry === false) {
+		if (config.registry === false) {
 			return new MemoryStateImpl(key, '', options, config)
 		}
 
