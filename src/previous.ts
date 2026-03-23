@@ -1,6 +1,7 @@
 import { notify } from './batch.js'
 import { createListeners } from './listeners.js'
 import type { ReadonlyInstance } from './types.js'
+import { createLazyDestroyed } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -71,10 +72,7 @@ export function previous<T>(
 		}
 	})
 
-	// Lazy destroyed promise — only allocated if someone awaits it
-	let destroyedPromise: Promise<void> | undefined
-
-	let resolveDestroyed: (() => void) | undefined
+	const lazyDestroyed = createLazyDestroyed()
 
 	return {
 		key: instanceKey,
@@ -93,13 +91,7 @@ export function previous<T>(
 		},
 
 		get destroyed(): Promise<void> {
-			if (!destroyedPromise) {
-				destroyedPromise = new Promise<void>((resolve) => {
-					resolveDestroyed = resolve
-				})
-			}
-
-			return destroyedPromise
+			return lazyDestroyed.promise
 		},
 
 		get isDestroyed() {
@@ -125,11 +117,7 @@ export function previous<T>(
 
 			listeners.clear()
 
-			if (resolveDestroyed) {
-				resolveDestroyed()
-			} else {
-				destroyedPromise = Promise.resolve()
-			}
+			lazyDestroyed.resolve()
 		},
 	}
 }

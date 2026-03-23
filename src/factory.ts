@@ -1,6 +1,6 @@
-import { getConfig, log } from './config.js'
-import { createBase, createMemoryState } from './core.js'
-import { getRegistered, registerByKey, scopedKey } from './registry.js'
+import { log } from './config.js'
+import { createBase, createMemoryState, resolveKeyAndScope } from './core.js'
+import { registerByKey } from './registry.js'
 import type { StateInstance, StateOptions } from './types.js'
 
 /**
@@ -10,24 +10,9 @@ import type { StateInstance, StateOptions } from './types.js'
  * live in `shortcuts.ts` and delegate here after normalizing arguments.
  */
 export function createState<T>(key: string, options: StateOptions<T>): StateInstance<T> {
-	if (!key) {
-		throw new Error('[gjendje] key must be a non-empty string.')
-	}
+	const ctx = resolveKeyAndScope(key, options)
 
-	const config = getConfig()
-
-	if (config.keyPattern && !config.keyPattern.test(key)) {
-		throw new Error(
-			`[gjendje] Key "${key}" does not match the configured keyPattern ${config.keyPattern}.`,
-		)
-	}
-
-	const rawScope = options.scope ?? config.scope ?? 'memory'
-	const scope = rawScope === 'render' ? 'memory' : rawScope
-
-	const rKey = scopedKey(key, scope)
-
-	const existing = getRegistered<T>(rKey) as StateInstance<T> | undefined
+	const { config, scope, rKey, existing } = ctx
 
 	if (existing && !existing.isDestroyed) {
 		if (config.warnOnDuplicate) {
@@ -54,5 +39,5 @@ export function createState<T>(key: string, options: StateOptions<T>): StateInst
 	}
 
 	// All other scopes go through the full pipeline
-	return createBase(key, options)
+	return createBase(key, options, ctx)
 }

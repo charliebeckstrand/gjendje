@@ -43,21 +43,20 @@ function isBucketSupported(): boolean {
 	)
 }
 
-function parseExpiry(expires: string | number): number | undefined {
-	if (typeof expires === 'number') return expires
+function parseWithUnits(
+	input: string | number,
+	units: Record<string, number>,
+	transform?: (result: number) => number,
+): number | undefined {
+	if (typeof input === 'number') return input
 
-	const units: Record<string, number> = {
-		ms: 1,
-		s: 1_000,
-		m: 60_000,
-		h: 3_600_000,
-		d: 86_400_000,
-		w: 604_800_000,
-	}
+	const unitKeys = Object.keys(units)
+		.sort((a, b) => b.length - a.length)
+		.join('|')
 
-	const match = expires.match(/^(\d+(?:\.\d+)?)(ms|s|m|h|d|w)$/)
+	const match = input.toLowerCase().match(new RegExp(`^(\\d+(?:\\.\\d+)?)(${unitKeys})$`))
 
-	if (!match || !match[1] || !match[2]) return undefined
+	if (!match?.[1] || !match[2]) return undefined
 
 	const value = parseFloat(match[1])
 
@@ -65,30 +64,33 @@ function parseExpiry(expires: string | number): number | undefined {
 
 	if (!unit) return undefined
 
-	return Date.now() + value * unit
+	const result = value * unit
+
+	return transform ? transform(result) : result
+}
+
+const EXPIRY_UNITS: Record<string, number> = {
+	ms: 1,
+	s: 1_000,
+	m: 60_000,
+	h: 3_600_000,
+	d: 86_400_000,
+	w: 604_800_000,
+}
+
+const QUOTA_UNITS: Record<string, number> = {
+	b: 1,
+	kb: 1_024,
+	mb: 1_048_576,
+	gb: 1_073_741_824,
+}
+
+function parseExpiry(expires: string | number): number | undefined {
+	return parseWithUnits(expires, EXPIRY_UNITS, (v) => Date.now() + v)
 }
 
 function parseQuota(quota: string | number): number | undefined {
-	if (typeof quota === 'number') return quota
-
-	const units: Record<string, number> = {
-		b: 1,
-		kb: 1_024,
-		mb: 1_048_576,
-		gb: 1_073_741_824,
-	}
-
-	const match = quota.toLowerCase().match(/^(\d+(?:\.\d+)?)(b|kb|mb|gb)$/)
-
-	if (!match || !match[1] || !match[2]) return undefined
-
-	const value = parseFloat(match[1])
-
-	const unit = units[match[2]]
-
-	if (!unit) return undefined
-
-	return Math.floor(value * unit)
+	return parseWithUnits(quota, QUOTA_UNITS, Math.floor)
 }
 
 // ---------------------------------------------------------------------------

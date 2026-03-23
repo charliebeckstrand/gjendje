@@ -44,3 +44,37 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 
 	return true
 }
+
+/**
+ * Create a lazily-allocated destroyed promise.
+ * The promise is only created when `.promise` is first accessed,
+ * avoiding allocation for instances that are never awaited.
+ */
+export function createLazyDestroyed(): {
+	readonly promise: Promise<void>
+	resolve(): void
+} {
+	let _promise: Promise<void> | undefined
+
+	let _resolve: (() => void) | undefined
+
+	return {
+		get promise(): Promise<void> {
+			if (!_promise) {
+				_promise = new Promise<void>((r) => {
+					_resolve = r
+				})
+			}
+
+			return _promise
+		},
+
+		resolve(): void {
+			if (_resolve) {
+				_resolve()
+			} else {
+				_promise = Promise.resolve()
+			}
+		},
+	}
+}
