@@ -8,7 +8,7 @@ import { state } from 'gjendje'
 const store = state({ count: 0 })
 ```
 
-### Persist
+## Persist
 
 ```ts
 const store = state({ theme: 'light' }, { scope: 'local' })
@@ -19,7 +19,7 @@ const store = state({ theme: 'light' }, { scope: 'local' })
 const store = state.local({ theme: 'light' })
 ```
 
-### Getting values
+## Get
 
 Return the full state:
 
@@ -27,20 +27,20 @@ Return the full state:
 store.get()
 ```
 
-Destructure specific values:
+Destructure values:
 
 ```ts
 const { theme } = store.get()
 ```
 
-### Updating values
+## Set / Patch
 
-Replace the entire state:
+Replace entire state:
 
 ```ts
 store.set({ count: 1 })
 ```
-Use an updater function:
+Update a property using an updater function:
 
 ```ts
 store.set((prev) => ({ ...prev, count: prev.count + 1 }))
