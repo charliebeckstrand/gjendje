@@ -1,12 +1,26 @@
 # gjendje
 
-## 1.0.7
+## 1.0.8
 
 ### Patch Changes
 
 - Performance and correctness audit — error isolation, allocation reduction, and pattern cleanup. Error-isolate batch flush, change handler loops (via extracted `safeCallChange` to avoid V8 deopt), effect callbacks, and collection watcher notifications. Guard computed/select subscribe against destroyed state. Fix withHistory navigate to prevent history corruption on throw. Fix withWatch re-entrancy guard. Remove redundant `_hasIsEqual` field (+14% isEqual writes). Lazy-allocate collection watchers Map and subscription. Consolidate computed async dep promise construction. Use `createLazyDestroyed` in computed/select.
 
 - Single-listener fast path in computed and select notification — when exactly one subscriber exists (common in computed chains), call it directly instead of iterating the Set, avoiding iterator allocation per notification. Computed chain depth-25 +33%, depth-10 +17%, depth-5 +20%.
+
+## 1.0.7
+
+### Patch Changes
+
+- ae0427e: Add package summary documentation covering what gjendje does, how it works, and how it compares to competing state management libraries
+
+- Add package summary documentation (`docs/summary.md`) covering what gjendje does, how it works architecturally, and how it compares to competing state management libraries (Zustand, Redux, Jotai, Valtio, Signals)
+
+## 1.0.6
+
+### Patch Changes
+
+- 48b782d: Add A/B testing framework for benchmarks with --save/--compare workflow and defineSuite helper to reduce benchmark boilerplate
 
 ## 1.0.6
 

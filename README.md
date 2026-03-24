@@ -2,12 +2,13 @@
 
 # gjendje
 
-Replaces storage backends with a unified API. Choose where state lives. The rest is handled.
+![NPM Last Update](https://img.shields.io/npm/last-update/gjendje)
+![NPM Version](https://img.shields.io/npm/v/gjendje)
+![GitHub License](https://img.shields.io/github/license/charliebeckstrand/gjendje)
 
-- Zero runtime dependencies
-- ~5 kB core (minified + brotli)
-- TypeScript-first with full type inference
-- 6 storage backends, one API
+gjendje is a storage-agnostic state management library for TypeScript and JavaScript. It gives you a single, unified API for reactive state — regardless of where that state lives.
+
+[Learn more](https://github.com/charliebeckstrand/gjendje/blob/main/docs/summary.md)
 
 ## Install
 
@@ -26,12 +27,16 @@ function increment() {
   store.set((prev) => ({ ...prev, count: prev.count + 1 }))
 }
 
-const { counter} = store.get()
+const { counter } = store.get()
 ```
 
 [Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
 
-## Configure 
+## Configure
+
+`configure` allows you to set global values for all state instances.
+
+`scope`, `maxKeys`, `prefix`, `requireValidation`, `registry`, `ssr`, `sync`, `warnOnDuplicate`, `onChange`, `onDestroy`, `onError`, `onExpire`, `onHydrate`, `onIntercept`, `onMigrate`, `onQuotaExceeded`, `onRegister`, `onReset`, `onSync`, `onValidationFail`
 
 [Configure guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 

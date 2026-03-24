@@ -1,13 +1,18 @@
 # Configure
 
-Sets global defaults for all state instances.
+`configure` allows you to set global values for all state instances.
+
+Import and call once at your app entry point:
 
 ```ts
 import { configure } from 'gjendje'
+
+configure({
+  // options
+})
 ```
 
 ---
-
 
 ## `scope`
 
