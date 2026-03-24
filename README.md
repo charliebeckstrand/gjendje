@@ -8,12 +8,12 @@
 
 Replaces storage backends with a unified API. Choose where state lives. The rest is handled.
 
-[Learn more](https://github.com/charliebeckstrand/gjendje/blob/main/docs/summary.md)
 
 - Zero runtime dependencies
-- ~5 kB core (minified + brotli)
 - TypeScript-first with full type inference
 - 6 storage backends, one API
+
+[Learn more](https://github.com/charliebeckstrand/gjendje/blob/main/docs/summary.md)
 
 ## Install
 
