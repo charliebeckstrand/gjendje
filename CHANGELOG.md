@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- 1fd8b5a: Fix supply chain security: upgrade happy-dom to v20 to resolve 2 critical CVEs and add SECURITY.md
+
+## 1.0.9
+
+### Patch Changes
+
 - Fix supply chain security: upgrade happy-dom from v14 to v20 to resolve 2 critical CVEs (GHSA-96g7-g7g9-jxw8, GHSA-37j7-fg3j-429f). Add SECURITY.md with vulnerability reporting guidelines.
 
 ## 1.0.8
