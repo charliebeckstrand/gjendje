@@ -8,7 +8,7 @@
 
 gjendje is a storage-agnostic state management library for TypeScript and JavaScript. It gives you a single, unified API for reactive state — regardless of where that state lives.
 
-[Learn more](https://github.com/charliebeckstrand/gjendje/blob/main/docs/summary.md)
+[Learn more](https://github.com/charliebeckstrand/gjendje/blob/main/docs/summary.md#what-gjendje-does)
 
 ## Install
 
