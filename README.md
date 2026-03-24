@@ -34,23 +34,9 @@ const { counter } = store.get()
 
 ## Configure
 
-`configure` allows you to set global values for all state instances:
+`configure` allows you to set global values for all state instances.
 
-```ts
-import { configure } from 'gjendje'
-
-configure({ scope: 'local' })
-```
-
-Now anywhere you call `state` it will derive the configured values:
-
-```ts
-import { state } from 'gjendje'
-
-const theme = state({ theme: 'light' })
-
-theme.scope // 'local' — derived from configure
-```
+`scope`, `maxKeys`, `prefix`, `requireValidation`, `registry`, `ssr`, `sync`, `warnOnDuplicate`, `onChange`, `onDestroy`, `onError`, `onExpire`, `onHydrate`, `onIntercept`, `onMigrate`, `onQuotaExceeded`, `onRegister`, `onReset`, `onSync`, `onValidationFail`
 
 [Configure guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
