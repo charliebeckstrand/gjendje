@@ -36,6 +36,8 @@ const { counter } = store.get()
 
 `configure` allows you to set global values for all state instances.
 
+---
+
 `scope`, `maxKeys`, `prefix`, `requireValidation`, `registry`, `ssr`, `sync`, `warnOnDuplicate`, `onChange`, `onDestroy`, `onError`, `onExpire`, `onHydrate`, `onIntercept`, `onMigrate`, `onQuotaExceeded`, `onRegister`, `onReset`, `onSync`, `onValidationFail`
 
 [Configure guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
