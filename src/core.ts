@@ -415,11 +415,13 @@ class StateImpl<T> implements StateInstance<T> {
 		s.watchPrev = this.get()
 
 		s.watchUnsub = this.subscribe((next) => {
-			if (s.watchers && s.watchers.size > 0) {
-				notifyWatchers(s.watchers, s.watchPrev, next)
+			try {
+				if (s.watchers && s.watchers.size > 0) {
+					notifyWatchers(s.watchers, s.watchPrev, next)
+				}
+			} finally {
+				s.watchPrev = next
 			}
-
-			s.watchPrev = next
 		})
 	}
 }
@@ -746,11 +748,13 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 		ext.watchPrev = this._c.current
 
 		ext.watchUnsub = this.subscribe((next) => {
-			if (ext.watchers && ext.watchers.size > 0) {
-				notifyWatchers(ext.watchers, ext.watchPrev, next)
+			try {
+				if (ext.watchers && ext.watchers.size > 0) {
+					notifyWatchers(ext.watchers, ext.watchPrev, next)
+				}
+			} finally {
+				ext.watchPrev = next
 			}
-
-			ext.watchPrev = next
 		})
 	}
 

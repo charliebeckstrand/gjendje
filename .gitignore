@@ -5,3 +5,4 @@ coverage/
 .DS_Store
 .lefthook/
 package-lock.json
+.claude/
