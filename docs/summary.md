@@ -6,8 +6,6 @@ gjendje is a storage-agnostic state management library for TypeScript and JavaSc
 
 The core idea is that **choosing where state lives should be a configuration decision, not an architectural one**. You can start with in-memory state during development, switch to `localStorage` for persistence in production, and later move specific pieces of state to URL params for shareability — all without changing a single line of state logic.
 
-The library ships at ~5 kB (minified + brotli) with zero runtime dependencies.
-
 ## How it works
 
 ### Adapter pattern
