@@ -1,4 +1,3 @@
-import { Bench } from 'tinybench'
 import {
 	batch,
 	collection,
@@ -11,7 +10,7 @@ import {
 	withHistory,
 	withWatch,
 } from '../src/index.js'
-import { printResults, runSuites, uniqueKey } from './helpers.js'
+import { defineSuite, runSuites, uniqueKey } from './helpers.js'
 
 // ---------------------------------------------------------------------------
 // 1. Computed: diamond dependency graph
@@ -20,798 +19,709 @@ import { printResults, runSuites, uniqueKey } from './helpers.js'
 //    or twice per source change.
 // ---------------------------------------------------------------------------
 
-async function benchComputedDiamond() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const computedDiamond = defineSuite('diamond', {
+	'Computed Diamond Dependency': (bench) => {
+		// Diamond: src → [mid1, mid2] → final
+		const src = state(uniqueKey('diamond'), { default: 0 })
+		const mid1 = computed([src], ([v]) => v * 2)
+		const mid2 = computed([src], ([v]) => v + 10)
+		const final = computed([mid1, mid2], ([a, b]) => a + b)
 
-	// Diamond: src → [mid1, mid2] → final
-	const src = state(uniqueKey('diamond'), { default: 0 })
-	const mid1 = computed([src], ([v]) => v * 2)
-	const mid2 = computed([src], ([v]) => v + 10)
-	const final = computed([mid1, mid2], ([a, b]) => a + b)
+		let recomputeCount = 0
 
-	let recomputeCount = 0
+		final.subscribe(() => {
+			recomputeCount++
+		})
 
-	final.subscribe(() => {
-		recomputeCount++
-	})
+		let i = 0
 
-	let i = 0
+		bench.add('diamond (src → 2 mid → final)', () => {
+			src.set(++i)
+			final.get()
+		})
 
-	bench.add('diamond (src → 2 mid → final)', () => {
-		src.set(++i)
-		final.get()
-	})
+		// Wider diamond: src → 5 intermediates → final
+		const srcWide = state(uniqueKey('diamond-wide'), { default: 0 })
+		const mids = Array.from({ length: 5 }, (_, j) =>
+			computed([srcWide], ([v]) => v + j),
+		)
+		const finalWide = computed(mids, (vals) =>
+			vals.reduce((a: number, b: number) => a + b, 0),
+		)
 
-	// Wider diamond: src → 5 intermediates → final
-	const srcWide = state(uniqueKey('diamond-wide'), { default: 0 })
-	const mids = Array.from({ length: 5 }, (_, j) =>
-		computed([srcWide], ([v]) => v + j),
-	)
-	const finalWide = computed(mids, (vals) =>
-		vals.reduce((a: number, b: number) => a + b, 0),
-	)
+		finalWide.subscribe(() => {})
 
-	finalWide.subscribe(() => {})
+		let iw = 0
 
-	let iw = 0
+		bench.add('diamond (src → 5 mid → final)', () => {
+			srcWide.set(++iw)
+			finalWide.get()
+		})
 
-	bench.add('diamond (src → 5 mid → final)', () => {
-		srcWide.set(++iw)
-		finalWide.get()
-	})
+		// Linear chain (same depth) for comparison
+		const srcLin = state(uniqueKey('diamond-lin'), { default: 0 })
+		let prev = computed([srcLin], ([v]) => v * 2)
+		prev = computed([prev], ([v]) => v + 10)
+		const finalLin = prev
 
-	// Linear chain (same depth) for comparison
-	const srcLin = state(uniqueKey('diamond-lin'), { default: 0 })
-	let prev = computed([srcLin], ([v]) => v * 2)
-	prev = computed([prev], ([v]) => v + 10)
-	const finalLin = prev
+		finalLin.subscribe(() => {})
 
-	finalLin.subscribe(() => {})
+		let il = 0
 
-	let il = 0
+		bench.add('linear chain (depth 2, for comparison)', () => {
+			srcLin.set(++il)
+			finalLin.get()
+		})
 
-	bench.add('linear chain (depth 2, for comparison)', () => {
-		srcLin.set(++il)
-		finalLin.get()
-	})
-
-	await bench.run()
-
-	console.log('── Computed Diamond Dependency ──')
-
-	printResults(bench)
-
-	void recomputeCount
-}
+		void recomputeCount
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 2. Computed: peek() vs get() read cost
 // ---------------------------------------------------------------------------
 
-async function benchPeekVsGet() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const peekVsGet = defineSuite('peek-vs-get', {
+	'peek() vs get() Read Cost': (bench) => {
+		const s = state(uniqueKey('peek'), { default: 42 })
+		const c = computed([s], ([v]) => v * 2)
 
-	const s = state(uniqueKey('peek'), { default: 42 })
-	const c = computed([s], ([v]) => v * 2)
+		bench.add('state.get()', () => {
+			s.get()
+		})
 
-	bench.add('state.get()', () => {
-		s.get()
-	})
+		bench.add('state.peek()', () => {
+			s.peek()
+		})
 
-	bench.add('state.peek()', () => {
-		s.peek()
-	})
+		bench.add('computed.get()', () => {
+			c.get()
+		})
 
-	bench.add('computed.get()', () => {
-		c.get()
-	})
-
-	bench.add('computed.peek()', () => {
-		c.peek()
-	})
-
-	await bench.run()
-
-	console.log('── peek() vs get() Read Cost ──')
-
-	printResults(bench)
-}
+		bench.add('computed.peek()', () => {
+			c.peek()
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 3. Collection watch at scale — O(items × watchers) hot path
 // ---------------------------------------------------------------------------
 
-async function benchCollectionWatch() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const collectionWatch = defineSuite('collection-watch', {
+	'Collection Watch at Scale': (bench) => {
+		type Item = { id: number; name: string; score: number }
 
-	type Item = { id: number; name: string; score: number }
+		// 100 items, 1 watcher
+		const items100 = Array.from({ length: 100 }, (_, i) => ({
+			id: i,
+			name: `item-${i}`,
+			score: i,
+		}))
 
-	// 100 items, 1 watcher
-	const items100 = Array.from({ length: 100 }, (_, i) => ({
-		id: i,
-		name: `item-${i}`,
-		score: i,
-	}))
+		const col100 = collection(uniqueKey('cw-100'), { default: [...items100] })
 
-	const col100 = collection(uniqueKey('cw-100'), { default: [...items100] })
+		col100.watch('score', () => {})
 
-	col100.watch('score', () => {})
+		let ic100 = 0
 
-	let ic100 = 0
+		bench.add('collection.watch (100 items, 1 key)', () => {
+			col100.update((item) => item.id === 0, { score: ++ic100 })
+		})
 
-	bench.add('collection.watch (100 items, 1 key)', () => {
-		col100.update((item) => item.id === 0, { score: ++ic100 })
-	})
+		// 1000 items, 1 watcher
+		const items1000 = Array.from({ length: 1000 }, (_, i) => ({
+			id: i,
+			name: `item-${i}`,
+			score: i,
+		}))
 
-	// 1000 items, 1 watcher
-	const items1000 = Array.from({ length: 1000 }, (_, i) => ({
-		id: i,
-		name: `item-${i}`,
-		score: i,
-	}))
+		const col1000 = collection(uniqueKey('cw-1000'), { default: [...items1000] })
 
-	const col1000 = collection(uniqueKey('cw-1000'), { default: [...items1000] })
+		col1000.watch('score', () => {})
 
-	col1000.watch('score', () => {})
+		let ic1000 = 0
 
-	let ic1000 = 0
+		bench.add('collection.watch (1000 items, 1 key)', () => {
+			col1000.update((item) => item.id === 0, { score: ++ic1000 })
+		})
 
-	bench.add('collection.watch (1000 items, 1 key)', () => {
-		col1000.update((item) => item.id === 0, { score: ++ic1000 })
-	})
+		// 1000 items, 3 watchers on different keys
+		const col1000m = collection(uniqueKey('cw-1000m'), {
+			default: [...items1000],
+		})
 
-	// 1000 items, 3 watchers on different keys
-	const col1000m = collection(uniqueKey('cw-1000m'), {
-		default: [...items1000],
-	})
+		col1000m.watch('id', () => {})
+		col1000m.watch('name', () => {})
+		col1000m.watch('score', () => {})
 
-	col1000m.watch('id', () => {})
-	col1000m.watch('name', () => {})
-	col1000m.watch('score', () => {})
+		let ic1000m = 0
 
-	let ic1000m = 0
+		bench.add('collection.watch (1000 items, 3 keys)', () => {
+			col1000m.update((item) => item.id === 0, { score: ++ic1000m })
+		})
 
-	bench.add('collection.watch (1000 items, 3 keys)', () => {
-		col1000m.update((item) => item.id === 0, { score: ++ic1000m })
-	})
+		// Baseline: same update without watch
+		const colBase = collection(uniqueKey('cw-base'), { default: [...items1000] })
 
-	// Baseline: same update without watch
-	const colBase = collection(uniqueKey('cw-base'), { default: [...items1000] })
+		colBase.subscribe(() => {})
 
-	colBase.subscribe(() => {})
+		let icb = 0
 
-	let icb = 0
-
-	bench.add('collection.update (1000 items, no watch)', () => {
-		colBase.update((item) => item.id === 0, { score: ++icb })
-	})
-
-	await bench.run()
-
-	console.log('── Collection Watch at Scale ──')
-
-	printResults(bench)
-}
+		bench.add('collection.update (1000 items, no watch)', () => {
+			colBase.update((item) => item.id === 0, { score: ++icb })
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 4. Snapshot (devtools) at scale
 // ---------------------------------------------------------------------------
 
-async function benchSnapshot() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const snapshotSuite = defineSuite('snapshot', {
+	'Snapshot (DevTools) at Scale': (bench) => {
+		// Create many instances to stress snapshot
+		const instances10 = Array.from({ length: 10 }, (_, i) =>
+			state(uniqueKey('snap10'), { default: i }),
+		)
 
-	// Create many instances to stress snapshot
-	const instances10 = Array.from({ length: 10 }, (_, i) =>
-		state(uniqueKey('snap10'), { default: i }),
-	)
+		bench.add('snapshot (10 instances)', () => {
+			snapshot()
+		})
 
-	bench.add('snapshot (10 instances)', () => {
-		snapshot()
-	})
+		const instances100 = Array.from({ length: 100 }, (_, i) =>
+			state(uniqueKey('snap100'), { default: i }),
+		)
 
-	const instances100 = Array.from({ length: 100 }, (_, i) =>
-		state(uniqueKey('snap100'), { default: i }),
-	)
+		bench.add('snapshot (110 instances)', () => {
+			snapshot()
+		})
 
-	bench.add('snapshot (110 instances)', () => {
-		snapshot()
-	})
+		const instances500 = Array.from({ length: 500 }, (_, i) =>
+			state(uniqueKey('snap500'), { default: i }),
+		)
 
-	const instances500 = Array.from({ length: 500 }, (_, i) =>
-		state(uniqueKey('snap500'), { default: i }),
-	)
-
-	bench.add('snapshot (610 instances)', () => {
-		snapshot()
-	})
-
-	await bench.run()
-
-	console.log('── Snapshot (DevTools) at Scale ──')
-
-	printResults(bench)
-
-	// Cleanup
-	for (const s of [...instances10, ...instances100, ...instances500]) {
-		s.destroy()
-	}
-}
+		bench.add('snapshot (610 instances)', () => {
+			snapshot()
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 5. Instance cache hit vs fresh creation
 // ---------------------------------------------------------------------------
 
-async function benchCacheHit() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const cacheHit = defineSuite('cache-hit', {
+	'Instance Cache Hit vs Fresh Creation': (bench) => {
+		// Cache hit — same key returns existing instance
+		const cachedKey = uniqueKey('cache-hit')
 
-	// Cache hit — same key returns existing instance
-	const cachedKey = uniqueKey('cache-hit')
-
-	state(cachedKey, { default: 0 })
-
-	bench.add('state() cache hit (existing key)', () => {
 		state(cachedKey, { default: 0 })
-	})
 
-	// Fresh creation — new key each time
-	bench.add('state() fresh creation (new key)', () => {
-		const s = state(uniqueKey('cache-miss'), { default: 0 })
-		s.destroy()
-	})
+		bench.add('state() cache hit (existing key)', () => {
+			state(cachedKey, { default: 0 })
+		})
 
-	await bench.run()
-
-	console.log('── Instance Cache Hit vs Fresh Creation ──')
-
-	printResults(bench)
-}
+		// Fresh creation — new key each time
+		bench.add('state() fresh creation (new key)', () => {
+			const s = state(uniqueKey('cache-miss'), { default: 0 })
+			s.destroy()
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 6. Effect stop + recreate (component mount/unmount simulation)
 // ---------------------------------------------------------------------------
 
-async function benchEffectLifecycle() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const effectLifecycle = defineSuite('effect-lifecycle', {
+	'Effect Lifecycle (Create + Stop)': (bench) => {
+		const src = state(uniqueKey('eff-lc'), { default: 0 })
 
-	const src = state(uniqueKey('eff-lc'), { default: 0 })
-
-	bench.add('effect create + stop (no cleanup)', () => {
-		const handle = effect([src], () => {})
-		handle.stop()
-	})
-
-	bench.add('effect create + stop (with cleanup)', () => {
-		const handle = effect([src], () => {
-			return () => {}
+		bench.add('effect create + stop (no cleanup)', () => {
+			const handle = effect([src], () => {})
+			handle.stop()
 		})
-		handle.stop()
-	})
 
-	// 3 dependencies
-	const dep1 = state(uniqueKey('eff-lc-d1'), { default: 0 })
-	const dep2 = state(uniqueKey('eff-lc-d2'), { default: 0 })
-	const dep3 = state(uniqueKey('eff-lc-d3'), { default: 0 })
+		bench.add('effect create + stop (with cleanup)', () => {
+			const handle = effect([src], () => {
+				return () => {}
+			})
+			handle.stop()
+		})
 
-	bench.add('effect create + stop (3 deps)', () => {
-		const handle = effect([dep1, dep2, dep3], () => {})
-		handle.stop()
-	})
+		// 3 dependencies
+		const dep1 = state(uniqueKey('eff-lc-d1'), { default: 0 })
+		const dep2 = state(uniqueKey('eff-lc-d2'), { default: 0 })
+		const dep3 = state(uniqueKey('eff-lc-d3'), { default: 0 })
 
-	// Create + trigger + stop (full mount/update/unmount)
-	let iv = 0
+		bench.add('effect create + stop (3 deps)', () => {
+			const handle = effect([dep1, dep2, dep3], () => {})
+			handle.stop()
+		})
 
-	bench.add('effect create + trigger + stop', () => {
-		const handle = effect([src], () => {})
-		src.set(++iv)
-		handle.stop()
-	})
+		// Create + trigger + stop (full mount/update/unmount)
+		let iv = 0
 
-	await bench.run()
-
-	console.log('── Effect Lifecycle (Create + Stop) ──')
-
-	printResults(bench)
-}
+		bench.add('effect create + trigger + stop', () => {
+			const handle = effect([src], () => {})
+			src.set(++iv)
+			handle.stop()
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 7. Batch with computed consumers — does computed recompute once or N times?
 // ---------------------------------------------------------------------------
 
-async function benchBatchWithComputed() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const batchComputed = defineSuite('batch-computed', {
+	'Batch with Computed Consumers': (bench) => {
+		// 5 sources feeding 1 computed, all batched
+		const sources5 = Array.from({ length: 5 }, (_, i) =>
+			state(uniqueKey(`bcomp5-${i}`), { default: i }),
+		)
+		const comp5 = computed(sources5, (vals) =>
+			vals.reduce((a: number, b: number) => a + b, 0),
+		)
 
-	// 5 sources feeding 1 computed, all batched
-	const sources5 = Array.from({ length: 5 }, (_, i) =>
-		state(uniqueKey(`bcomp5-${i}`), { default: i }),
-	)
-	const comp5 = computed(sources5, (vals) =>
-		vals.reduce((a: number, b: number) => a + b, 0),
-	)
+		comp5.subscribe(() => {})
 
-	comp5.subscribe(() => {})
+		let i5 = 0
 
-	let i5 = 0
+		bench.add('batch 5 sources (1 computed consumer)', () => {
+			i5++
 
-	bench.add('batch 5 sources (1 computed consumer)', () => {
-		i5++
+			batch(() => {
+				for (const s of sources5) {
+					s.set(i5)
+				}
+			})
+		})
 
-		batch(() => {
-			for (const s of sources5) {
-				s.set(i5)
+		// Same without batch (baseline)
+		const sources5nb = Array.from({ length: 5 }, (_, i) =>
+			state(uniqueKey(`bcomp5nb-${i}`), { default: i }),
+		)
+		const comp5nb = computed(sources5nb, (vals) =>
+			vals.reduce((a: number, b: number) => a + b, 0),
+		)
+
+		comp5nb.subscribe(() => {})
+
+		let i5nb = 0
+
+		bench.add('unbatched 5 sources (1 computed consumer)', () => {
+			i5nb++
+
+			for (const s of sources5nb) {
+				s.set(i5nb)
 			}
 		})
-	})
 
-	// Same without batch (baseline)
-	const sources5nb = Array.from({ length: 5 }, (_, i) =>
-		state(uniqueKey(`bcomp5nb-${i}`), { default: i }),
-	)
-	const comp5nb = computed(sources5nb, (vals) =>
-		vals.reduce((a: number, b: number) => a + b, 0),
-	)
+		// 20 sources, 1 computed
+		const sources20 = Array.from({ length: 20 }, (_, i) =>
+			state(uniqueKey(`bcomp20-${i}`), { default: i }),
+		)
+		const comp20 = computed(sources20, (vals) =>
+			vals.reduce((a: number, b: number) => a + b, 0),
+		)
 
-	comp5nb.subscribe(() => {})
+		comp20.subscribe(() => {})
 
-	let i5nb = 0
+		let i20 = 0
 
-	bench.add('unbatched 5 sources (1 computed consumer)', () => {
-		i5nb++
+		bench.add('batch 20 sources (1 computed consumer)', () => {
+			i20++
 
-		for (const s of sources5nb) {
-			s.set(i5nb)
-		}
-	})
+			batch(() => {
+				for (const s of sources20) {
+					s.set(i20)
+				}
+			})
+		})
 
-	// 20 sources, 1 computed
-	const sources20 = Array.from({ length: 20 }, (_, i) =>
-		state(uniqueKey(`bcomp20-${i}`), { default: i }),
-	)
-	const comp20 = computed(sources20, (vals) =>
-		vals.reduce((a: number, b: number) => a + b, 0),
-	)
+		let i20nb = 0
 
-	comp20.subscribe(() => {})
+		bench.add('unbatched 20 sources (1 computed consumer)', () => {
+			i20nb++
 
-	let i20 = 0
-
-	bench.add('batch 20 sources (1 computed consumer)', () => {
-		i20++
-
-		batch(() => {
 			for (const s of sources20) {
-				s.set(i20)
+				s.set(i20nb)
 			}
 		})
-	})
-
-	let i20nb = 0
-
-	bench.add('unbatched 20 sources (1 computed consumer)', () => {
-		i20nb++
-
-		for (const s of sources20) {
-			s.set(i20nb)
-		}
-	})
-
-	await bench.run()
-
-	console.log('── Batch with Computed Consumers ──')
-
-	printResults(bench)
-}
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 8. Read/write interleaving — rapid alternating get() and set()
 // ---------------------------------------------------------------------------
 
-async function benchReadWriteInterleave() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const readWrite = defineSuite('read-write', {
+	'Read/Write Interleaving': (bench) => {
+		const s = state(uniqueKey('rw'), { default: 0 })
 
-	const s = state(uniqueKey('rw'), { default: 0 })
+		s.subscribe(() => {})
 
-	s.subscribe(() => {})
+		let irw = 0
 
-	let irw = 0
+		bench.add('write-only (baseline)', () => {
+			s.set(++irw)
+		})
 
-	bench.add('write-only (baseline)', () => {
-		s.set(++irw)
-	})
+		let irw2 = 0
 
-	let irw2 = 0
+		bench.add('read-write alternating', () => {
+			s.set(++irw2)
+			s.get()
+		})
 
-	bench.add('read-write alternating', () => {
-		s.set(++irw2)
-		s.get()
-	})
+		let irw3 = 0
 
-	let irw3 = 0
+		bench.add('write-read-read-read pattern', () => {
+			s.set(++irw3)
+			s.get()
+			s.get()
+			s.get()
+		})
 
-	bench.add('write-read-read-read pattern', () => {
-		s.set(++irw3)
-		s.get()
-		s.get()
-		s.get()
-	})
+		// With computed dependent
+		const c = computed([s], ([v]) => v * 2)
 
-	// With computed dependent
-	const c = computed([s], ([v]) => v * 2)
+		c.subscribe(() => {})
 
-	c.subscribe(() => {})
+		let irw4 = 0
 
-	let irw4 = 0
-
-	bench.add('write + computed.get() interleaved', () => {
-		s.set(++irw4)
-		c.get()
-	})
-
-	await bench.run()
-
-	console.log('── Read/Write Interleaving ──')
-
-	printResults(bench)
-}
+		bench.add('write + computed.get() interleaved', () => {
+			s.set(++irw4)
+			c.get()
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 9. History with large objects — memory & copy overhead
 // ---------------------------------------------------------------------------
 
-async function benchHistoryLargeValues() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const historyLarge = defineSuite('history-large', {
+	'History with Large Values': (bench) => {
+		// Small value (primitive)
+		const hSmall = withHistory(state(uniqueKey('hist-sm'), { default: 0 }), {
+			maxSize: 100,
+		})
 
-	// Small value (primitive)
-	const hSmall = withHistory(state(uniqueKey('hist-sm'), { default: 0 }), {
-		maxSize: 100,
-	})
+		let ism = 0
 
-	let ism = 0
+		bench.add('history write (primitive)', () => {
+			hSmall.set(++ism)
+		})
 
-	bench.add('history write (primitive)', () => {
-		hSmall.set(++ism)
-	})
+		// Medium object (20 keys)
+		type MedObj = Record<string, number>
 
-	// Medium object (20 keys)
-	type MedObj = Record<string, number>
+		const medDefault: MedObj = {}
 
-	const medDefault: MedObj = {}
+		for (let i = 0; i < 20; i++) medDefault[`k${i}`] = i
 
-	for (let i = 0; i < 20; i++) medDefault[`k${i}`] = i
+		const hMed = withHistory(
+			state(uniqueKey('hist-med'), { default: medDefault }),
+			{ maxSize: 100 },
+		)
 
-	const hMed = withHistory(
-		state(uniqueKey('hist-med'), { default: medDefault }),
-		{ maxSize: 100 },
-	)
+		let imd = 0
 
-	let imd = 0
+		bench.add('history write (20-key object)', () => {
+			hMed.set({ ...medDefault, k0: ++imd })
+		})
 
-	bench.add('history write (20-key object)', () => {
-		hMed.set({ ...medDefault, k0: ++imd })
-	})
+		// Large object (200 keys)
+		const lgDefault: Record<string, number> = {}
 
-	// Large object (200 keys)
-	const lgDefault: Record<string, number> = {}
+		for (let i = 0; i < 200; i++) lgDefault[`k${i}`] = i
 
-	for (let i = 0; i < 200; i++) lgDefault[`k${i}`] = i
+		const hLg = withHistory(
+			state(uniqueKey('hist-lg'), { default: lgDefault }),
+			{ maxSize: 100 },
+		)
 
-	const hLg = withHistory(
-		state(uniqueKey('hist-lg'), { default: lgDefault }),
-		{ maxSize: 100 },
-	)
+		let ilg = 0
 
-	let ilg = 0
+		bench.add('history write (200-key object)', () => {
+			hLg.set({ ...lgDefault, k0: ++ilg })
+		})
 
-	bench.add('history write (200-key object)', () => {
-		hLg.set({ ...lgDefault, k0: ++ilg })
-	})
+		// Undo/redo with large objects
+		const hUndoLg = withHistory(
+			state(uniqueKey('hist-undo-lg'), { default: lgDefault }),
+			{ maxSize: 100 },
+		)
 
-	// Undo/redo with large objects
-	const hUndoLg = withHistory(
-		state(uniqueKey('hist-undo-lg'), { default: lgDefault }),
-		{ maxSize: 100 },
-	)
+		for (let i = 0; i < 50; i++) {
+			hUndoLg.set({ ...lgDefault, k0: i })
+		}
 
-	for (let i = 0; i < 50; i++) {
-		hUndoLg.set({ ...lgDefault, k0: i })
-	}
-
-	bench.add('undo + redo (200-key object)', () => {
-		hUndoLg.undo()
-		hUndoLg.redo()
-	})
-
-	await bench.run()
-
-	console.log('── History with Large Values ──')
-
-	printResults(bench)
-}
+		bench.add('undo + redo (200-key object)', () => {
+			hUndoLg.undo()
+			hUndoLg.redo()
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 10. Collection operation chaining — multiple mutations without batch
 // ---------------------------------------------------------------------------
 
-async function benchCollectionChaining() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const collectionChaining = defineSuite('collection-chaining', {
+	'Collection Operation Chaining': (bench) => {
+		type Item = { id: number; value: number }
 
-	type Item = { id: number; value: number }
+		const items = Array.from({ length: 100 }, (_, i) => ({
+			id: i,
+			value: i,
+		}))
 
-	const items = Array.from({ length: 100 }, (_, i) => ({
-		id: i,
-		value: i,
-	}))
+		// Single operation
+		const colSingle = collection(uniqueKey('chain-1'), { default: [...items] })
 
-	// Single operation
-	const colSingle = collection(uniqueKey('chain-1'), { default: [...items] })
+		colSingle.subscribe(() => {})
 
-	colSingle.subscribe(() => {})
+		let is = 0
 
-	let is = 0
-
-	bench.add('1 mutation (add)', () => {
-		colSingle.add({ id: 1000 + is, value: ++is })
-		colSingle.set([...items]) // reset
-	})
-
-	// 3 operations without batch
-	const col3 = collection(uniqueKey('chain-3'), { default: [...items] })
-
-	col3.subscribe(() => {})
-
-	let i3 = 0
-
-	bench.add('3 mutations unbatched', () => {
-		i3++
-		col3.add({ id: 1000 + i3, value: i3 })
-		col3.update((item) => item.id === 0, { value: i3 })
-		col3.remove((item) => item.id === 1000 + i3)
-	})
-
-	// 3 operations with batch
-	const col3b = collection(uniqueKey('chain-3b'), { default: [...items] })
-
-	col3b.subscribe(() => {})
-
-	let i3b = 0
-
-	bench.add('3 mutations batched', () => {
-		i3b++
-
-		batch(() => {
-			col3b.add({ id: 1000 + i3b, value: i3b })
-			col3b.update((item) => item.id === 0, { value: i3b })
-			col3b.remove((item) => item.id === 1000 + i3b)
+		bench.add('1 mutation (add)', () => {
+			colSingle.add({ id: 1000 + is, value: ++is })
+			colSingle.set([...items]) // reset
 		})
-	})
 
-	await bench.run()
+		// 3 operations without batch
+		const col3 = collection(uniqueKey('chain-3'), { default: [...items] })
 
-	console.log('── Collection Operation Chaining ──')
+		col3.subscribe(() => {})
 
-	printResults(bench)
-}
+		let i3 = 0
+
+		bench.add('3 mutations unbatched', () => {
+			i3++
+			col3.add({ id: 1000 + i3, value: i3 })
+			col3.update((item) => item.id === 0, { value: i3 })
+			col3.remove((item) => item.id === 1000 + i3)
+		})
+
+		// 3 operations with batch
+		const col3b = collection(uniqueKey('chain-3b'), { default: [...items] })
+
+		col3b.subscribe(() => {})
+
+		let i3b = 0
+
+		bench.add('3 mutations batched', () => {
+			i3b++
+
+			batch(() => {
+				col3b.add({ id: 1000 + i3b, value: i3b })
+				col3b.update((item) => item.id === 0, { value: i3b })
+				col3b.remove((item) => item.id === 1000 + i3b)
+			})
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 11. shallowEqual scaling
 // ---------------------------------------------------------------------------
 
-async function benchShallowEqual() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const shallowEqualSuite = defineSuite('shallow-equal', {
+	'shallowEqual Scaling': (bench) => {
+		// Identical primitives
+		bench.add('shallowEqual (identical primitives)', () => {
+			shallowEqual(42, 42)
+		})
 
-	// Identical primitives
-	bench.add('shallowEqual (identical primitives)', () => {
-		shallowEqual(42, 42)
-	})
+		// Small objects (equal)
+		const smallA = { a: 1, b: 2, c: 3 }
+		const smallB = { a: 1, b: 2, c: 3 }
 
-	// Small objects (equal)
-	const smallA = { a: 1, b: 2, c: 3 }
-	const smallB = { a: 1, b: 2, c: 3 }
+		bench.add('shallowEqual (3-key objects, equal)', () => {
+			shallowEqual(smallA, smallB)
+		})
 
-	bench.add('shallowEqual (3-key objects, equal)', () => {
-		shallowEqual(smallA, smallB)
-	})
+		// Medium objects (equal)
+		const medA: Record<string, number> = {}
+		const medB: Record<string, number> = {}
 
-	// Medium objects (equal)
-	const medA: Record<string, number> = {}
-	const medB: Record<string, number> = {}
+		for (let i = 0; i < 50; i++) {
+			medA[`k${i}`] = i
+			medB[`k${i}`] = i
+		}
 
-	for (let i = 0; i < 50; i++) {
-		medA[`k${i}`] = i
-		medB[`k${i}`] = i
-	}
+		bench.add('shallowEqual (50-key objects, equal)', () => {
+			shallowEqual(medA, medB)
+		})
 
-	bench.add('shallowEqual (50-key objects, equal)', () => {
-		shallowEqual(medA, medB)
-	})
+		// Large objects (equal)
+		const lgA: Record<string, number> = {}
+		const lgB: Record<string, number> = {}
 
-	// Large objects (equal)
-	const lgA: Record<string, number> = {}
-	const lgB: Record<string, number> = {}
+		for (let i = 0; i < 500; i++) {
+			lgA[`k${i}`] = i
+			lgB[`k${i}`] = i
+		}
 
-	for (let i = 0; i < 500; i++) {
-		lgA[`k${i}`] = i
-		lgB[`k${i}`] = i
-	}
-
-	bench.add('shallowEqual (500-key objects, equal)', () => {
-		shallowEqual(lgA, lgB)
-	})
-
-	await bench.run()
-
-	console.log('── shallowEqual Scaling ──')
-
-	printResults(bench)
-}
+		bench.add('shallowEqual (500-key objects, equal)', () => {
+			shallowEqual(lgA, lgB)
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 12. withWatch enhancer vs native state.watch
 // ---------------------------------------------------------------------------
 
-async function benchWatchEnhancer() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const watchEnhancer = defineSuite('watch-enhancer', {
+	'withWatch Enhancer vs Native watch': (bench) => {
+		type Obj = { a: number; b: number; c: number }
 
-	type Obj = { a: number; b: number; c: number }
-
-	// Native state.watch()
-	const sNative = state(uniqueKey('wn'), {
-		default: { a: 0, b: 0, c: 0 } as Obj,
-	})
-
-	sNative.watch('a', () => {})
-
-	let in1 = 0
-
-	bench.add('state.watch() native', () => {
-		sNative.set({ a: ++in1, b: 0, c: 0 })
-	})
-
-	// withWatch enhancer
-	const sEnhanced = withWatch(
-		state(uniqueKey('we'), {
+		// Native state.watch()
+		const sNative = state(uniqueKey('wn'), {
 			default: { a: 0, b: 0, c: 0 } as Obj,
-		}),
-	)
+		})
 
-	sEnhanced.watch('a', () => {})
+		sNative.watch('a', () => {})
 
-	let ie1 = 0
+		let in1 = 0
 
-	bench.add('withWatch() enhancer', () => {
-		sEnhanced.set({ a: ++ie1, b: 0, c: 0 })
-	})
+		bench.add('state.watch() native', () => {
+			sNative.set({ a: ++in1, b: 0, c: 0 })
+		})
 
-	// Plain subscribe (baseline)
-	const sPlain = state(uniqueKey('wp'), {
-		default: { a: 0, b: 0, c: 0 } as Obj,
-	})
+		// withWatch enhancer
+		const sEnhanced = withWatch(
+			state(uniqueKey('we'), {
+				default: { a: 0, b: 0, c: 0 } as Obj,
+			}),
+		)
 
-	sPlain.subscribe(() => {})
+		sEnhanced.watch('a', () => {})
 
-	let ip1 = 0
+		let ie1 = 0
 
-	bench.add('subscribe() baseline', () => {
-		sPlain.set({ a: ++ip1, b: 0, c: 0 })
-	})
+		bench.add('withWatch() enhancer', () => {
+			sEnhanced.set({ a: ++ie1, b: 0, c: 0 })
+		})
 
-	await bench.run()
+		// Plain subscribe (baseline)
+		const sPlain = state(uniqueKey('wp'), {
+			default: { a: 0, b: 0, c: 0 } as Obj,
+		})
 
-	console.log('── withWatch Enhancer vs Native watch ──')
+		sPlain.subscribe(() => {})
 
-	printResults(bench)
-}
+		let ip1 = 0
+
+		bench.add('subscribe() baseline', () => {
+			sPlain.set({ a: ++ip1, b: 0, c: 0 })
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 13. GC pressure — rapid create/destroy cycles at scale
 // ---------------------------------------------------------------------------
 
-async function benchGCPressure() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
-
-	// Single create + destroy
-	bench.add('create + destroy (×1)', () => {
-		const s = state(uniqueKey('gc1'), { default: 0 })
-		s.destroy()
-	})
-
-	// Burst of 10
-	bench.add('create + destroy burst (×10)', () => {
-		const instances = []
-
-		for (let i = 0; i < 10; i++) {
-			instances.push(state(uniqueKey('gc10'), { default: i }))
-		}
-
-		for (const s of instances) {
+const gcPressure = defineSuite('gc-pressure', {
+	'GC Pressure (Create/Destroy Churn)': (bench) => {
+		// Single create + destroy
+		bench.add('create + destroy (×1)', () => {
+			const s = state(uniqueKey('gc1'), { default: 0 })
 			s.destroy()
-		}
-	})
+		})
 
-	// Burst of 50 with subscribers
-	bench.add('create + subscribe + destroy burst (×50)', () => {
-		const instances = []
+		// Burst of 10
+		bench.add('create + destroy burst (×10)', () => {
+			const instances = []
 
-		for (let i = 0; i < 50; i++) {
-			const s = state(uniqueKey('gc50'), { default: i })
-			s.subscribe(() => {})
-			instances.push(s)
-		}
+			for (let i = 0; i < 10; i++) {
+				instances.push(state(uniqueKey('gc10'), { default: i }))
+			}
 
-		for (const s of instances) {
-			s.destroy()
-		}
-	})
+			for (const s of instances) {
+				s.destroy()
+			}
+		})
 
-	await bench.run()
+		// Burst of 50 with subscribers
+		bench.add('create + subscribe + destroy burst (×50)', () => {
+			const instances = []
 
-	console.log('── GC Pressure (Create/Destroy Churn) ──')
+			for (let i = 0; i < 50; i++) {
+				const s = state(uniqueKey('gc50'), { default: i })
+				s.subscribe(() => {})
+				instances.push(s)
+			}
 
-	printResults(bench)
-}
+			for (const s of instances) {
+				s.destroy()
+			}
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 14. Interceptor rejection rate — how fast can set() bail out?
 // ---------------------------------------------------------------------------
 
-async function benchInterceptorRejection() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const interceptor = defineSuite('interceptor', {
+	'Interceptor / Rejection Overhead': (bench) => {
+		// No interceptor (baseline)
+		const sNone = state(uniqueKey('rej-none'), { default: 0 })
 
-	// No interceptor (baseline)
-	const sNone = state(uniqueKey('rej-none'), { default: 0 })
+		sNone.subscribe(() => {})
 
-	sNone.subscribe(() => {})
+		let in0 = 0
 
-	let in0 = 0
+		bench.add('write (no interceptor)', () => {
+			sNone.set(++in0)
+		})
 
-	bench.add('write (no interceptor)', () => {
-		sNone.set(++in0)
-	})
+		// Interceptor that always passes through
+		const sPass = state(uniqueKey('rej-pass'), { default: 0 })
 
-	// Interceptor that always passes through
-	const sPass = state(uniqueKey('rej-pass'), { default: 0 })
+		sPass.intercept((next) => next)
+		sPass.subscribe(() => {})
 
-	sPass.intercept((next) => next)
-	sPass.subscribe(() => {})
+		let ip0 = 0
 
-	let ip0 = 0
+		bench.add('write (interceptor passthrough)', () => {
+			sPass.set(++ip0)
+		})
 
-	bench.add('write (interceptor passthrough)', () => {
-		sPass.set(++ip0)
-	})
+		// Interceptor that transforms value
+		const sTx = state(uniqueKey('rej-tx'), { default: 0 })
 
-	// Interceptor that transforms value
-	const sTx = state(uniqueKey('rej-tx'), { default: 0 })
+		sTx.intercept((next) => Math.max(0, next))
+		sTx.subscribe(() => {})
 
-	sTx.intercept((next) => Math.max(0, next))
-	sTx.subscribe(() => {})
+		let it0 = 0
 
-	let it0 = 0
+		bench.add('write (interceptor transform)', () => {
+			sTx.set(++it0)
+		})
 
-	bench.add('write (interceptor transform)', () => {
-		sTx.set(++it0)
-	})
+		// isEqual that rejects 50% of writes (no change half the time)
+		const sEqHalf = state(uniqueKey('rej-half'), {
+			default: 0,
+			isEqual: (a, b) => a === b,
+		})
 
-	// isEqual that rejects 50% of writes (no change half the time)
-	const sEqHalf = state(uniqueKey('rej-half'), {
-		default: 0,
-		isEqual: (a, b) => a === b,
-	})
+		sEqHalf.subscribe(() => {})
 
-	sEqHalf.subscribe(() => {})
+		let ih = 0
 
-	let ih = 0
-
-	bench.add('write (isEqual rejects ~50%)', () => {
-		// Alternates between new value and same value
-		sEqHalf.set(Math.floor(++ih / 2))
-	})
-
-	await bench.run()
-
-	console.log('── Interceptor / Rejection Overhead ──')
-
-	printResults(bench)
-}
+		bench.add('write (isEqual rejects ~50%)', () => {
+			// Alternates between new value and same value
+			sEqHalf.set(Math.floor(++ih / 2))
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // 15. Computed: stale read after dependency change
@@ -819,84 +729,82 @@ async function benchInterceptorRejection() {
 //     a dependency changes but before any subscriber fires.
 // ---------------------------------------------------------------------------
 
-async function benchComputedStaleness() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const computedStaleness = defineSuite('computed-staleness', {
+	'Computed Staleness / Recomputation': (bench) => {
+		// Cheap compute function
+		const sCheap = state(uniqueKey('stale-cheap'), { default: 0 })
+		const cCheap = computed([sCheap], ([v]) => v + 1)
 
-	// Cheap compute function
-	const sCheap = state(uniqueKey('stale-cheap'), { default: 0 })
-	const cCheap = computed([sCheap], ([v]) => v + 1)
+		let ic = 0
 
-	let ic = 0
+		bench.add('set + computed.get() (cheap fn)', () => {
+			sCheap.set(++ic)
+			cCheap.get()
+		})
 
-	bench.add('set + computed.get() (cheap fn)', () => {
-		sCheap.set(++ic)
-		cCheap.get()
-	})
+		// Moderate compute function (string concat)
+		const sMod = state(uniqueKey('stale-mod'), { default: 0 })
+		const cMod = computed([sMod], ([v]) => `value-${v}-end`)
 
-	// Moderate compute function (string concat)
-	const sMod = state(uniqueKey('stale-mod'), { default: 0 })
-	const cMod = computed([sMod], ([v]) => `value-${v}-end`)
+		let im = 0
 
-	let im = 0
+		bench.add('set + computed.get() (string concat)', () => {
+			sMod.set(++im)
+			cMod.get()
+		})
 
-	bench.add('set + computed.get() (string concat)', () => {
-		sMod.set(++im)
-		cMod.get()
-	})
+		// Expensive compute function (object creation + array)
+		const sExp = state(uniqueKey('stale-exp'), { default: 0 })
+		const cExp = computed([sExp], ([v]) => ({
+			id: v,
+			label: `item-${v}`,
+			tags: [v, v + 1, v + 2],
+		}))
 
-	// Expensive compute function (object creation + array)
-	const sExp = state(uniqueKey('stale-exp'), { default: 0 })
-	const cExp = computed([sExp], ([v]) => ({
-		id: v,
-		label: `item-${v}`,
-		tags: [v, v + 1, v + 2],
-	}))
+		let ie = 0
 
-	let ie = 0
+		bench.add('set + computed.get() (object creation)', () => {
+			sExp.set(++ie)
+			cExp.get()
+		})
 
-	bench.add('set + computed.get() (object creation)', () => {
-		sExp.set(++ie)
-		cExp.get()
-	})
+		// Multiple reads of same stale computed (should only recompute once)
+		const sMulti = state(uniqueKey('stale-multi'), { default: 0 })
+		const cMulti = computed([sMulti], ([v]) => v + 1)
 
-	// Multiple reads of same stale computed (should only recompute once)
-	const sMulti = state(uniqueKey('stale-multi'), { default: 0 })
-	const cMulti = computed([sMulti], ([v]) => v + 1)
+		let imr = 0
 
-	let imr = 0
-
-	bench.add('set + 3× computed.get() (recompute once?)', () => {
-		sMulti.set(++imr)
-		cMulti.get()
-		cMulti.get()
-		cMulti.get()
-	})
-
-	await bench.run()
-
-	console.log('── Computed Staleness / Recomputation ──')
-
-	printResults(bench)
-}
+		bench.add('set + 3× computed.get() (recompute once?)', () => {
+			sMulti.set(++imr)
+			cMulti.get()
+			cMulti.get()
+			cMulti.get()
+		})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // Run suites — supports CLI filter: `pnpm tsx edge-cases.bench.ts diamond`
 // ---------------------------------------------------------------------------
 
-runSuites('Edge-Case Benchmark: subtle performance pain points', [
-	{ name: 'diamond', fn: benchComputedDiamond },
-	{ name: 'peek-vs-get', fn: benchPeekVsGet },
-	{ name: 'collection-watch', fn: benchCollectionWatch },
-	{ name: 'snapshot', fn: benchSnapshot },
-	{ name: 'cache-hit', fn: benchCacheHit },
-	{ name: 'effect-lifecycle', fn: benchEffectLifecycle },
-	{ name: 'batch-computed', fn: benchBatchWithComputed },
-	{ name: 'read-write', fn: benchReadWriteInterleave },
-	{ name: 'history-large', fn: benchHistoryLargeValues },
-	{ name: 'collection-chaining', fn: benchCollectionChaining },
-	{ name: 'shallow-equal', fn: benchShallowEqual },
-	{ name: 'watch-enhancer', fn: benchWatchEnhancer },
-	{ name: 'gc-pressure', fn: benchGCPressure },
-	{ name: 'interceptor', fn: benchInterceptorRejection },
-	{ name: 'computed-staleness', fn: benchComputedStaleness },
-]).catch(console.error)
+runSuites(
+	'Edge-Case Benchmark: subtle performance pain points',
+	[
+		computedDiamond,
+		peekVsGet,
+		collectionWatch,
+		snapshotSuite,
+		cacheHit,
+		effectLifecycle,
+		batchComputed,
+		readWrite,
+		historyLarge,
+		collectionChaining,
+		shallowEqualSuite,
+		watchEnhancer,
+		gcPressure,
+		interceptor,
+		computedStaleness,
+	],
+	'edge-cases',
+).catch(console.error)

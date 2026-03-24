@@ -76,7 +76,9 @@
 		"typecheck": "tsc --project tsconfig.test.json --skipLibCheck",
 		"bench": "tsx benchmarks/state-management.bench.ts",
 		"bench:internal": "tsx benchmarks/internal.bench.ts",
-		"bench:extended": "tsx benchmarks/internals-extended.bench.ts"
+		"bench:extended": "tsx benchmarks/internals-extended.bench.ts",
+		"bench:save": "tsx benchmarks/internal.bench.ts --save",
+		"bench:compare": "tsx benchmarks/internal.bench.ts --compare"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.6",

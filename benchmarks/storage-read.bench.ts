@@ -1,9 +1,8 @@
-import { Bench } from 'tinybench'
 import { proxy, snapshot as valtioSnapshot } from 'valtio/vanilla'
 import { createStore as createZustandStore } from 'zustand/vanilla'
 import { persist } from 'zustand/middleware'
 import { state } from '../src/index.js'
-import { formatOps, printResults, runSuites, uniqueKey } from './helpers.js'
+import { defineSuite, runSuites, uniqueKey } from './helpers.js'
 
 // ---------------------------------------------------------------------------
 // Storage mock — shared Map so all libraries hit the same backend
@@ -60,299 +59,219 @@ function makeObject(keyCount: number): ObjectShape {
 	return obj
 }
 
+function makeZustandPersistStorage() {
+	return {
+		getItem: (name: string) => {
+			const raw = mockStorage.getItem(name)
+
+			return raw ? JSON.parse(raw) : null
+		},
+		setItem: (name: string, value: unknown) => {
+			mockStorage.setItem(name, JSON.stringify(value))
+		},
+		removeItem: (name: string) => {
+			mockStorage.removeItem(name)
+		},
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Benchmark: Cached read — primitive (repeated get, no writes between)
 // ---------------------------------------------------------------------------
 
-async function benchReadPrimitive() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const primitiveSuite = defineSuite('primitive', {
+	'Storage Read: Primitive': (bench) => {
+		const gj = state(uniqueKey('stor-prim'), { default: 42, scope: 'local' })
 
-	// gjendje: storage-backed state
-	const gj = state(uniqueKey('stor-prim'), { default: 42, scope: 'local' })
+		const zStore = createZustandStore(
+			persist(() => ({ value: 42 }), {
+				name: uniqueKey('z-stor-prim'),
+				storage: makeZustandPersistStorage(),
+			}),
+		)
 
-	// Zustand: persist middleware (hydrate-once, in-memory reads)
-	const zStore = createZustandStore(
-		persist(() => ({ value: 42 }), {
-			name: uniqueKey('z-stor-prim'),
-			storage: {
-				getItem: (name) => {
-					const raw = mockStorage.getItem(name)
+		const vp = proxy({ value: 42 })
 
-					return raw ? JSON.parse(raw) : null
-				},
-				setItem: (name, value) => {
-					mockStorage.setItem(name, JSON.stringify(value))
-				},
-				removeItem: (name) => {
-					mockStorage.removeItem(name)
-				},
-			},
-		}),
-	)
+		gj.get()
+		zStore.getState()
+		valtioSnapshot(vp)
 
-	// Valtio: hydrate once from storage, in-memory reads
-	const vp = proxy({ value: 42 })
-
-	// Warm up — ensure all stores are hydrated
-	gj.get()
-	zStore.getState()
-	valtioSnapshot(vp)
-
-	bench
-		.add('gjendje (scope: local)', () => {
-			gj.get()
-		})
-		.add('zustand (persist)', () => {
-			zStore.getState()
-		})
-		.add('valtio (hydrated)', () => {
-			valtioSnapshot(vp).value
-		})
-
-	await bench.run()
-
-	console.log('── Storage Read: Primitive ──')
-
-	printResults(bench)
-}
+		bench
+			.add('gjendje (scope: local)', () => {
+				gj.get()
+			})
+			.add('zustand (persist)', () => {
+				zStore.getState()
+			})
+			.add('valtio (hydrated)', () => {
+				valtioSnapshot(vp).value
+			})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // Benchmark: Cached read — small object (5 keys)
 // ---------------------------------------------------------------------------
 
-async function benchReadSmallObject() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const smallSuite = defineSuite('small', {
+	'Storage Read: Small Object (5 keys)': (bench) => {
+		const small = makeObject(5)
 
-	const small = makeObject(5)
+		const gj = state(uniqueKey('stor-small'), { default: small, scope: 'local' })
 
-	const gj = state(uniqueKey('stor-small'), { default: small, scope: 'local' })
+		const zStore = createZustandStore(
+			persist(() => ({ ...small }), {
+				name: uniqueKey('z-stor-small'),
+				storage: makeZustandPersistStorage(),
+			}),
+		)
 
-	const zStore = createZustandStore(
-		persist(() => ({ ...small }), {
-			name: uniqueKey('z-stor-small'),
-			storage: {
-				getItem: (name) => {
-					const raw = mockStorage.getItem(name)
+		const vp = proxy({ ...small })
 
-					return raw ? JSON.parse(raw) : null
-				},
-				setItem: (name, value) => {
-					mockStorage.setItem(name, JSON.stringify(value))
-				},
-				removeItem: (name) => {
-					mockStorage.removeItem(name)
-				},
-			},
-		}),
-	)
+		gj.get()
+		zStore.getState()
+		valtioSnapshot(vp)
 
-	const vp = proxy({ ...small })
-
-	gj.get()
-	zStore.getState()
-	valtioSnapshot(vp)
-
-	bench
-		.add('gjendje (scope: local)', () => {
-			gj.get()
-		})
-		.add('zustand (persist)', () => {
-			zStore.getState()
-		})
-		.add('valtio (hydrated)', () => {
-			valtioSnapshot(vp)
-		})
-
-	await bench.run()
-
-	console.log('── Storage Read: Small Object (5 keys) ──')
-
-	printResults(bench)
-}
+		bench
+			.add('gjendje (scope: local)', () => {
+				gj.get()
+			})
+			.add('zustand (persist)', () => {
+				zStore.getState()
+			})
+			.add('valtio (hydrated)', () => {
+				valtioSnapshot(vp)
+			})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // Benchmark: Cached read — large object (200 keys)
 // ---------------------------------------------------------------------------
 
-async function benchReadLargeObject() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const largeSuite = defineSuite('large', {
+	'Storage Read: Large Object (200 keys)': (bench) => {
+		const large = makeObject(200)
 
-	const large = makeObject(200)
+		const gj = state(uniqueKey('stor-large'), { default: large, scope: 'local' })
 
-	const gj = state(uniqueKey('stor-large'), { default: large, scope: 'local' })
+		const zStore = createZustandStore(
+			persist(() => ({ ...large }), {
+				name: uniqueKey('z-stor-large'),
+				storage: makeZustandPersistStorage(),
+			}),
+		)
 
-	const zStore = createZustandStore(
-		persist(() => ({ ...large }), {
-			name: uniqueKey('z-stor-large'),
-			storage: {
-				getItem: (name) => {
-					const raw = mockStorage.getItem(name)
+		const vp = proxy({ ...large })
 
-					return raw ? JSON.parse(raw) : null
-				},
-				setItem: (name, value) => {
-					mockStorage.setItem(name, JSON.stringify(value))
-				},
-				removeItem: (name) => {
-					mockStorage.removeItem(name)
-				},
-			},
-		}),
-	)
+		gj.get()
+		zStore.getState()
+		valtioSnapshot(vp)
 
-	const vp = proxy({ ...large })
-
-	gj.get()
-	zStore.getState()
-	valtioSnapshot(vp)
-
-	bench
-		.add('gjendje (scope: local)', () => {
-			gj.get()
-		})
-		.add('zustand (persist)', () => {
-			zStore.getState()
-		})
-		.add('valtio (hydrated)', () => {
-			valtioSnapshot(vp)
-		})
-
-	await bench.run()
-
-	console.log('── Storage Read: Large Object (200 keys) ──')
-
-	printResults(bench)
-}
+		bench
+			.add('gjendje (scope: local)', () => {
+				gj.get()
+			})
+			.add('zustand (persist)', () => {
+				zStore.getState()
+			})
+			.add('valtio (hydrated)', () => {
+				valtioSnapshot(vp)
+			})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // Benchmark: Read after write (cache invalidation + re-cache)
 // ---------------------------------------------------------------------------
 
-async function benchReadAfterWrite() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const readAfterWriteSuite = defineSuite('read-after-write', {
+	'Storage Read After Write: Medium Object (20 keys)': (bench) => {
+		const medium = makeObject(20)
 
-	const medium = makeObject(20)
+		const gj = state(uniqueKey('stor-rw'), { default: medium, scope: 'local' })
 
-	const gj = state(uniqueKey('stor-rw'), { default: medium, scope: 'local' })
+		const zStore = createZustandStore(
+			persist<ObjectShape>(() => ({ ...medium }), {
+				name: uniqueKey('z-stor-rw'),
+				storage: makeZustandPersistStorage(),
+			}),
+		)
 
-	const zStore = createZustandStore(
-		persist<ObjectShape>(() => ({ ...medium }), {
-			name: uniqueKey('z-stor-rw'),
-			storage: {
-				getItem: (name) => {
-					const raw = mockStorage.getItem(name)
+		const vp = proxy<ObjectShape>({ ...medium })
 
-					return raw ? JSON.parse(raw) : null
-				},
-				setItem: (name, value) => {
-					mockStorage.setItem(name, JSON.stringify(value))
-				},
-				removeItem: (name) => {
-					mockStorage.removeItem(name)
-				},
-			},
-		}),
-	)
+		let i = 0
 
-	const vp = proxy<ObjectShape>({ ...medium })
-
-	let i = 0
-
-	bench
-		.add('gjendje (scope: local)', () => {
-			gj.set({ ...medium, field0: `updated-${++i}` })
-			gj.get()
-		})
-		.add('zustand (persist)', () => {
-			zStore.setState({ field0: `updated-${++i}` })
-			zStore.getState()
-		})
-		.add('valtio (hydrated)', () => {
-			vp.field0 = `updated-${++i}`
-			valtioSnapshot(vp)
-		})
-
-	await bench.run()
-
-	console.log('── Storage Read After Write: Medium Object (20 keys) ──')
-
-	printResults(bench)
-}
+		bench
+			.add('gjendje (scope: local)', () => {
+				gj.set({ ...medium, field0: `updated-${++i}` })
+				gj.get()
+			})
+			.add('zustand (persist)', () => {
+				zStore.setState({ field0: `updated-${++i}` })
+				zStore.getState()
+			})
+			.add('valtio (hydrated)', () => {
+				vp.field0 = `updated-${++i}`
+				valtioSnapshot(vp)
+			})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // Benchmark: Rapid reads between occasional writes
 // ---------------------------------------------------------------------------
 
-async function benchManyReadsFewWrites() {
-	const bench = new Bench({ time: 1000, warmupTime: 200 })
+const manyReadsSuite = defineSuite('many-reads', {
+	'100 Reads per 1 Write: Medium Object (20 keys)': (bench) => {
+		const READS_PER_WRITE = 100
 
-	const READS_PER_WRITE = 100
+		const medium = makeObject(20)
 
-	const medium = makeObject(20)
+		const gj = state(uniqueKey('stor-ratio'), { default: medium, scope: 'local' })
 
-	const gj = state(uniqueKey('stor-ratio'), { default: medium, scope: 'local' })
+		const zStore = createZustandStore(
+			persist<ObjectShape>(() => ({ ...medium }), {
+				name: uniqueKey('z-stor-ratio'),
+				storage: makeZustandPersistStorage(),
+			}),
+		)
 
-	const zStore = createZustandStore(
-		persist<ObjectShape>(() => ({ ...medium }), {
-			name: uniqueKey('z-stor-ratio'),
-			storage: {
-				getItem: (name) => {
-					const raw = mockStorage.getItem(name)
+		const vp = proxy<ObjectShape>({ ...medium })
 
-					return raw ? JSON.parse(raw) : null
-				},
-				setItem: (name, value) => {
-					mockStorage.setItem(name, JSON.stringify(value))
-				},
-				removeItem: (name) => {
-					mockStorage.removeItem(name)
-				},
-			},
-		}),
-	)
+		let i = 0
 
-	const vp = proxy<ObjectShape>({ ...medium })
+		bench
+			.add(`gjendje (scope: local) — ${READS_PER_WRITE} reads per write`, () => {
+				gj.set({ ...medium, field0: `v-${++i}` })
 
-	let i = 0
+				for (let r = 0; r < READS_PER_WRITE; r++) {
+					gj.get()
+				}
+			})
+			.add(`zustand (persist) — ${READS_PER_WRITE} reads per write`, () => {
+				zStore.setState({ field0: `v-${++i}` })
 
-	bench
-		.add(`gjendje (scope: local) — ${READS_PER_WRITE} reads per write`, () => {
-			gj.set({ ...medium, field0: `v-${++i}` })
+				for (let r = 0; r < READS_PER_WRITE; r++) {
+					zStore.getState()
+				}
+			})
+			.add(`valtio (hydrated) — ${READS_PER_WRITE} reads per write`, () => {
+				vp.field0 = `v-${++i}`
 
-			for (let r = 0; r < READS_PER_WRITE; r++) {
-				gj.get()
-			}
-		})
-		.add(`zustand (persist) — ${READS_PER_WRITE} reads per write`, () => {
-			zStore.setState({ field0: `v-${++i}` })
-
-			for (let r = 0; r < READS_PER_WRITE; r++) {
-				zStore.getState()
-			}
-		})
-		.add(`valtio (hydrated) — ${READS_PER_WRITE} reads per write`, () => {
-			vp.field0 = `v-${++i}`
-
-			for (let r = 0; r < READS_PER_WRITE; r++) {
-				valtioSnapshot(vp)
-			}
-		})
-
-	await bench.run()
-
-	console.log(`── ${READS_PER_WRITE} Reads per 1 Write: Medium Object (20 keys) ──`)
-
-	printResults(bench)
-}
+				for (let r = 0; r < READS_PER_WRITE; r++) {
+					valtioSnapshot(vp)
+				}
+			})
+	},
+})
 
 // ---------------------------------------------------------------------------
 // Run
 // ---------------------------------------------------------------------------
 
-runSuites('Storage-Backed Read Benchmark: gjendje (local) vs Zustand (persist) vs Valtio', [
-	{ name: 'primitive', fn: benchReadPrimitive },
-	{ name: 'small', fn: benchReadSmallObject },
-	{ name: 'large', fn: benchReadLargeObject },
-	{ name: 'read-after-write', fn: benchReadAfterWrite },
-	{ name: 'many-reads', fn: benchManyReadsFewWrites },
-]).catch(console.error)
+runSuites(
+	'Storage-Backed Read Benchmark: gjendje (local) vs Zustand (persist) vs Valtio',
+	[primitiveSuite, smallSuite, largeSuite, readAfterWriteSuite, manyReadsSuite],
+	'storage-read',
+).catch(console.error)
