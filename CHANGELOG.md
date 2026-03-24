@@ -1,5 +1,15 @@
 # gjendje
 
+## 1.0.6
+
+### Patch Changes
+
+- Add A/B testing framework for benchmarks — save baseline results with `--save`, compare against them with `--compare`, and see ANSI-colored improvement/regression indicators with a configurable noise threshold (default ±5%)
+- Add `defineSuite` helper to reduce benchmark boilerplate (automates Bench creation, running, and result printing)
+- Add `--quick` flag for faster benchmark iteration during development
+- Migrate all 8 benchmark files to use `defineSuite`
+- Add `bench:save` and `bench:compare` npm scripts
+
 ## 1.0.5
 
 ### Patch Changes
