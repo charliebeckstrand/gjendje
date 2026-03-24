@@ -1,4 +1,5 @@
 import { createBase } from './core.js'
+import { safeCall } from './listeners.js'
 import type { BaseInstance, Listener, StateOptions, Unsubscribe } from './types.js'
 import { isRecord } from './utils.js'
 import { addWatcher } from './watchers.js'
@@ -93,61 +94,71 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 		// Single pass: iterate items once, checking all watched keys per item.
 		// This is O(items + keys) instead of the previous O(items × keys).
-		const changedKeys = new Set<PropertyKey>()
-
 		const lengthChanged = next.length !== prevItems.length
 
 		if (lengthChanged) {
 			// Length change implies all watched keys changed — notify all directly
 			for (const [, listeners] of watchers) {
 				for (const listener of listeners) {
-					listener(next)
+					safeCall(listener, next)
 				}
 			}
 
 			prevItems = next
 
 			return
-		} else {
-			const len = next.length
-
-			for (let i = 0; i < len; i++) {
-				const prev = prevItems[i]
-
-				const curr = next[i]
-
-				if (prev === curr) continue
-
-				const p = isRecord(prev) ? prev : undefined
-
-				const n = isRecord(curr) ? curr : undefined
-
-				if (!p || !n) {
-					// Non-object items changed — flag all watched keys
-					for (const watchKey of watchers.keys()) {
-						changedKeys.add(watchKey)
-					}
-
-					break
-				}
-
-				for (const watchKey of watchers.keys()) {
-					if (!changedKeys.has(watchKey) && !Object.is(p[watchKey], n[watchKey])) {
-						changedKeys.add(watchKey)
-					}
-				}
-
-				// Early exit when all keys are flagged
-				if (changedKeys.size === watchers.size) break
-			}
 		}
 
-		for (const watchKey of changedKeys) {
-			const listeners = watchers.get(watchKey)
+		const len = next.length
 
-			if (listeners) {
-				for (const listener of listeners) {
-					listener(next)
+		let changedKeys: Set<PropertyKey> | undefined
+
+		for (let i = 0; i < len; i++) {
+			const prev = prevItems[i]
+
+			const curr = next[i]
+
+			if (prev === curr) continue
+
+			const p = isRecord(prev) ? prev : undefined
+
+			const n = isRecord(curr) ? curr : undefined
+
+			if (!p || !n) {
+				// Non-object items changed — notify all watched keys directly
+				for (const [, listeners] of watchers) {
+					for (const listener of listeners) {
+						safeCall(listener, next)
+					}
+				}
+
+				prevItems = next
+
+				return
+			}
+
+			for (const watchKey of watchers.keys()) {
+				if (changedKeys?.has(watchKey)) continue
+
+				if (!Object.is(p[watchKey], n[watchKey])) {
+					if (!changedKeys) changedKeys = new Set()
+
+					changedKeys.add(watchKey)
+				}
+			}
+
+			// Early exit when all keys are flagged
+			if (changedKeys && changedKeys.size === watchers.size) break
+		}
+
+		if (changedKeys) {
+			for (const watchKey of changedKeys) {
+				const listeners = watchers.get(watchKey)
+
+				if (listeners) {
+					for (const listener of listeners) {
+						safeCall(listener, next)
+					}
 				}
 			}
 		}

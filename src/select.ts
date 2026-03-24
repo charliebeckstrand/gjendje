@@ -1,7 +1,7 @@
 import { notify } from './batch.js'
 import { safeCall } from './listeners.js'
 import type { Listener, ReadonlyInstance, Unsubscribe } from './types.js'
-import { RESOLVED } from './utils.js'
+import { createLazyDestroyed, RESOLVED } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,6 +22,8 @@ export interface SelectOptions {
 // ---------------------------------------------------------------------------
 // Auto-incrementing key counter
 // ---------------------------------------------------------------------------
+
+const NOOP: () => void = () => {}
 
 let selectCounter = 0
 
@@ -58,9 +60,7 @@ export function select<TSource, TResult>(
 
 	let isDestroyed = false
 
-	let _destroyedPromise: Promise<void> | undefined
-
-	let _resolveDestroyed: (() => void) | undefined
+	const lazyDestroyed = createLazyDestroyed()
 
 	function recompute(): TResult {
 		if (!isDirty) return cached
@@ -114,13 +114,7 @@ export function select<TSource, TResult>(
 		get destroyed(): Promise<void> {
 			if (isDestroyed) return RESOLVED
 
-			if (!_destroyedPromise) {
-				_destroyedPromise = new Promise<void>((r) => {
-					_resolveDestroyed = r
-				})
-			}
-
-			return _destroyedPromise
+			return lazyDestroyed.promise
 		},
 
 		get isDestroyed() {
@@ -136,6 +130,8 @@ export function select<TSource, TResult>(
 		},
 
 		subscribe(listener: Listener<TResult>): Unsubscribe {
+			if (isDestroyed) return NOOP
+
 			listenerSet.add(listener)
 
 			return () => {
@@ -152,11 +148,7 @@ export function select<TSource, TResult>(
 
 			listenerSet.clear()
 
-			if (_resolveDestroyed) {
-				_resolveDestroyed()
-			} else {
-				_destroyedPromise = RESOLVED
-			}
+			lazyDestroyed.resolve()
 		},
 	}
 }

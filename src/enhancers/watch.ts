@@ -44,13 +44,11 @@ export function withWatch<TIn extends BaseInstance<any>>(
 
 	// Lazily subscribe to the base instance only when the first watcher is added
 	function ensureSubscription() {
-		if (unsubscribe) return
+		if (unsubscribe || initialized) return
 
-		if (!initialized) {
-			prev = instance.get()
+		initialized = true
 
-			initialized = true
-		}
+		prev = instance.get()
 
 		unsubscribe = instance.subscribe((next) => {
 			try {
@@ -79,7 +77,15 @@ export function withWatch<TIn extends BaseInstance<any>>(
 	result.destroy = () => {
 		watchers?.clear()
 
+		watchers = undefined
+
 		unsubscribe?.()
+
+		unsubscribe = undefined
+
+		initialized = false
+
+		prev = undefined
 
 		instance.destroy()
 	}

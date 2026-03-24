@@ -1,7 +1,7 @@
 import { notify } from './batch.js'
 import { safeCall } from './listeners.js'
 import type { BaseInstance, DepValues, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
-import { RESOLVED } from './utils.js'
+import { createLazyDestroyed, RESOLVED } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,6 +22,8 @@ export interface ComputedOptions {
 // ---------------------------------------------------------------------------
 // Auto-incrementing key counter
 // ---------------------------------------------------------------------------
+
+const NOOP: () => void = () => {}
 
 let computedCounter = 0
 
@@ -61,9 +63,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 	let isDestroyed = false
 
-	let _destroyedPromise: Promise<void> | undefined
-
-	let _resolveDestroyed: (() => void) | undefined
+	const lazyDestroyed = createLazyDestroyed()
 
 	// Reuse a single array to avoid allocation on every recomputation
 	const depValues = new Array(deps.length) as DepValues<TDeps>
@@ -154,13 +154,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		get destroyed(): Promise<void> {
 			if (isDestroyed) return RESOLVED
 
-			if (!_destroyedPromise) {
-				_destroyedPromise = new Promise<void>((r) => {
-					_resolveDestroyed = r
-				})
-			}
-
-			return _destroyedPromise
+			return lazyDestroyed.promise
 		},
 
 		get isDestroyed() {
@@ -176,6 +170,8 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		subscribe(listener: Listener<TResult>): Unsubscribe {
+			if (isDestroyed) return NOOP
+
 			listenerSet.add(listener)
 
 			return () => {
@@ -194,11 +190,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 			listenerSet.clear()
 
-			if (_resolveDestroyed) {
-				_resolveDestroyed()
-			} else {
-				_destroyedPromise = RESOLVED
-			}
+			lazyDestroyed.resolve()
 		},
 	}
 }

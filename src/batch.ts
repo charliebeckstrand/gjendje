@@ -69,7 +69,11 @@ function flush(): void {
 			for (let i = 0; i < current.length; i++) {
 				const fn = current[i]
 
-				if (fn) fn()
+				try {
+					if (fn) fn()
+				} catch (err) {
+					console.error('[gjendje] Notification threw:', err)
+				}
 			}
 		} finally {
 			depth--
