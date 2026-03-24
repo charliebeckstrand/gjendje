@@ -14,14 +14,14 @@ Every storage backend implements the same `Adapter<T>` interface: `get()`, `set(
 
 Six scopes are provided out of the box:
 
-| Scope | Storage | Persists | Cross-tab |
-|-------|---------|----------|-----------|
-| `memory` | RAM | No | No |
-| `local` | localStorage | Yes | Yes |
-| `session` | sessionStorage | Tab lifetime | No |
-| `url` | URLSearchParams | In address bar | Yes |
-| `bucket` | Storage Buckets API | Configurable expiry | Yes |
-| `server` | AsyncLocalStorage | Per-request | No |
+| Scope | Storage | Persists |
+|-------|---------|----------|
+| `memory` | RAM | No |
+| `local` | localStorage | Yes |
+| `session` | sessionStorage | Tab lifetime |
+| `url` | URLSearchParams | In address bar |
+| `bucket` | Storage Buckets API | Configurable expiry |
+| `server` | AsyncLocalStorage | Per-request |
 
 ### State instances
 
