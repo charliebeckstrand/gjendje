@@ -230,7 +230,11 @@ class StateImpl<T> implements StateInstance<T> {
 
 		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
 			for (const hook of s.changeHandlers) {
-				hook(next, prev)
+				try {
+					hook(next, prev)
+				} catch (err) {
+					console.error('[gjendje] Change handler threw:', err)
+				}
 			}
 		}
 

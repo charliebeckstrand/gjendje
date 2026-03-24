@@ -25,6 +25,8 @@ export interface ComputedOptions {
 
 const NOOP: () => void = () => {}
 
+const TO_VOID: () => undefined = () => undefined
+
 let computedCounter = 0
 
 // ---------------------------------------------------------------------------
@@ -121,19 +123,43 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	// Short-circuit promise allocation when all deps are memory-scoped.
 	// Memory deps always return RESOLVED for ready/hydrated/settled,
 	// so we can skip Promise.all entirely in the common case.
-	const allDepsImmediate = deps.every((d) => d.ready === RESOLVED)
+	let readyPromise: Promise<void> = RESOLVED
 
-	const readyPromise = allDepsImmediate
-		? RESOLVED
-		: Promise.all(deps.map((d) => d.ready)).then(() => undefined)
+	let hydratedPromise: Promise<void> = RESOLVED
 
-	const hydratedPromise = allDepsImmediate
-		? RESOLVED
-		: Promise.all(deps.map((d) => d.hydrated)).then(() => undefined)
+	let settledPromise: Promise<void> = RESOLVED
 
-	const settledPromise = allDepsImmediate
-		? RESOLVED
-		: Promise.all(deps.map((d) => d.settled)).then(() => undefined)
+	let hasAsyncDep = false
+
+	for (let i = 0; i < depLen; i++) {
+		if ((deps[i] as BaseInstance<unknown>).ready !== RESOLVED) {
+			hasAsyncDep = true
+
+			break
+		}
+	}
+
+	if (hasAsyncDep) {
+		const readyArr = new Array(depLen)
+
+		const hydratedArr = new Array(depLen)
+
+		const settledArr = new Array(depLen)
+
+		for (let i = 0; i < depLen; i++) {
+			const dep = deps[i] as BaseInstance<unknown>
+
+			readyArr[i] = dep.ready
+			hydratedArr[i] = dep.hydrated
+			settledArr[i] = dep.settled
+		}
+
+		readyPromise = Promise.all(readyArr).then(TO_VOID)
+
+		hydratedPromise = Promise.all(hydratedArr).then(TO_VOID)
+
+		settledPromise = Promise.all(settledArr).then(TO_VOID)
+	}
 
 	return {
 		key: instanceKey,
