@@ -2,6 +2,10 @@
 
 # gjendje
 
+![GitHub License](https://img.shields.io/github/license/charliebeckstrand/gjendje)
+![NPM Version](https://img.shields.io/npm/v/gjendje)
+
+
 Replaces storage backends with a unified API. Choose where state lives. The rest is handled.
 
 [Learn more](https://github.com/charliebeckstrand/gjendje/blob/main/docs/summary.md)
