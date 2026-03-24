@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- Remove benchmark-only devDependencies (zustand, valtio, tsx) to reduce published dependency footprint.
+
+## 1.0.10
+
+### Patch Changes
+
 - Fix supply chain security: upgrade happy-dom from v14 to v20 to resolve 2 critical CVEs (GHSA-96g7-g7g9-jxw8, GHSA-37j7-fg3j-429f). Remove benchmark-only devDependencies (zustand, valtio, tsx) to reduce published dependency footprint. Add SECURITY.md with vulnerability reporting guidelines.
 
 ## 1.0.9
