@@ -61,6 +61,10 @@ export function previous<T>(
 
 	let isDestroyed = false
 
+	const notifyListeners = () => {
+		listeners.notify(prev)
+	}
+
 	const unsubscribe = source.subscribe((next) => {
 		const old = prev
 
@@ -68,7 +72,7 @@ export function previous<T>(
 		current = next
 
 		if (old !== prev) {
-			notify(() => listeners.notify(prev))
+			notify(notifyListeners)
 		}
 	})
 

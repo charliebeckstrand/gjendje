@@ -68,14 +68,17 @@ export function withHistory<T>(
 
 		const current = instance.get()
 
-		const value = from.pop() as T
-
-		to.push(current)
+		const value = from[from.length - 1] as T
 
 		isNavigating = true
 
 		try {
 			instance.set(value)
+
+			// Only mutate stacks after successful set
+			from.pop()
+
+			to.push(current)
 		} finally {
 			isNavigating = false
 		}

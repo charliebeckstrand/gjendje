@@ -70,7 +70,11 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 			;(depValues as unknown[])[i] = dep.get()
 		}
 
-		cleanup = fn(depValues)
+		try {
+			cleanup = fn(depValues)
+		} catch (err) {
+			console.error('[gjendje] Effect callback threw:', err)
+		}
 	}
 
 	// Subscribe to all dependencies — single shared callback avoids per-dep closures

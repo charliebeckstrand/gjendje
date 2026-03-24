@@ -15,6 +15,19 @@ export function safeCall<T>(listener: Listener<T>, value: T): void {
 }
 
 /**
+ * Like safeCall but for two-argument change handlers.
+ * Extracted so V8 can optimize the caller independently
+ * (keeping try/catch out of hot methods like MemoryStateImpl.set).
+ */
+export function safeCallChange<T>(handler: (next: T, prev: T) => void, next: T, prev: T): void {
+	try {
+		handler(next, prev)
+	} catch (err) {
+		console.error('[gjendje] Change handler threw:', err)
+	}
+}
+
+/**
  * Create a lightweight listener set with subscribe, notify, and clear.
  * Used internally by adapters and computed to avoid duplicating
  * the same Set + iterate + add/delete boilerplate.

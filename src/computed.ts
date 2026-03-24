@@ -1,7 +1,7 @@
 import { notify } from './batch.js'
 import { safeCall } from './listeners.js'
 import type { BaseInstance, DepValues, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
-import { RESOLVED } from './utils.js'
+import { createLazyDestroyed, RESOLVED } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,6 +22,10 @@ export interface ComputedOptions {
 // ---------------------------------------------------------------------------
 // Auto-incrementing key counter
 // ---------------------------------------------------------------------------
+
+const NOOP: () => void = () => {}
+
+const TO_VOID: () => undefined = () => undefined
 
 let computedCounter = 0
 
@@ -53,6 +57,12 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 ): ComputedInstance<TResult> {
 	const listenerSet = new Set<Listener<TResult>>()
 
+	// Fast path: when there is exactly one listener (common in chains),
+	// call it directly instead of iterating the Set (avoids iterator allocation).
+	let singleListener: Listener<TResult> | undefined
+
+	let listenerCount = 0
+
 	const instanceKey = options?.key ?? `computed:${computedCounter++}`
 
 	let cached: TResult
@@ -61,9 +71,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 	let isDestroyed = false
 
-	let _destroyedPromise: Promise<void> | undefined
-
-	let _resolveDestroyed: (() => void) | undefined
+	const lazyDestroyed = createLazyDestroyed()
 
 	// Reuse a single array to avoid allocation on every recomputation
 	const depValues = new Array(deps.length) as DepValues<TDeps>
@@ -96,6 +104,12 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		// recomputed value is identical to the previous cached value.
 		if (value === prev) return
 
+		if (singleListener !== undefined) {
+			safeCall(singleListener, value)
+
+			return
+		}
+
 		for (const l of listenerSet) {
 			safeCall(l, value)
 		}
@@ -121,19 +135,43 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	// Short-circuit promise allocation when all deps are memory-scoped.
 	// Memory deps always return RESOLVED for ready/hydrated/settled,
 	// so we can skip Promise.all entirely in the common case.
-	const allDepsImmediate = deps.every((d) => d.ready === RESOLVED)
+	let readyPromise: Promise<void> = RESOLVED
 
-	const readyPromise = allDepsImmediate
-		? RESOLVED
-		: Promise.all(deps.map((d) => d.ready)).then(() => undefined)
+	let hydratedPromise: Promise<void> = RESOLVED
 
-	const hydratedPromise = allDepsImmediate
-		? RESOLVED
-		: Promise.all(deps.map((d) => d.hydrated)).then(() => undefined)
+	let settledPromise: Promise<void> = RESOLVED
 
-	const settledPromise = allDepsImmediate
-		? RESOLVED
-		: Promise.all(deps.map((d) => d.settled)).then(() => undefined)
+	let hasAsyncDep = false
+
+	for (let i = 0; i < depLen; i++) {
+		if ((deps[i] as BaseInstance<unknown>).ready !== RESOLVED) {
+			hasAsyncDep = true
+
+			break
+		}
+	}
+
+	if (hasAsyncDep) {
+		const readyArr = new Array(depLen)
+
+		const hydratedArr = new Array(depLen)
+
+		const settledArr = new Array(depLen)
+
+		for (let i = 0; i < depLen; i++) {
+			const dep = deps[i] as BaseInstance<unknown>
+
+			readyArr[i] = dep.ready
+			hydratedArr[i] = dep.hydrated
+			settledArr[i] = dep.settled
+		}
+
+		readyPromise = Promise.all(readyArr).then(TO_VOID)
+
+		hydratedPromise = Promise.all(hydratedArr).then(TO_VOID)
+
+		settledPromise = Promise.all(settledArr).then(TO_VOID)
+	}
 
 	return {
 		key: instanceKey,
@@ -154,13 +192,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		get destroyed(): Promise<void> {
 			if (isDestroyed) return RESOLVED
 
-			if (!_destroyedPromise) {
-				_destroyedPromise = new Promise<void>((r) => {
-					_resolveDestroyed = r
-				})
-			}
-
-			return _destroyedPromise
+			return lazyDestroyed.promise
 		},
 
 		get isDestroyed() {
@@ -176,10 +208,24 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		subscribe(listener: Listener<TResult>): Unsubscribe {
+			if (isDestroyed) return NOOP
+
 			listenerSet.add(listener)
+
+			listenerCount++
+
+			singleListener = listenerCount === 1 ? listener : undefined
 
 			return () => {
 				listenerSet.delete(listener)
+
+				listenerCount--
+
+				if (listenerCount === 1) {
+					singleListener = listenerSet.values().next().value
+				} else {
+					singleListener = undefined
+				}
 			}
 		},
 
@@ -194,11 +240,11 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 			listenerSet.clear()
 
-			if (_resolveDestroyed) {
-				_resolveDestroyed()
-			} else {
-				_destroyedPromise = RESOLVED
-			}
+			listenerCount = 0
+
+			singleListener = undefined
+
+			lazyDestroyed.resolve()
 		},
 	}
 }

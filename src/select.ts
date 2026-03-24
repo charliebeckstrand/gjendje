@@ -1,7 +1,7 @@
 import { notify } from './batch.js'
 import { safeCall } from './listeners.js'
 import type { Listener, ReadonlyInstance, Unsubscribe } from './types.js'
-import { RESOLVED } from './utils.js'
+import { createLazyDestroyed, RESOLVED } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,6 +22,8 @@ export interface SelectOptions {
 // ---------------------------------------------------------------------------
 // Auto-incrementing key counter
 // ---------------------------------------------------------------------------
+
+const NOOP: () => void = () => {}
 
 let selectCounter = 0
 
@@ -50,6 +52,10 @@ export function select<TSource, TResult>(
 ): SelectInstance<TResult> {
 	const listenerSet = new Set<Listener<TResult>>()
 
+	let singleListener: Listener<TResult> | undefined
+
+	let listenerCount = 0
+
 	const instanceKey = options?.key ?? `select:${selectCounter++}`
 
 	let cached: TResult
@@ -58,9 +64,7 @@ export function select<TSource, TResult>(
 
 	let isDestroyed = false
 
-	let _destroyedPromise: Promise<void> | undefined
-
-	let _resolveDestroyed: (() => void) | undefined
+	const lazyDestroyed = createLazyDestroyed()
 
 	function recompute(): TResult {
 		if (!isDirty) return cached
@@ -78,6 +82,12 @@ export function select<TSource, TResult>(
 		const value = recompute()
 
 		if (value === prev) return
+
+		if (singleListener !== undefined) {
+			safeCall(singleListener, value)
+
+			return
+		}
 
 		for (const l of listenerSet) {
 			safeCall(l, value)
@@ -114,13 +124,7 @@ export function select<TSource, TResult>(
 		get destroyed(): Promise<void> {
 			if (isDestroyed) return RESOLVED
 
-			if (!_destroyedPromise) {
-				_destroyedPromise = new Promise<void>((r) => {
-					_resolveDestroyed = r
-				})
-			}
-
-			return _destroyedPromise
+			return lazyDestroyed.promise
 		},
 
 		get isDestroyed() {
@@ -136,10 +140,24 @@ export function select<TSource, TResult>(
 		},
 
 		subscribe(listener: Listener<TResult>): Unsubscribe {
+			if (isDestroyed) return NOOP
+
 			listenerSet.add(listener)
+
+			listenerCount++
+
+			singleListener = listenerCount === 1 ? listener : undefined
 
 			return () => {
 				listenerSet.delete(listener)
+
+				listenerCount--
+
+				if (listenerCount === 1) {
+					singleListener = listenerSet.values().next().value
+				} else {
+					singleListener = undefined
+				}
 			}
 		},
 
@@ -152,11 +170,11 @@ export function select<TSource, TResult>(
 
 			listenerSet.clear()
 
-			if (_resolveDestroyed) {
-				_resolveDestroyed()
-			} else {
-				_destroyedPromise = RESOLVED
-			}
+			listenerCount = 0
+
+			singleListener = undefined
+
+			lazyDestroyed.resolve()
 		},
 	}
 }

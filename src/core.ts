@@ -6,7 +6,7 @@ import { createUrlAdapter } from './adapters/url.js'
 import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
 import { getConfig, log, reportError } from './config.js'
-import { safeCall } from './listeners.js'
+import { safeCall, safeCallChange } from './listeners.js'
 import { getRegistered, registerNew, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
 import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
@@ -230,7 +230,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
 			for (const hook of s.changeHandlers) {
-				hook(next, prev)
+				safeCallChange(hook, next, prev)
 			}
 		}
 
@@ -360,12 +360,10 @@ class StateImpl<T> implements StateInstance<T> {
 
 				const partialRec = partial as Record<string, unknown>
 
-				const prevKeys = new Set(Object.keys(prevRec))
-
 				const filtered: Record<string, unknown> = {}
 
 				for (const key of Object.keys(partialRec)) {
-					if (prevKeys.has(key)) {
+					if (Object.hasOwn(prevRec, key)) {
 						filtered[key] = partialRec[key]
 					} else {
 						log('warn', `patch("${this.key}") ignored unknown key "${key}" (strict mode).`)
@@ -515,8 +513,6 @@ const MEMORY_MUTABLE_SHIM: MutableState<unknown> = {
 class MemoryStateImpl<T> extends StateImpl<T> {
 	private _c: MemoryCore<T>
 
-	private _hasIsEqual: boolean
-
 	constructor(
 		key: string,
 		rKey: string,
@@ -540,8 +536,6 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 			notifyFn: undefined,
 			ext: undefined,
 		}
-
-		this._hasIsEqual = options.isEqual !== undefined
 	}
 
 	override get(): T {
@@ -585,7 +579,7 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 			}
 		}
 
-		if (this._hasIsEqual && this._options.isEqual?.(next, prev)) return
+		if (this._options.isEqual?.(next, prev)) return
 
 		c.current = next
 
@@ -595,7 +589,7 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 
 		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
 			for (const hook of ext.changeHandlers) {
-				hook(next, prev)
+				safeCallChange(hook, next, prev)
 			}
 		}
 
@@ -654,7 +648,7 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 			}
 		}
 
-		if (this._hasIsEqual && this._options.isEqual?.(next, prev)) return
+		if (this._options.isEqual?.(next, prev)) return
 
 		c.current = next
 
@@ -664,7 +658,7 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 
 		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
 			for (const hook of ext.changeHandlers) {
-				hook(next, prev)
+				safeCallChange(hook, next, prev)
 			}
 		}
 
@@ -775,6 +769,7 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 		}
 
 		c.listeners?.clear()
+		c.notifyFn = undefined
 
 		if (this._rKey) unregisterByKey(this._rKey)
 

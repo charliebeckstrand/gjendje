@@ -1,7 +1,10 @@
 import { createBase } from './core.js'
+import { safeCall } from './listeners.js'
 import type { BaseInstance, Listener, StateOptions, Unsubscribe } from './types.js'
 import { isRecord } from './utils.js'
 import { addWatcher } from './watchers.js'
+
+type WatcherMap<T> = Map<PropertyKey, Set<Listener<T[]>>>
 
 // ---------------------------------------------------------------------------
 // Types
@@ -79,37 +82,50 @@ export interface CollectionInstance<T> extends BaseInstance<T[]> {
 export function collection<T>(key: string, options: StateOptions<T[]>): CollectionInstance<T> {
 	const base: BaseInstance<T[]> = createBase(key, options)
 
-	// Per-key watchers — fires when that key's value changes on any item
-	const watchers = new Map<PropertyKey, Set<Listener<T[]>>>()
+	// Per-key watchers — lazily allocated on first watch() to avoid
+	// Map + subscription overhead for collections that never use watch().
+	let watchers: WatcherMap<T> | undefined
 
-	let prevItems = base.get()
+	let prevItems: T[]
 
-	const unsubscribe = base.subscribe((next) => {
-		if (watchers.size === 0) {
-			prevItems = next
+	let unsubscribe: Unsubscribe | undefined
 
-			return
-		}
+	function ensureWatchers(): WatcherMap<T> {
+		if (watchers) return watchers
 
-		// Single pass: iterate items once, checking all watched keys per item.
-		// This is O(items + keys) instead of the previous O(items × keys).
-		const changedKeys = new Set<PropertyKey>()
+		const w: WatcherMap<T> = new Map()
 
-		const lengthChanged = next.length !== prevItems.length
+		watchers = w
 
-		if (lengthChanged) {
-			// Length change implies all watched keys changed — notify all directly
-			for (const [, listeners] of watchers) {
-				for (const listener of listeners) {
-					listener(next)
-				}
+		prevItems = base.get()
+
+		unsubscribe = base.subscribe((next) => {
+			if (w.size === 0) {
+				prevItems = next
+
+				return
 			}
 
-			prevItems = next
+			// Single pass: iterate items once, checking all watched keys per item.
+			// This is O(items + keys) instead of the previous O(items × keys).
+			const lengthChanged = next.length !== prevItems.length
 
-			return
-		} else {
+			if (lengthChanged) {
+				// Length change implies all watched keys changed — notify all directly
+				for (const [, listeners] of w) {
+					for (const listener of listeners) {
+						safeCall(listener, next)
+					}
+				}
+
+				prevItems = next
+
+				return
+			}
+
 			const len = next.length
+
+			let changedKeys: Set<PropertyKey> | undefined
 
 			for (let i = 0; i < len; i++) {
 				const prev = prevItems[i]
@@ -123,37 +139,49 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 				const n = isRecord(curr) ? curr : undefined
 
 				if (!p || !n) {
-					// Non-object items changed — flag all watched keys
-					for (const watchKey of watchers.keys()) {
-						changedKeys.add(watchKey)
+					// Non-object items changed — notify all watched keys directly
+					for (const [, listeners] of w) {
+						for (const listener of listeners) {
+							safeCall(listener, next)
+						}
 					}
 
-					break
+					prevItems = next
+
+					return
 				}
 
-				for (const watchKey of watchers.keys()) {
-					if (!changedKeys.has(watchKey) && !Object.is(p[watchKey], n[watchKey])) {
+				for (const watchKey of w.keys()) {
+					if (changedKeys?.has(watchKey)) continue
+
+					if (!Object.is(p[watchKey], n[watchKey])) {
+						if (!changedKeys) changedKeys = new Set()
+
 						changedKeys.add(watchKey)
 					}
 				}
 
 				// Early exit when all keys are flagged
-				if (changedKeys.size === watchers.size) break
+				if (changedKeys && changedKeys.size === w.size) break
 			}
-		}
 
-		for (const watchKey of changedKeys) {
-			const listeners = watchers.get(watchKey)
+			if (changedKeys) {
+				for (const watchKey of changedKeys) {
+					const listeners = w.get(watchKey)
 
-			if (listeners) {
-				for (const listener of listeners) {
-					listener(next)
+					if (listeners) {
+						for (const listener of listeners) {
+							safeCall(listener, next)
+						}
+					}
 				}
 			}
-		}
 
-		prevItems = next
-	})
+			prevItems = next
+		})
+
+		return w
+	}
 
 	// Delegate to base via prototype to inherit all BaseInstance methods and
 	// getters (ready, settled, isDestroyed, etc.) without manual forwarding.
@@ -161,7 +189,7 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 	const col = Object.create(base) as CollectionInstance<T>
 
 	col.watch = (watchKey: PropertyKey, listener: Listener<T[]>) => {
-		return addWatcher(watchers, watchKey, listener)
+		return addWatcher(ensureWatchers(), watchKey, listener)
 	}
 
 	col.add = (...items: T[]) => {
@@ -254,9 +282,9 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 	})
 
 	col.destroy = () => {
-		watchers.clear()
+		watchers?.clear()
 
-		unsubscribe()
+		unsubscribe?.()
 
 		base.destroy()
 	}
