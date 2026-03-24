@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- ae0427e: Add package summary documentation covering what gjendje does, how it works, and how it compares to competing state management libraries
+
+## 1.0.7
+
+### Patch Changes
+
 - Add package summary documentation (`docs/summary.md`) covering what gjendje does, how it works architecturally, and how it compares to competing state management libraries (Zustand, Redux, Jotai, Valtio, Signals)
 
 ## 1.0.6
