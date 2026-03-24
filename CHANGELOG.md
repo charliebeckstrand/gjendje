@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Fix supply chain security: upgrade happy-dom from v14 to v20 to resolve 2 critical CVEs (GHSA-96g7-g7g9-jxw8, GHSA-37j7-fg3j-429f). Add SECURITY.md with vulnerability reporting guidelines.
+- Fix supply chain security: upgrade happy-dom from v14 to v20 to resolve 2 critical CVEs (GHSA-96g7-g7g9-jxw8, GHSA-37j7-fg3j-429f). Remove benchmark-only devDependencies (zustand, valtio, tsx) to reduce published dependency footprint. Guard prepare script against install-time execution. Add SECURITY.md with vulnerability reporting guidelines.
 
 ## 1.0.8
 
