@@ -6,3 +6,4 @@ coverage/
 .lefthook/
 package-lock.json
 .claude/
+benchmarks/.baseline/
