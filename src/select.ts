@@ -52,6 +52,10 @@ export function select<TSource, TResult>(
 ): SelectInstance<TResult> {
 	const listenerSet = new Set<Listener<TResult>>()
 
+	let singleListener: Listener<TResult> | undefined
+
+	let listenerCount = 0
+
 	const instanceKey = options?.key ?? `select:${selectCounter++}`
 
 	let cached: TResult
@@ -78,6 +82,12 @@ export function select<TSource, TResult>(
 		const value = recompute()
 
 		if (value === prev) return
+
+		if (singleListener !== undefined) {
+			safeCall(singleListener, value)
+
+			return
+		}
 
 		for (const l of listenerSet) {
 			safeCall(l, value)
@@ -134,8 +144,20 @@ export function select<TSource, TResult>(
 
 			listenerSet.add(listener)
 
+			listenerCount++
+
+			singleListener = listenerCount === 1 ? listener : undefined
+
 			return () => {
 				listenerSet.delete(listener)
+
+				listenerCount--
+
+				if (listenerCount === 1) {
+					singleListener = listenerSet.values().next().value
+				} else {
+					singleListener = undefined
+				}
 			}
 		},
 
@@ -147,6 +169,10 @@ export function select<TSource, TResult>(
 			unsubscribe()
 
 			listenerSet.clear()
+
+			listenerCount = 0
+
+			singleListener = undefined
 
 			lazyDestroyed.resolve()
 		},

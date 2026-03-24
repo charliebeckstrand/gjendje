@@ -57,6 +57,12 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 ): ComputedInstance<TResult> {
 	const listenerSet = new Set<Listener<TResult>>()
 
+	// Fast path: when there is exactly one listener (common in chains),
+	// call it directly instead of iterating the Set (avoids iterator allocation).
+	let singleListener: Listener<TResult> | undefined
+
+	let listenerCount = 0
+
 	const instanceKey = options?.key ?? `computed:${computedCounter++}`
 
 	let cached: TResult
@@ -97,6 +103,12 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		// once per intermediate. Skip redundant notifications when the
 		// recomputed value is identical to the previous cached value.
 		if (value === prev) return
+
+		if (singleListener !== undefined) {
+			safeCall(singleListener, value)
+
+			return
+		}
 
 		for (const l of listenerSet) {
 			safeCall(l, value)
@@ -200,8 +212,20 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 			listenerSet.add(listener)
 
+			listenerCount++
+
+			singleListener = listenerCount === 1 ? listener : undefined
+
 			return () => {
 				listenerSet.delete(listener)
+
+				listenerCount--
+
+				if (listenerCount === 1) {
+					singleListener = listenerSet.values().next().value
+				} else {
+					singleListener = undefined
+				}
 			}
 		},
 
@@ -215,6 +239,10 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 			}
 
 			listenerSet.clear()
+
+			listenerCount = 0
+
+			singleListener = undefined
 
 			lazyDestroyed.resolve()
 		},
