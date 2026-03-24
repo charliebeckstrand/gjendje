@@ -99,8 +99,8 @@ Signal-based libraries provide fine-grained reactivity at the framework level. T
 ### What's unique to gjendje
 
 - **Storage as a first-class axis** — No other library treats the choice of storage backend as a core API concept with six interchangeable scopes
-- **Built-in migration and validation** — Versioned schema migration and value validation are part of the core, not plugins
 - **Instance registry with singleton semantics** — Same key + scope always returns the same instance
 - **Lifecycle promises** (`ready`, `settled`, `hydrated`, `destroyed`) — Fine-grained control over async initialization and cleanup
 - **Storage Buckets API support** — First-class support for expiry-based and quota-managed storage with graceful fallback
 - **Performance-specialized memory path** — Dedicated fast path for the most common scope without sacrificing the unified API
+- **Built-in migration and validation** — Versioned schema migration and value validation are part of the core, not plugins
