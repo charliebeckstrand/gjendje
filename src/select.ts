@@ -1,7 +1,7 @@
 import { notify } from './batch.js'
-import { createListeners } from './listeners.js'
-import type { ReadonlyInstance } from './types.js'
-import { createLazyDestroyed } from './utils.js'
+import { safeCall } from './listeners.js'
+import type { Listener, ReadonlyInstance, Unsubscribe } from './types.js'
+import { RESOLVED } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,7 +48,7 @@ export function select<TSource, TResult>(
 	fn: (value: TSource) => TResult,
 	options?: SelectOptions,
 ): SelectInstance<TResult> {
-	const listeners = createListeners<TResult>()
+	const listenerSet = new Set<Listener<TResult>>()
 
 	const instanceKey = options?.key ?? `select:${selectCounter++}`
 
@@ -57,6 +57,10 @@ export function select<TSource, TResult>(
 	let isDirty = true
 
 	let isDestroyed = false
+
+	let _destroyedPromise: Promise<void> | undefined
+
+	let _resolveDestroyed: (() => void) | undefined
 
 	function recompute(): TResult {
 		if (!isDirty) return cached
@@ -70,11 +74,14 @@ export function select<TSource, TResult>(
 
 	const notifyListeners = () => {
 		const prev = cached
+
 		const value = recompute()
 
 		if (value === prev) return
 
-		listeners.notify(value)
+		for (const l of listenerSet) {
+			safeCall(l, value)
+		}
 	}
 
 	const markDirty = () => {
@@ -87,8 +94,6 @@ export function select<TSource, TResult>(
 
 	// Compute initial value eagerly so first get() is synchronous
 	recompute()
-
-	const lazyDestroyed = createLazyDestroyed()
 
 	return {
 		key: instanceKey,
@@ -107,7 +112,15 @@ export function select<TSource, TResult>(
 		},
 
 		get destroyed(): Promise<void> {
-			return lazyDestroyed.promise
+			if (isDestroyed) return RESOLVED
+
+			if (!_destroyedPromise) {
+				_destroyedPromise = new Promise<void>((r) => {
+					_resolveDestroyed = r
+				})
+			}
+
+			return _destroyedPromise
 		},
 
 		get isDestroyed() {
@@ -122,7 +135,13 @@ export function select<TSource, TResult>(
 			return cached
 		},
 
-		subscribe: listeners.subscribe,
+		subscribe(listener: Listener<TResult>): Unsubscribe {
+			listenerSet.add(listener)
+
+			return () => {
+				listenerSet.delete(listener)
+			}
+		},
 
 		destroy() {
 			if (isDestroyed) return
@@ -131,9 +150,13 @@ export function select<TSource, TResult>(
 
 			unsubscribe()
 
-			listeners.clear()
+			listenerSet.clear()
 
-			lazyDestroyed.resolve()
+			if (_resolveDestroyed) {
+				_resolveDestroyed()
+			} else {
+				_destroyedPromise = RESOLVED
+			}
 		},
 	}
 }

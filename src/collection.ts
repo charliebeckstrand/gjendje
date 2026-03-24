@@ -165,28 +165,28 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 	}
 
 	col.add = (...items: T[]) => {
-		base.set((prev) => [...prev, ...items])
+		base.set(base.get().concat(items))
 	}
 
 	col.remove = (predicate: (item: T) => boolean, options?: { one?: boolean }) => {
+		const prev = base.get()
+
 		if (options?.one) {
-			base.set((prev) => {
-				const idx = prev.findIndex(predicate)
+			const idx = prev.findIndex(predicate)
 
-				if (idx === -1) return prev
+			if (idx === -1) return
 
-				const next = prev.slice()
+			const next = prev.slice()
 
-				next.splice(idx, 1)
+			next.splice(idx, 1)
 
-				return next
-			})
+			base.set(next)
 		} else {
-			base.set((prev) => {
-				const next = prev.filter((item) => !predicate(item))
+			const next = prev.filter((item) => !predicate(item))
 
-				return next.length === prev.length ? prev : next
-			})
+			if (next.length !== prev.length) {
+				base.set(next)
+			}
 		}
 	}
 
@@ -195,36 +195,38 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 		patch: Partial<T> | ((item: T) => T),
 		options?: { one?: boolean },
 	) => {
-		const applyPatch = typeof patch === 'function' ? patch : (item: T): T => ({ ...item, ...patch })
+		const prev = base.get()
+
+		const isFn = typeof patch === 'function'
 
 		if (options?.one) {
-			base.set((prev) => {
-				const idx = prev.findIndex(predicate)
+			const idx = prev.findIndex(predicate)
 
-				if (idx === -1) return prev
+			if (idx === -1) return
 
-				const next = prev.slice()
+			const next = prev.slice()
 
-				next[idx] = applyPatch(prev[idx] as T)
+			next[idx] = isFn
+				? (patch as (item: T) => T)(prev[idx] as T)
+				: ({ ...prev[idx], ...patch } as T)
 
-				return next
-			})
+			base.set(next)
 		} else {
-			base.set((prev) => {
-				let next: T[] | undefined
+			let next: T[] | undefined
 
-				for (let i = 0; i < prev.length; i++) {
-					const item = prev[i] as T
+			for (let i = 0; i < prev.length; i++) {
+				const item = prev[i] as T
 
-					if (predicate(item)) {
-						if (!next) next = prev.slice()
+				if (predicate(item)) {
+					if (!next) next = prev.slice()
 
-						next[i] = applyPatch(item)
-					}
+					next[i] = isFn ? (patch as (item: T) => T)(item) : ({ ...item, ...patch } as T)
 				}
+			}
 
-				return next ?? prev
-			})
+			if (next) {
+				base.set(next)
+			}
 		}
 	}
 

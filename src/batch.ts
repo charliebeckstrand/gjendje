@@ -2,11 +2,11 @@ type Notification = () => void
 
 let depth = 0
 
-const queue = new Set<Notification>()
+let generation = 0
 
-// Pre-allocated flush buffer — grows as needed, never shrinks.
-// Typed as a union so cleared slots don't require an unsafe double cast.
-let flushBuf: (Notification | undefined)[] = new Array(16)
+let queue: Notification[] = []
+
+const lastGen = new WeakMap<Notification, number>()
 
 /**
  * Runs all state updates inside fn as a single batch.
@@ -43,7 +43,11 @@ export function batch(fn: () => void): void {
  */
 export function notify(fn: Notification): void {
 	if (depth > 0) {
-		queue.add(fn)
+		if (lastGen.get(fn) !== generation) {
+			lastGen.set(fn, generation)
+
+			queue.push(fn)
+		}
 
 		return
 	}
@@ -52,38 +56,23 @@ export function notify(fn: Notification): void {
 }
 
 function flush(): void {
-	while (queue.size > 0) {
-		// Snapshot to a temporary array to avoid iterator invalidation,
-		// using a pre-allocated array to reduce GC pressure.
-		const size = queue.size
+	while (queue.length > 0) {
+		generation++
 
-		if (size > flushBuf.length) {
-			flushBuf = new Array(size)
-		}
+		const current = queue
 
-		let i = 0
-
-		for (const notification of queue) {
-			flushBuf[i++] = notification
-		}
-
-		queue.clear()
+		queue = []
 
 		depth++
 
 		try {
-			for (let j = 0; j < size; j++) {
-				const fn = flushBuf[j]
+			for (let i = 0; i < current.length; i++) {
+				const fn = current[i]
 
 				if (fn) fn()
 			}
 		} finally {
 			depth--
-
-			// Clear references to avoid retaining closures
-			for (let j = 0; j < size; j++) {
-				flushBuf[j] = undefined
-			}
 		}
 	}
 }

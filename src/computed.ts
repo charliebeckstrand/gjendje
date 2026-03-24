@@ -1,7 +1,7 @@
 import { notify } from './batch.js'
-import { createListeners } from './listeners.js'
-import type { BaseInstance, DepValues, ReadonlyInstance } from './types.js'
-import { createLazyDestroyed, RESOLVED } from './utils.js'
+import { safeCall } from './listeners.js'
+import type { BaseInstance, DepValues, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
+import { RESOLVED } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,7 +51,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	fn: (values: DepValues<TDeps>) => TResult,
 	options?: ComputedOptions,
 ): ComputedInstance<TResult> {
-	const listeners = createListeners<TResult>()
+	const listenerSet = new Set<Listener<TResult>>()
 
 	const instanceKey = options?.key ?? `computed:${computedCounter++}`
 
@@ -60,6 +60,10 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	let isDirty = true
 
 	let isDestroyed = false
+
+	let _destroyedPromise: Promise<void> | undefined
+
+	let _resolveDestroyed: (() => void) | undefined
 
 	// Reuse a single array to avoid allocation on every recomputation
 	const depValues = new Array(deps.length) as DepValues<TDeps>
@@ -92,7 +96,9 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		// recomputed value is identical to the previous cached value.
 		if (value === prev) return
 
-		listeners.notify(value)
+		for (const l of listenerSet) {
+			safeCall(l, value)
+		}
 	}
 
 	const markDirty = () => {
@@ -111,8 +117,6 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 
 	// Compute initial value eagerly so first get() is synchronous
 	recompute()
-
-	const lazyDestroyed = createLazyDestroyed()
 
 	// Short-circuit promise allocation when all deps are memory-scoped.
 	// Memory deps always return RESOLVED for ready/hydrated/settled,
@@ -148,7 +152,15 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		},
 
 		get destroyed(): Promise<void> {
-			return lazyDestroyed.promise
+			if (isDestroyed) return RESOLVED
+
+			if (!_destroyedPromise) {
+				_destroyedPromise = new Promise<void>((r) => {
+					_resolveDestroyed = r
+				})
+			}
+
+			return _destroyedPromise
 		},
 
 		get isDestroyed() {
@@ -163,7 +175,13 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 			return cached
 		},
 
-		subscribe: listeners.subscribe,
+		subscribe(listener: Listener<TResult>): Unsubscribe {
+			listenerSet.add(listener)
+
+			return () => {
+				listenerSet.delete(listener)
+			}
+		},
 
 		destroy() {
 			if (isDestroyed) return
@@ -174,9 +192,13 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 				unsub()
 			}
 
-			listeners.clear()
+			listenerSet.clear()
 
-			lazyDestroyed.resolve()
+			if (_resolveDestroyed) {
+				_resolveDestroyed()
+			} else {
+				_destroyedPromise = RESOLVED
+			}
 		},
 	}
 }

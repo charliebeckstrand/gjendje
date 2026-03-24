@@ -50,7 +50,7 @@ export function withHistory<T>(
 
 	let isNavigating = false
 
-	const unintercept: Unsubscribe = instance.intercept((next, prev) => {
+	const unsubChange: Unsubscribe = instance.onChange((_next, prev) => {
 		if (!isNavigating) {
 			past.push(prev)
 
@@ -61,8 +61,6 @@ export function withHistory<T>(
 			// Any new set() clears the redo stack
 			future.length = 0
 		}
-
-		return next
 	})
 
 	function navigate(from: T[], to: T[]): void {
@@ -112,7 +110,7 @@ export function withHistory<T>(
 	}
 
 	result.destroy = (): void => {
-		unintercept()
+		unsubChange()
 
 		past.length = 0
 		future.length = 0

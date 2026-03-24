@@ -53,11 +53,13 @@ export function withWatch<TIn extends BaseInstance<any>>(
 		}
 
 		unsubscribe = instance.subscribe((next) => {
-			if (watchers && watchers.size > 0) {
-				notifyWatchers(watchers, prev, next)
+			try {
+				if (watchers && watchers.size > 0) {
+					notifyWatchers(watchers, prev, next)
+				}
+			} finally {
+				prev = next
 			}
-
-			prev = next
 		})
 	}
 

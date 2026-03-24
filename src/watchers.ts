@@ -1,3 +1,4 @@
+import { safeCall } from './listeners.js'
 import type { Listener, Unsubscribe } from './types.js'
 import { isRecord } from './utils.js'
 
@@ -50,7 +51,7 @@ export function notifyWatchers(
 
 		if (!Object.is(prevVal, nextVal)) {
 			for (const listener of listeners) {
-				listener(nextVal)
+				safeCall(listener, nextVal)
 			}
 		}
 	}
