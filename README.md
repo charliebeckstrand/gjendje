@@ -5,13 +5,7 @@
 ![GitHub License](https://img.shields.io/github/license/charliebeckstrand/gjendje)
 ![NPM Version](https://img.shields.io/npm/v/gjendje)
 
-
-Replaces storage backends with a unified API. Choose where state lives. The rest is handled.
-
-
-- Zero runtime dependencies
-- TypeScript-first with full type inference
-- 6 storage backends, one API
+gjendje is a storage-agnostic state management library for TypeScript and JavaScript. It gives you a single, unified API for reactive state — regardless of where that state lives.
 
 [Learn more](https://github.com/charliebeckstrand/gjendje/blob/main/docs/summary.md)
 
