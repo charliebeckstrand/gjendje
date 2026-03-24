@@ -1,5 +1,9 @@
 # Summary
 
+## What gjendje is
+
+gjendje is a storage-agnostic state management library for TypeScript and JavaScript. It gives you a single, unified API for reactive state — regardless of where that state lives. Whether your data is in memory, `localStorage`, `sessionStorage`, URL search params, the Storage Buckets API, or Node.js `AsyncLocalStorage`, you interact with it the same way: `get`, `set`, `subscribe`, `reset`, `destroy`.
+
 ## What gjendje does
 
 The core idea is that **choosing where state lives should be a configuration decision, not an architectural one**. You can start with in-memory state during development, switch to `localStorage` for persistence in production, and later move specific pieces of state to URL params for shareability — all without changing a single line of state logic.
