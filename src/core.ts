@@ -6,7 +6,7 @@ import { createUrlAdapter } from './adapters/url.js'
 import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
 import { getConfig, log, reportError } from './config.js'
-import { safeCall } from './listeners.js'
+import { safeCall, safeCallChange } from './listeners.js'
 import { getRegistered, registerNew, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
 import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
@@ -230,11 +230,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
 			for (const hook of s.changeHandlers) {
-				try {
-					hook(next, prev)
-				} catch (err) {
-					console.error('[gjendje] Change handler threw:', err)
-				}
+				safeCallChange(hook, next, prev)
 			}
 		}
 
@@ -593,7 +589,7 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 
 		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
 			for (const hook of ext.changeHandlers) {
-				hook(next, prev)
+				safeCallChange(hook, next, prev)
 			}
 		}
 
@@ -662,7 +658,7 @@ class MemoryStateImpl<T> extends StateImpl<T> {
 
 		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
 			for (const hook of ext.changeHandlers) {
-				hook(next, prev)
+				safeCallChange(hook, next, prev)
 			}
 		}
 
