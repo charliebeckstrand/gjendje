@@ -2,8 +2,9 @@
 
 # gjendje
 
-![GitHub License](https://img.shields.io/github/license/charliebeckstrand/gjendje)
+![NPM Last Update](https://img.shields.io/npm/last-update/gjendje)
 ![NPM Version](https://img.shields.io/npm/v/gjendje)
+![GitHub License](https://img.shields.io/github/license/charliebeckstrand/gjendje)
 
 gjendje is a storage-agnostic state management library for TypeScript and JavaScript. It gives you a single, unified API for reactive state — regardless of where that state lives.
 
