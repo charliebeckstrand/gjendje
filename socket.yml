@@ -16,3 +16,5 @@ issueRules:
   tooManyAuthors: true
   trivialPackage: true
   unresolved: true
+  missingDependency: false
+  newDependency: false
