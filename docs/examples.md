@@ -1,9 +1,5 @@
 # Examples
 
-## Table of contents
-
-### Basic
-
 - [Counter](#counter)
 - [Persisted state](#persisted-state)
 - [Read-only exports](#read-only-exports)
@@ -11,8 +7,6 @@
 - [Batching multiple updates](#batching-multiple-updates)
 - [Tracking the previous value](#tracking-the-previous-value)
 - [Undo/redo with history](#undoredo-with-history)
-
-### Advanced
 
 - [Theme switcher with cross-tab sync](#theme-switcher-with-cross-tab-sync)
 - [Todo list with collection](#todo-list-with-collection)
@@ -24,9 +18,7 @@
 
 ---
 
-## Basic
-
-### Counter
+## Counter
 
 ```ts
 import { state } from 'gjendje'
@@ -47,7 +39,7 @@ count.subscribe((value) => console.log(value))
 count.reset()
 ```
 
-### Persisted state
+## Persisted state
 
 ```ts
 import { state } from 'gjendje'
@@ -61,7 +53,7 @@ language.set('fr')
 language.get() // 'fr'
 ```
 
-### Read-only exports
+## Read-only exports
 
 ```ts
 // store.ts
@@ -78,7 +70,7 @@ export function increment() {
 }
 ```
 
-### Per-key watchers
+## Per-key watchers
 
 ```ts
 import { state } from 'gjendje'
@@ -94,7 +86,7 @@ user.set({ name: 'Jane', age: 31, role: 'admin' })  // nothing
 user.set({ name: 'John', age: 31, role: 'admin' })  // logs 'John'
 ```
 
-### Batching multiple updates
+## Batching multiple updates
 
 ```ts
 import { state, computed, batch } from 'gjendje'
@@ -115,7 +107,7 @@ batch(() => {
 // logs: 'John Smith' (once)
 ```
 
-### Tracking the previous value
+## Tracking the previous value
 
 ```ts
 import { state, previous, effect } from 'gjendje'
@@ -136,7 +128,7 @@ route.set('/settings')
 // logs: Navigated from /home to /settings
 ```
 
-### Undo/redo with history
+## Undo/redo with history
 
 ```ts
 import { state, withHistory } from 'gjendje'
@@ -156,9 +148,7 @@ h.redo()   // 'Hello, world'
 
 ---
 
-## Advanced
-
-### Theme switcher with cross-tab sync
+## Theme switcher with cross-tab sync
 
 ```ts
 import { state } from 'gjendje'
@@ -179,7 +169,7 @@ theme.subscribe((value) => {
 
 Changing theme in one tab updates every open tab instantly.
 
-### Todo list with collection
+## Todo list with collection
 
 ```ts
 import { collection, select } from 'gjendje'
@@ -208,7 +198,7 @@ todos.remove((t) => t.done)
 const remaining = select(todos, (items) => items.filter((t) => !t.done).length)
 ```
 
-### Custom serializer for Set
+## Custom serializer for Set
 
 ```ts
 import { state } from 'gjendje'
@@ -223,7 +213,7 @@ const bookmarks = state.local({ bookmarks: new Set<string>() }, {
 bookmarks.set((prev) => new Set([...prev, '/docs/api']))
 ```
 
-### Form with validation and selective persistence
+## Form with validation and selective persistence
 
 ```ts
 import { state, select } from 'gjendje'
@@ -254,7 +244,7 @@ form.intercept((next, prev) => {
 })
 ```
 
-### Persisted settings with migration
+## Persisted settings with migration
 
 ```ts
 import { state } from 'gjendje'
@@ -291,7 +281,7 @@ const settings = state.local(
 
 Users on v1 migrate through both steps. Users on v2 run only the second. Users on v3 skip migration entirely.
 
-### URL-driven filters
+## URL-driven filters
 
 ```ts
 import { state, computed } from 'gjendje'
@@ -311,7 +301,7 @@ const results = computed([query, category], ([q, cat]) => {
 })
 ```
 
-### Server-scoped request state
+## Server-scoped request state
 
 ```ts
 import { state, withServerSession } from 'gjendje'
