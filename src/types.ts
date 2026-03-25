@@ -267,6 +267,6 @@ export type Unsubscribe = () => void
  * Extract the value types from a tuple of BaseInstance dependencies.
  * Used by computed() and effect() to infer callback parameter types.
  */
-export type DepValues<T extends ReadonlyArray<BaseInstance<unknown>>> = {
-	[K in keyof T]: T[K] extends BaseInstance<infer V> ? V : never
+export type DepValues<T extends ReadonlyArray<ReadonlyInstance<unknown>>> = {
+	[K in keyof T]: T[K] extends ReadonlyInstance<infer V> ? V : never
 }

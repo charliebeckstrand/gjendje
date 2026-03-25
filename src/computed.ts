@@ -1,6 +1,6 @@
 import { notify } from './batch.js'
 import { safeCall } from './listeners.js'
-import type { BaseInstance, DepValues, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
+import type { DepValues, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
 import { createLazyDestroyed, RESOLVED } from './utils.js'
 
 // ---------------------------------------------------------------------------
@@ -50,7 +50,7 @@ let computedCounter = 0
  * fullName.subscribe(name => console.log(name))
  * ```
  */
-export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TResult>(
+export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>, TResult>(
 	deps: TDeps,
 	fn: (values: DepValues<TDeps>) => TResult,
 	options?: ComputedOptions,
@@ -82,7 +82,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		if (!isDirty) return cached
 
 		for (let i = 0; i < depLen; i++) {
-			const dep = deps[i] as BaseInstance<unknown>
+			const dep = deps[i] as ReadonlyInstance<unknown>
 
 			;(depValues as unknown[])[i] = dep.get()
 		}
@@ -124,7 +124,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	const unsubscribers = new Array(depLen)
 
 	for (let i = 0; i < depLen; i++) {
-		const dep = deps[i] as BaseInstance<unknown>
+		const dep = deps[i] as ReadonlyInstance<unknown>
 
 		unsubscribers[i] = dep.subscribe(markDirty)
 	}
@@ -144,7 +144,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 	let hasAsyncDep = false
 
 	for (let i = 0; i < depLen; i++) {
-		if ((deps[i] as BaseInstance<unknown>).ready !== RESOLVED) {
+		if ((deps[i] as ReadonlyInstance<unknown>).ready !== RESOLVED) {
 			hasAsyncDep = true
 
 			break
@@ -159,7 +159,7 @@ export function computed<TDeps extends ReadonlyArray<BaseInstance<unknown>>, TRe
 		const settledArr = new Array(depLen)
 
 		for (let i = 0; i < depLen; i++) {
-			const dep = deps[i] as BaseInstance<unknown>
+			const dep = deps[i] as ReadonlyInstance<unknown>
 
 			readyArr[i] = dep.ready
 			hydratedArr[i] = dep.hydrated

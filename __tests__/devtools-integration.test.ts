@@ -58,15 +58,13 @@ beforeEach(() => {
 
 	disableDevTools()
 
-	// biome-ignore lint/suspicious/noExplicitAny: cleaning up test global
-	delete (globalThis as any).__REDUX_DEVTOOLS_EXTENSION__
+	globalThis.__REDUX_DEVTOOLS_EXTENSION__ = undefined
 })
 
 afterEach(() => {
 	disableDevTools()
 
-	// biome-ignore lint/suspicious/noExplicitAny: cleaning up test global
-	delete (globalThis as any).__REDUX_DEVTOOLS_EXTENSION__
+	globalThis.__REDUX_DEVTOOLS_EXTENSION__ = undefined
 })
 
 // ---------------------------------------------------------------------------
@@ -77,8 +75,7 @@ describe('Redux DevTools adapter', () => {
 	it('connects to the extension and initializes with current state', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		const s = state('rdx-init', { default: 42 })
 
@@ -98,8 +95,7 @@ describe('Redux DevTools adapter', () => {
 	it('dispatches set actions', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		enableDevTools({ logger: false })
 
@@ -123,8 +119,7 @@ describe('Redux DevTools adapter', () => {
 	it('dispatches reset actions', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		enableDevTools({ logger: false })
 
@@ -148,8 +143,7 @@ describe('Redux DevTools adapter', () => {
 	it('dispatches register actions for new instances', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		enableDevTools({ logger: false })
 
@@ -171,8 +165,7 @@ describe('Redux DevTools adapter', () => {
 	it('dispatches destroy actions', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		enableDevTools({ logger: false })
 
@@ -194,8 +187,7 @@ describe('Redux DevTools adapter', () => {
 	it('supports time-travel via JUMP_TO_STATE', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		const s = state('rdx-jump', { default: 0 })
 
@@ -222,8 +214,7 @@ describe('Redux DevTools adapter', () => {
 	it('supports time-travel via JUMP_TO_ACTION', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		const s = state('rdx-jump-action', { default: 'a' })
 
@@ -258,8 +249,7 @@ describe('Redux DevTools adapter', () => {
 	it('prevents double connection', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		connectReduxDevTools()
 
@@ -273,8 +263,7 @@ describe('Redux DevTools adapter', () => {
 	it('ignores DISPATCH messages without JUMP payload type', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		const s = state('rdx-ignore', { default: 0 })
 
@@ -298,8 +287,7 @@ describe('Redux DevTools adapter', () => {
 	it('ignores invalid JSON in time-travel state', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		const s = state('rdx-badjson', { default: 0 })
 
@@ -585,8 +573,7 @@ describe('enableDevTools', () => {
 	it('enables both Redux DevTools and logger by default', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		const logSpy = vi.spyOn(console, 'groupCollapsed').mockImplementation(() => {})
 
@@ -616,8 +603,7 @@ describe('enableDevTools', () => {
 	it('can enable Redux DevTools only', () => {
 		const mock = createMockDevTools()
 
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		;(globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ = mock
+		globalThis.__REDUX_DEVTOOLS_EXTENSION__ = mock
 
 		enableDevTools({ logger: false })
 

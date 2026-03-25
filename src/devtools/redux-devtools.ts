@@ -29,6 +29,10 @@ interface DevToolsExtension {
 	connect(options?: { name?: string; features?: Record<string, boolean> }): DevToolsInstance
 }
 
+declare global {
+	var __REDUX_DEVTOOLS_EXTENSION__: DevToolsExtension | undefined
+}
+
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
@@ -57,8 +61,7 @@ function getGlobalState(): Record<string, unknown> {
 
 function getExtension(): DevToolsExtension | undefined {
 	if (typeof globalThis !== 'undefined') {
-		// biome-ignore lint/suspicious/noExplicitAny: DevTools extension uses untyped global
-		return (globalThis as any).__REDUX_DEVTOOLS_EXTENSION__ as DevToolsExtension | undefined
+		return globalThis.__REDUX_DEVTOOLS_EXTENSION__
 	}
 
 	return undefined
