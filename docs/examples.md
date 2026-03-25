@@ -5,7 +5,7 @@
 ### Basic
 
 - [Counter](#counter)
-- [Persisted counter](#persisted-counter)
+- [Persisted state](#persisted-state)
 - [Read-only exports](#read-only-exports)
 - [Per-key watchers](#per-key-watchers)
 - [Batching multiple updates](#batching-multiple-updates)
@@ -47,18 +47,18 @@ count.subscribe((value) => console.log(value))
 count.reset()
 ```
 
-### Persisted counter
+### Persisted state
 
 ```ts
 import { state } from 'gjendje'
 
 // state.local persists to localStorage — survives page reloads
-const count = state.local({ count: 0 })
+const language = state.local({ language: 'en' })
 
-count.set((n) => n + 1)
+language.set('fr')
 
-// Close the tab, reopen — count picks up where it left off
-count.get() // 1
+// Close the tab, reopen — language picks up where it left off
+language.get() // 'fr'
 ```
 
 ### Read-only exports
