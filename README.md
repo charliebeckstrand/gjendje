@@ -27,7 +27,7 @@ function increment() {
   store.set((prev) => ({ ...prev, count: prev.count + 1 }))
 }
 
-const { counter } = store.get()
+const { count } = store.get()
 ```
 
 [Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
