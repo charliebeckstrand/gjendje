@@ -1,5 +1,26 @@
 # gjendje
 
+## 1.1.0
+
+### Minor Changes
+
+- Add React bindings via `gjendje/react` entry point.
+
+  **New export: `useGjendje`** — a single hook for subscribing to any gjendje instance in React.
+
+  ```tsx
+  import { useGjendje } from 'gjendje/react'
+
+  const count = useGjendje(counter)
+  const theme = useGjendje(settings, s => s.theme)
+  ```
+
+  - Built on `useSyncExternalStore` for React 18+ concurrent rendering safety
+  - Optional selector for derived slices — skips re-renders when the slice is unchanged (`===`)
+  - Works with all instance types: `state`, `computed`, `select`, `collection`, `readonly`, `withHistory`
+  - React added as optional peer dependency — tree-shakes completely when not imported
+  - Bundle: 47 bytes (brotli)
+
 ## 1.0.10
 
 ### Patch Changes
