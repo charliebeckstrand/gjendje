@@ -23,11 +23,18 @@ import { state } from 'gjendje'
 
 const store = state({ count: 0 })
 
-function increment() {
-  store.set((prev) => ({ ...prev, count: prev.count + 1 }))
-}
+// set
+store.set({ count: 1 })
+
+store.set((prev) => ({ ...prev, count: prev.count + 1 }))
+
+// get
+store.get()
 
 const { count } = store.get()
+
+// reset
+store.reset()
 ```
 
 [Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
