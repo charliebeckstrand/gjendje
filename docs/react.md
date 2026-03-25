@@ -16,7 +16,7 @@ A single hook for reading any gjendje instance in React. It re-renders your comp
 import { state } from 'gjendje'
 import { useGjendje } from 'gjendje/react'
 
-const counter = state('counter', { default: 0 })
+const counter = state({ counter: 0 })
 
 function Counter() {
   const count = useGjendje(counter)
@@ -36,9 +36,7 @@ function Counter() {
 Pass an optional selector to derive a slice. The component only re-renders when the selected value changes (compared with `===`).
 
 ```tsx
-const settings = state.local('settings', {
-  default: { theme: 'light', fontSize: 14, locale: 'en' },
-})
+const settings = state.local({ settings: { theme: 'light', fontSize: 14, locale: 'en' } })
 
 function ThemeToggle() {
   // Only re-renders when `theme` changes — not when fontSize or locale change
@@ -60,7 +58,7 @@ function ThemeToggle() {
 import { state, computed, collection, readonly } from 'gjendje'
 import { useGjendje } from 'gjendje/react'
 
-const price = state('price', { default: 100 })
+const price = state({ price: 100 })
 const tax = computed([price], ([p]) => p * 0.1)
 const total = computed([price, tax], ([p, t]) => p + t)
 
@@ -71,7 +69,7 @@ function PriceSummary() {
 ```
 
 ```tsx
-const todos = collection('todos', { default: [] })
+const todos = collection({ todos: [] })
 
 function TodoCount() {
   const items = useGjendje(todos)
@@ -85,13 +83,13 @@ Switching storage backends doesn't change how hooks work. The same `useGjendje` 
 
 ```tsx
 // Memory (default)
-const draft = state('draft', { default: '' })
+const draft = state({ draft: '' })
 
 // localStorage — persists across sessions
-const theme = state.local('theme', { default: 'light' })
+const theme = state.local({ theme: 'light' })
 
 // URL — syncs with query params
-const filters = state.url('filters', { default: { sort: 'date', page: 1 } })
+const filters = state.url({ filters: { sort: 'date', page: 1 } })
 
 function App() {
   const currentTheme = useGjendje(theme)
@@ -122,7 +120,7 @@ function resetAll() {
 `useGjendje` is fully typed. The return type is inferred from the instance or selector.
 
 ```tsx
-const user = state('user', { default: { name: 'Alice', age: 30 } })
+const user = state({ user: { name: 'Alice', age: 30 } })
 
 // Inferred as { name: string; age: number }
 const value = useGjendje(user)
