@@ -101,7 +101,11 @@ const count = useGjendje(counter)
 
 [Utilities reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/utilities.md)
 
-## Configure
+## DevTools
+
+[DevTools guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/devtools.md)
+
+## Global Config (`Configure`)
 
 `scope`, `maxKeys`, `prefix`, `requireValidation`, `registry`, `ssr`, `sync`, `warnOnDuplicate`, `onChange`, `onDestroy`, `onError`, `onExpire`, `onHydrate`, `onIntercept`, `onMigrate`, `onQuotaExceeded`, `onRegister`, `onReset`, `onSync`, `onValidationFail`
 
