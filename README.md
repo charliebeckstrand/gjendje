@@ -63,7 +63,7 @@ store.reset()
 
 [Utilities reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/utilities.md)
 
-## Configure
+## Configure (global config)
 
 `scope`, `maxKeys`, `prefix`, `requireValidation`, `registry`, `ssr`, `sync`, `warnOnDuplicate`, `onChange`, `onDestroy`, `onError`, `onExpire`, `onHydrate`, `onIntercept`, `onMigrate`, `onQuotaExceeded`, `onRegister`, `onReset`, `onSync`, `onValidationFail`
 
