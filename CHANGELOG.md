@@ -47,12 +47,6 @@
 
 ### Patch Changes
 
-- Remove benchmark-only devDependencies (zustand, valtio, tsx) to reduce published dependency footprint.
-
-## 1.0.10
-
-### Patch Changes
-
 - Fix supply chain security: upgrade happy-dom from v14 to v20 to resolve 2 critical CVEs (GHSA-96g7-g7g9-jxw8, GHSA-37j7-fg3j-429f). Remove benchmark-only devDependencies (zustand, valtio, tsx) to reduce published dependency footprint. Add SECURITY.md with vulnerability reporting guidelines.
 
 ## 1.0.9
@@ -91,34 +85,17 @@
 
 - f09584d: Single-listener fast path in computed and select notification — when exactly one subscriber exists (common in computed chains), call it directly instead of iterating the Set, avoiding iterator allocation per notification. Computed chain depth-25 +33%, depth-10 +17%, depth-5 +20%.
 
-## 1.0.8
-
-### Patch Changes
-
-- Performance and correctness audit — error isolation, allocation reduction, and pattern cleanup. Error-isolate batch flush, change handler loops (via extracted `safeCallChange` to avoid V8 deopt), effect callbacks, and collection watcher notifications. Guard computed/select subscribe against destroyed state. Fix withHistory navigate to prevent history corruption on throw. Fix withWatch re-entrancy guard. Remove redundant `_hasIsEqual` field (+14% isEqual writes). Lazy-allocate collection watchers Map and subscription. Consolidate computed async dep promise construction. Use `createLazyDestroyed` in computed/select.
-
-- Single-listener fast path in computed and select notification — when exactly one subscriber exists (common in computed chains), call it directly instead of iterating the Set, avoiding iterator allocation per notification. Computed chain depth-25 +33%, depth-10 +17%, depth-5 +20%.
-
 ## 1.0.7
 
 ### Patch Changes
 
 - ae0427e: Add package summary documentation covering what gjendje does, how it works, and how it compares to competing state management libraries
 
-- Add package summary documentation (`docs/summary.md`) covering what gjendje does, how it works architecturally, and how it compares to competing state management libraries (Zustand, Redux, Jotai, Valtio, Signals)
-
 ## 1.0.6
 
 ### Patch Changes
 
 - 48b782d: Add A/B testing framework for benchmarks with --save/--compare workflow and defineSuite helper to reduce benchmark boilerplate
-
-## 1.0.6
-
-### Patch Changes
-
-- Add A/B testing framework for benchmarks — save baseline results with `--save`, compare against them with `--compare`, and see ANSI-colored improvement/regression indicators with a configurable noise threshold (default ±5%)
-- Add `defineSuite` helper to reduce benchmark boilerplate (automates Bench creation, running, and result printing)
 - Add `--quick` flag for faster benchmark iteration during development
 - Migrate all 8 benchmark files to use `defineSuite`
 - Add `bench:save` and `bench:compare` npm scripts
@@ -132,12 +109,6 @@
   **Performance:** Batch scaling +51% (Array+WeakMap queue replaces Set+copy flush), collection.add +63% (concat vs spread), collection.update-one +137% (direct get/set vs function updater), computed chain depth-25 +11% (inline createListeners/createLazyDestroyed), effect trigger +14%.
 
   **Correctness:** notifyWatchers uses safeCall to prevent one throwing watcher from silencing others or desynchronizing watchPrev. withHistory uses onChange instead of intercept to avoid phantom history entries when isEqual rejects a no-op write.
-
-## 1.0.5
-
-### Patch Changes
-
-- Optimize batch queue, collection operations, and computed/select allocation; fix watcher error isolation and history phantom entries. Batch scaling +51% (Array+WeakMap queue replaces Set+copy flush), collection.add +63% (concat vs spread), collection.update-one +137% (direct get/set vs function updater), computed chain depth-25 +11% (inline createListeners/createLazyDestroyed), effect trigger +14%. notifyWatchers uses safeCall to prevent one throwing watcher from silencing others or desynchronizing watchPrev. withHistory uses onChange instead of intercept to avoid phantom history entries when isEqual rejects a no-op write.
 
 ## 1.0.4
 
@@ -161,24 +132,6 @@
 - f5f75e2: Pre-populate storage adapter read cache after writes instead of invalidating it. Eliminates redundant getItem() + JSON.parse() on read-after-write paths (~41% faster single read-after-write, ~92% faster many-reads-per-write).
 - 644cfcc: Add read cache to URL adapter — caches parsed value keyed on location.search string, skipping URLSearchParams construction and re-parsing when the URL hasn't changed. Also pre-populates cache after writes. Repeated reads 16x faster, many-reads-per-write 26x faster.
 
-## Unreleased
-
-### Patch Changes
-
-- Improve supply chain security: remove duplicate lockfile (`package-lock.json`), pin all GitHub Actions to commit SHAs, add npm provenance attestation via `publishConfig.provenance`, add CI workflow (lint, test, typecheck) for PRs, and add `socket.yml` configuration.
-
-### Minor Changes
-
-- Optimize state creation performance: inline `resolveKeyAndScope` to eliminate intermediate object allocation, early-exit memory fast path before SSR/sync computation, consolidate registry lookups via `registerNew`, and build `MemoryStateImpl` mutable state in a single allocation (avoids hidden class transitions). Default creation improved ~13% (1.0M → 1.13M ops/s). Add `registry: false` config option to skip registry for memory-scoped state, bringing creation throughput to ~6M ops/s (within 2x of Zustand, down from 10.75x). Warns when `registry: false` is combined with a persistent global scope.
-
-### Patch Changes
-
-- Codebase elegance refactor — cache computed `settled` promise (was allocating `Promise.all` on every access), reuse shared `RESOLVED` promise in storage/URL adapters and SSR, extract `navigate` helper in `withHistory` to remove undo/redo duplication, short-circuit collection watcher notification on length change, simplify snapshot/devtools/sync adapter code, remove redundant assignments and unnecessary `.bind()` calls. No behavioral or performance changes.
-- Pre-populate storage adapter read cache after writes — eliminates redundant `getItem()` + `JSON.parse()` on read-after-write paths (subscriber chains, computed, effects). Benchmarks show ~41% improvement on single read-after-write and ~92% improvement on many-reads-per-write scenarios.
-- Add read cache to URL adapter — caches parsed value keyed on `location.search` string, skipping URLSearchParams construction and re-parsing when the URL hasn't changed. Also pre-populates cache after writes. Benchmarks show 16x faster repeated reads and 26x faster many-reads-per-write.
-- Short-circuit `Promise.all` in `computed()` for memory-scoped deps — when all deps return the shared `RESOLVED` promise, skip array allocation and promise wrapping entirely. Also caches the `settled` getter (previously allocated `Promise.all` + `.map()` + `.then()` on every access). Computed creation 12-30% faster, `.settled` access 2.6x faster.
-- Extract try/catch from listener notification loops into a shared `safeCall` helper — allows V8 to optimize the loop body independently. Deduplicates three identical try/catch blocks across `listeners.ts`, `core.ts`, and `adapters/memory.ts`.
-
 ## 1.0.1
 
 ### Patch Changes
@@ -200,9 +153,11 @@
   - Remove deprecated standalone scope shortcut exports (`local()`, `session()`, `url()`, `bucket()`, `server()`). Use `state.local()`, `state.session()`, `state.url()`, `state.bucket()`, `state.server()` instead.
   - Remove deprecated `'tab'` scope alias. Use `'session'` instead.
   - Remove `'tab'` from `BucketOptions.fallback` type. Use `'session'` instead.
+  - Rename `'render'` scope to `'memory'`. `'render'` is kept as a deprecated alias.
 
   **Improvements:**
 
+  - Standardize all error message prefixes to `[gjendje]`.
   - Promote `noNonNullAssertion` and `noExplicitAny` lint rules from warnings to errors.
   - Fix size-limit config referencing `withServerSession` from the wrong entry point.
   - Update size limit for core bundle from 4 kB to 5 kB.
@@ -215,34 +170,6 @@
   - README: add inline quick start, API methods table (consistent with primitives table), unified documentation index, and utilities/enhancers section.
   - Remove misplaced utilities table from configure guide.
   - Add navigation links between all doc pages.
-
-## Unreleased
-
-### Patch Changes
-
-- Improve documentation usability: add inline quick start and API methods table to README, remove misplaced utilities table from configure guide, add navigation links between all doc pages.
-- Add utilities reference doc (`docs/utilities.md`) covering `batch`, `snapshot`, `shallowEqual`, `withHistory`, `withWatch`, and `withServerSession`.
-
-## 1.0.0
-
-### Major Changes
-
-- **Breaking:** Remove deprecated standalone scope shortcut exports (`local()`, `session()`, `url()`, `bucket()`, `server()`). Use `state.local()`, `state.session()`, `state.url()`, `state.bucket()`, `state.server()` instead.
-- **Breaking:** Remove deprecated `'tab'` scope alias. Use `'session'` instead.
-- **Breaking:** Remove `'tab'` from `BucketOptions.fallback` type. Use `'session'` instead.
-- **Breaking:** Rename `'render'` scope to `'memory'`. `'render'` is kept as a deprecated alias.
-
-### Improvements
-
-- Standardize all error message prefixes to `[gjendje]` (previously mixed `[state]` and `[gjendje]`).
-- Remove unused legacy `register()` and `unregister()` functions from internal registry.
-- Fix inaccurate `sync` option comment — only `local` and `bucket` scopes support cross-tab sync, not `session`.
-- Promote `noNonNullAssertion` and `noExplicitAny` lint rules from warnings to errors.
-- Fix size-limit config referencing `withServerSession` from the wrong entry point.
-- Update all tests and documentation to use the new API surface.
-- Rewrite README for scannability — highlights section, one-liner primitive/utility tables, simplified quick start.
-- Fix stale `use()` → `onChange()` references in docs/api.md and docs/primitives.md.
-- Rename `docs/derived.md` to `docs/primitives.md`.
 
 ## 0.9.3
 
