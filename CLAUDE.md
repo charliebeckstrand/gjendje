@@ -21,12 +21,15 @@ This project uses **Biome** for linting and formatting. Run `pnpm lint` to check
 
 ## Changesets & Changelog
 
+The Changesets release action automatically generates `CHANGELOG.md` entries from changeset files. **Do not edit `CHANGELOG.md` manually** — write detailed descriptions in the changeset file instead.
+
 After completing a change, addition, or feature:
 
-1. Run `pnpm changeset` and describe what changed
-2. Select the appropriate changeset type based on the scope of the change (see `.changeset/README.md` for types)
-3. Commit the generated changeset file alongside the code changes
-4. Update `CHANGELOG.md` with a summary of the change
+1. Run `pnpm changeset` and select the appropriate type (`patch`, `minor`, or `major`)
+2. Write a **detailed** description in the generated `.changeset/*.md` file — full markdown is supported (code blocks, lists, bold, etc.). This becomes the changelog entry verbatim.
+3. Commit the changeset file alongside the code changes
+
+When the branch is merged to `main`, the Changesets GitHub Action creates a "Version Packages" PR that bumps the version, generates the changelog entry, and deletes the consumed changeset file. Merging that PR publishes to npm.
 
 ### Versioning
 

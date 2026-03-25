@@ -62,6 +62,7 @@ store.reset()
 ### React
 
 ```tsx
+import { state } from 'gjendje'
 import { useGjendje } from 'gjendje/react'
 
 const counter = state({ counter: 0 })
