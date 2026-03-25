@@ -67,6 +67,16 @@
 				"types": "./dist/vue.d.cts",
 				"default": "./dist/vue.cjs"
 			}
+		},
+		"./devtools": {
+			"import": {
+				"types": "./dist/devtools.d.ts",
+				"default": "./dist/devtools.js"
+			},
+			"require": {
+				"types": "./dist/devtools.d.cts",
+				"default": "./dist/devtools.cjs"
+			}
 		}
 	},
 	"main": "./dist/index.cjs",

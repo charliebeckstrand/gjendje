@@ -26,5 +26,12 @@
 		"limit": "1 kB",
 		"import": "{ useGjendje }",
 		"ignore": ["vue"]
+	},
+	{
+		"name": "gjendje/devtools",
+		"path": "dist/devtools.js",
+		"limit": "2 kB",
+		"import": "{ enableDevTools }",
+		"ignore": ["async_hooks"]
 	}
 ]
