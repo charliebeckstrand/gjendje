@@ -76,7 +76,7 @@ Collections are writable, so they return the same `[value, set, reset]` tuple. U
 import { collection } from 'gjendje'
 import { useGjendje } from 'gjendje/react'
 
-const todos = collection({ todos: [] })
+const todos = collection('todos', { default: [] })
 
 function TodoList() {
   const [items] = useGjendje(todos)

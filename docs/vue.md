@@ -83,7 +83,7 @@ Collections return a writable ref. Use collection methods directly for `add`, `r
 import { collection } from 'gjendje'
 import { useGjendje } from 'gjendje/vue'
 
-const todos = collection({ todos: [] })
+const todos = collection('todos', { default: [] })
 
 const items = useGjendje(todos)
 </script>

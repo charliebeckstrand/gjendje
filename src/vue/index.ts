@@ -29,7 +29,7 @@ export function useGjendje<T>(
 		const unsub = instance.subscribe((next) => {
 			const value = selector ? selector(next) : next
 
-			if (value !== last) {
+			if (!Object.is(value, last)) {
 				last = value
 				trigger()
 			}
