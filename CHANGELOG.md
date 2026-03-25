@@ -4,15 +4,21 @@
 
 ### Minor Changes
 
+- 76eabb3: Add React bindings via `gjendje/react` with `useGjendje` hook (useSyncExternalStore). Add Vue bindings via `gjendje/vue` with `useGjendje` composable (customRef). Both support optional selectors for derived slices.
+
+## 1.1.0
+
+### Minor Changes
+
 - Add React bindings via `gjendje/react` entry point.
 
   **New export: `useGjendje`** — a single hook for subscribing to any gjendje instance in React.
 
   ```tsx
-  import { useGjendje } from 'gjendje/react'
+  import { useGjendje } from "gjendje/react";
 
-  const count = useGjendje(counter)
-  const theme = useGjendje(settings, s => s.theme)
+  const count = useGjendje(counter);
+  const theme = useGjendje(settings, (s) => s.theme);
   ```
 
   - Built on `useSyncExternalStore` for React 18+ concurrent rendering safety
@@ -27,9 +33,9 @@
 
   ```vue
   <script setup>
-  import { useGjendje } from 'gjendje/vue'
+  import { useGjendje } from "gjendje/vue";
 
-  const count = useGjendje(counter)
+  const count = useGjendje(counter);
   // Read: count.value
   // Write: count.value = 5
   </script>
