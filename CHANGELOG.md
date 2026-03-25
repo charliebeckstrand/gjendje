@@ -19,7 +19,29 @@
   - Optional selector for derived slices — skips re-renders when the slice is unchanged (`===`)
   - Works with all instance types: `state`, `computed`, `select`, `collection`, `readonly`, `withHistory`
   - React added as optional peer dependency — tree-shakes completely when not imported
-  - Bundle: 47 bytes (brotli)
+  - Bundle: 75 bytes (brotli)
+
+- Add Vue bindings via `gjendje/vue` entry point.
+
+  **New export: `useGjendje`** — a composable that returns a reactive `Ref` synced with any gjendje instance.
+
+  ```vue
+  <script setup>
+  import { useGjendje } from 'gjendje/vue'
+
+  const count = useGjendje(counter)
+  // Read: count.value
+  // Write: count.value = 5
+  </script>
+  ```
+
+  - Built on Vue's `customRef` for native reactivity integration
+  - Writable instances return a two-way `Ref` — assign to `.value` to update
+  - Readonly/computed instances return a read-only `Ref`
+  - Optional selector for derived slices
+  - Cleanup via `onScopeDispose` — no manual teardown needed
+  - Vue added as optional peer dependency — tree-shakes completely when not imported
+  - Bundle: 90 bytes (brotli)
 
 ## 1.0.10
 

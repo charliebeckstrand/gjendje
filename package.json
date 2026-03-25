@@ -56,6 +56,16 @@
 				"types": "./dist/react.d.cts",
 				"default": "./dist/react.cjs"
 			}
+		},
+		"./vue": {
+			"import": {
+				"types": "./dist/vue.d.ts",
+				"default": "./dist/vue.js"
+			},
+			"require": {
+				"types": "./dist/vue.d.cts",
+				"default": "./dist/vue.cjs"
+			}
 		}
 	},
 	"main": "./dist/index.cjs",
@@ -92,10 +102,14 @@
 		"bench:compare": "tsx benchmarks/internal.bench.ts --compare"
 	},
 	"peerDependencies": {
-		"react": ">=18.0.0"
+		"react": ">=18.0.0",
+		"vue": ">=3.3.0"
 	},
 	"peerDependenciesMeta": {
 		"react": {
+			"optional": true
+		},
+		"vue": {
 			"optional": true
 		}
 	},
@@ -108,6 +122,7 @@
 		"@types/react": "^19.2.14",
 		"@types/react-dom": "^19.2.3",
 		"@vitest/coverage-v8": "^4.0.0",
+		"@vue/test-utils": "^2.4.6",
 		"happy-dom": "^20.8.7",
 		"lefthook": "^1.6.0",
 		"publint": "^0.3.0",
@@ -118,6 +133,7 @@
 		"tsup": "^8.0.0",
 		"typescript": "^5.4.0",
 		"vite": "^6.0.0",
-		"vitest": "^4.0.0"
+		"vitest": "^4.0.0",
+		"vue": "^3.5.31"
 	}
 }

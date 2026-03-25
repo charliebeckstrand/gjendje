@@ -19,5 +19,12 @@
 		"limit": "1 kB",
 		"import": "{ useGjendje }",
 		"ignore": ["react"]
+	},
+	{
+		"name": "gjendje/vue",
+		"path": "dist/vue.js",
+		"limit": "1 kB",
+		"import": "{ useGjendje }",
+		"ignore": ["vue"]
 	}
 ]

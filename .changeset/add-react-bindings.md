@@ -2,4 +2,4 @@
 "gjendje": minor
 ---
 
-Add React bindings via `gjendje/react` entry point with `useGjendje` hook built on `useSyncExternalStore` for React 18+ concurrent rendering safety. Supports optional selector for derived slices with referential equality skipping.
+Add React bindings via `gjendje/react` with `useGjendje` hook (useSyncExternalStore). Add Vue bindings via `gjendje/vue` with `useGjendje` composable (customRef). Both support optional selectors for derived slices.

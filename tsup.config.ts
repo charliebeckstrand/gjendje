@@ -5,6 +5,7 @@ export default defineConfig({
 		index: 'src/index.ts',
 		server: 'src/server.ts',
 		react: 'src/react/index.ts',
+		vue: 'src/vue/index.ts',
 	},
 	format: ['esm', 'cjs'],
 	dts: true,
