@@ -11,6 +11,7 @@ export default defineConfig({
 	dts: true,
 	splitting: true,
 	treeshake: true,
+	external: ['react', 'vue'],
 	clean: true,
 	sourcemap: false,
 	outDir: 'dist',
