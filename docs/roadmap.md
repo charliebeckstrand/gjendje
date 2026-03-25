@@ -4,104 +4,6 @@ A prioritized plan to close the gap between gjendje's engineering quality and it
 
 ---
 
-## Phase 1: React Bindings (`gjendje/react`)
-
-**Goal**: Remove the #1 adoption blocker. 80%+ of potential users are React developers — no hook means no adoption.
-
-**Why first**: Nothing else matters if developers can't use gjendje idiomatically in React. Every other improvement (docs site, DevTools, marketing) amplifies a product people can actually install and use in 5 minutes.
-
-### 1.1 — Core hooks
-
-Ship a `gjendje/react` entry point with hooks built on `useSyncExternalStore`.
-
-- [ ] **Create `src/react/index.ts` entry point**
-  - Export `useGjendje(instance)` — returns current value, re-renders on change
-  - Export `useGjendjeValue(instance)` — read-only variant (for `ReadonlyInstance` / `ComputedInstance`)
-  - Export `useGjendjeSelector(instance, selector)` — derived slice with referential equality check
-  - All hooks must use `useSyncExternalStore` for React 18+ concurrent rendering safety
-
-- [ ] **Add React as optional peer dependency**
-  - `peerDependencies: { "react": ">=18.0.0" }` with `peerDependenciesMeta: { "react": { "optional": true } }`
-  - Tree-shakes completely when not imported
-
-- [ ] **Add `gjendje/react` to package.json exports map**
-  - ESM + CJS conditional exports matching the existing `gjendje` and `gjendje/server` patterns
-  - Include TypeScript declarations
-
-- [ ] **Update tsup config**
-  - Add `src/react/index.ts` as a third entry point
-  - Ensure it splits into its own chunk (no core code duplication)
-
-### 1.2 — Quality gates
-
-- [ ] **Add size-limit budget**
-  - Target: `gjendje/react` entry < 1 kB (it's mostly wiring)
-
-- [ ] **Write tests**
-  - Hook renders with initial value
-  - Re-renders on `set()`, `patch()`, `reset()`
-  - Selector skips re-render when selected slice is unchanged
-  - Works with `computed`, `select`, `collection`, `readonly`, `withHistory`
-  - SSR hydration: hook returns default value on server, real value after hydration
-  - Concurrent mode: no tearing under `startTransition`
-
-### 1.3 — Documentation
-
-- [ ] **Write `docs/react.md`** — usage guide with examples for each hook
-- [ ] **Add React section to README quick-start**
-- [ ] **Add React examples to `docs/examples.md`**
-
----
-
-## Phase 2: Vue Bindings (`gjendje/vue`)
-
-**Goal**: Capture the second-largest frontend framework audience with idiomatic Vue composables.
-
-**Why second**: Vue has a massive global user base (~3M weekly npm downloads for vue@3). Shipping Vue bindings immediately after React signals that gjendje is genuinely framework-agnostic — not just React-with-extras.
-
-### 2.1 — Core composables
-
-- [ ] **Create `src/vue/index.ts` entry point**
-  - Export `useGjendje(instance)` — returns a Vue `Ref<T>` that syncs bidirectionally with the instance
-  - Export `useGjendjeReadonly(instance)` — returns `Readonly<Ref<T>>` (for `ReadonlyInstance` / `ComputedInstance`)
-  - Export `useGjendjeSelector(instance, selector)` — returns a computed `Ref` from a derived slice
-  - Use Vue's `ref()`, `watch()`, and `onScopeDispose()` for lifecycle-safe subscriptions
-
-- [ ] **Add Vue as optional peer dependency**
-  - `peerDependencies: { "vue": ">=3.3.0" }` with `peerDependenciesMeta: { "vue": { "optional": true } }`
-  - Tree-shakes completely when not imported
-
-- [ ] **Add `gjendje/vue` to package.json exports map**
-  - ESM + CJS conditional exports matching the existing pattern
-  - Include TypeScript declarations
-
-- [ ] **Update tsup config**
-  - Add `src/vue/index.ts` as an additional entry point
-  - Ensure it splits into its own chunk
-
-### 2.2 — Quality gates
-
-- [ ] **Add size-limit budget**
-  - Target: `gjendje/vue` entry < 1 kB
-
-- [ ] **Write tests**
-  - Composable returns reactive Ref with initial value
-  - Ref updates on `set()`, `patch()`, `reset()`
-  - Writing to the Ref calls `set()` on the instance
-  - Readonly composable prevents writes
-  - Selector returns computed Ref, skips updates when slice is unchanged
-  - Subscription cleanup on scope disposal (no memory leaks)
-  - Works with `computed`, `select`, `collection`, `readonly`, `withHistory`
-  - SSR: composable returns default value during server render
-
-### 2.3 — Documentation
-
-- [ ] **Write `docs/vue.md`** — usage guide with Composition API examples
-- [ ] **Add Vue section to README** (alongside React quick-start)
-- [ ] **Add Vue examples to `docs/examples.md`**
-
----
-
 ## Phase 3: Documentation Site
 
 **Goal**: Match the polish of jotai.org and zustand docs. Developers decide in 30 seconds — GitHub markdown loses that race.
@@ -145,47 +47,6 @@ Ship a `gjendje/react` entry point with hooks built on `useSyncExternalStore`.
   - Lead with the storage-agnostic pitch
   - "One API, six storage backends, zero config changes"
   - Real-world scenario: "Your prototype uses memory state. Ship to production by changing one word to `state.local()`."
-
----
-
-## Phase 4: DevTools
-
-**Goal**: Give developers debugging confidence. "Good enough DevTools" is a requirement for production adoption, not a nice-to-have.
-
-**Why here**: Framework bindings make gjendje usable. Docs make it discoverable. DevTools make it trustworthy for production. Without debugging tools, senior developers and tech leads will veto adoption.
-
-### 4.1 — Redux DevTools adapter
-
-- [ ] **Create `src/devtools/redux-devtools.ts`**
-  - Connect to the Redux DevTools Extension via `window.__REDUX_DEVTOOLS_EXTENSION__`
-  - On `state()` creation: register instance with DevTools as a named store
-  - On `set()` / `patch()` / `reset()`: dispatch action-like events (`{ type: 'set', key, value }`)
-  - Support time-travel debugging (DevTools sends `DISPATCH` with `JUMP_TO_STATE`)
-
-- [ ] **Make it opt-in via `configure()`**
-  - `configure({ devtools: true })` enables globally
-  - `state('key', { devtools: true })` enables per-instance
-  - Zero cost when disabled (no DevTools code in production bundles)
-
-- [ ] **Add to exports**
-  - Either auto-activate in `configure()` or export as `gjendje/devtools` entry point
-  - Must tree-shake completely when unused
-
-- [ ] **Write tests**
-  - Mock `window.__REDUX_DEVTOOLS_EXTENSION__` and verify dispatched actions
-  - Verify time-travel replays values correctly
-  - Verify no-op when DevTools extension is not installed
-
-- [ ] **Write docs**
-  - `docs/devtools.md` — setup guide with screenshots
-  - Add to docs site under "Advanced" section
-
-### 4.2 — Logger middleware
-
-- [ ] **Create `src/devtools/logger.ts`**
-  - `configure({ logLevel: 'debug' })` already exists — enhance it
-  - Log format: `[gjendje] key: oldValue → newValue` with console grouping
-  - Support custom log transports via `configure({ logger: customFn })`
 
 ---
 
@@ -345,15 +206,12 @@ Ship a `gjendje/react` entry point with hooks built on `useSyncExternalStore`.
 
 | Phase | Effort | Impact | Dependency | Can Parallel? |
 |-------|--------|--------|------------|---------------|
-| 1. React bindings | High | Critical | None | — |
-| 2. Vue bindings | Medium | High | None | With Phase 1 |
-| 3. Docs site | Medium | High | Phases 1-2 (content to document) | — |
-| 4. DevTools | Medium | High | None | With Phase 3 |
-| 5. README overhaul | Low | High | Phases 1-4 (substance to link to) | — |
+| 3. Docs site | Medium | High | — | — |
+| 5. README overhaul | Low | High | Phase 3 (substance to link to) | — |
 | 6. Migration guides | Low-Medium | Medium-High | Phase 3 (lives on docs site) | With Phase 5 |
 | 7. Community infra | Low | Medium | None | Anytime |
 | 8. Signals story | Low-Medium | Medium | None | Anytime |
-| 9. Content/social proof | Medium | Medium | Phases 1-5 (need product to promote) | — |
+| 9. Content/social proof | Medium | Medium | Phases 3-5 (need product to promote) | — |
 | 10. Svelte bindings | Low | Low-Medium | None | Anytime |
 
-Phases 4 and 7 have no dependencies and can be worked on in parallel with earlier phases. Phase 7 is research-first and can begin anytime.
+Phase 7 has no dependencies and can be worked on in parallel with earlier phases. Phase 8 is research-first and can begin anytime.

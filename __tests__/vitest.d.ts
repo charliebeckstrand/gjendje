@@ -24,6 +24,7 @@ declare module 'vitest' {
 		objectContaining(obj: Record<string, unknown>): unknown
 		arrayContaining(arr: unknown[]): unknown
 		stringContaining(str: string): unknown
+		any(ctor: new (...args: never[]) => unknown): unknown
 	}
 
 	interface Matchers {
@@ -31,6 +32,7 @@ declare module 'vitest' {
 		toEqual(expected: unknown): void
 		toStrictEqual(expected: unknown): void
 		toBeNull(): void
+		toBeDefined(): void
 		toBeUndefined(): void
 		toBeTruthy(): void
 		toBeFalsy(): void
