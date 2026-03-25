@@ -39,17 +39,17 @@ store.reset()
 
 [Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
 
-## Scopes
-
-`memory`, `local`, `session`, `url`, `bucket`, `server`
-
-[Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
-
 ## API
 
 `get`, `peek`, `set`, `patch`, `reset`, `destroy`, `subscribe`, `watch`, `intercept`, `onChange`
 
 [API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
+
+## Scopes
+
+`memory`, `local`, `session`, `url`, `bucket`, `server`
+
+[Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 
 ## Primitives
 
