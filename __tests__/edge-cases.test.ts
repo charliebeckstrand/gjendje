@@ -159,13 +159,7 @@ describe('computed edge cases', () => {
 		const b = computed([a], ([v]) => (v ?? 0) * 2)
 		const c = computed([a], ([v]) => (v ?? 0) * 3)
 
-		// ComputedInstance extends ReadonlyInstance, which satisfies the dep contract at runtime
-		// biome-ignore lint/suspicious/noExplicitAny: computed-of-computed needs BaseInstance cast
-		const d = computed([b, c] as any, (vals: unknown[]) => {
-			const [bv, cv] = vals as [number, number]
-
-			return bv + cv
-		})
+		const d = computed([b, c], ([bv, cv]) => (bv ?? 0) + (cv ?? 0))
 
 		expect(d.get()).toBe(5) // 2 + 3
 
