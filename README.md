@@ -45,17 +45,17 @@ store.reset()
 
 [API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
 
-## Scopes
-
-`memory`, `local`, `session`, `url`, `bucket`, `server`
-
-[Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
-
 ## Primitives
 
 `computed`, `select`, `previous`, `readonly`, `collection`, `effect`
 
 [Primitives reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/primitives.md)
+
+## Scopes
+
+`memory`, `local`, `session`, `url`, `bucket`, `server`
+
+[Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 
 ## Utilities
 
