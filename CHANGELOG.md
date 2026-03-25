@@ -1,11 +1,5 @@
 # gjendje
 
-## 1.0.11
-
-### Patch Changes
-
-- Reorganize examples doc: add table of contents with anchors, group examples into basic and advanced sections.
-
 ## 1.0.10
 
 ### Patch Changes
