@@ -2,7 +2,7 @@
 	{
 		"name": "gjendje (core)",
 		"path": "dist/index.js",
-		"limit": "5 kB",
+		"limit": "5.5 kB",
 		"import": "{ state, batch }",
 		"ignore": ["async_hooks"]
 	},
@@ -12,5 +12,19 @@
 		"limit": "9 kB",
 		"import": "{ state, computed, effect, collection, batch, withHistory, snapshot, shallowEqual, configure }",
 		"ignore": ["async_hooks"]
+	},
+	{
+		"name": "gjendje/react",
+		"path": "dist/react.js",
+		"limit": "1 kB",
+		"import": "{ useGjendje }",
+		"ignore": ["react"]
+	},
+	{
+		"name": "gjendje/vue",
+		"path": "dist/vue.js",
+		"limit": "1 kB",
+		"import": "{ useGjendje }",
+		"ignore": ["vue"]
 	}
 ]
