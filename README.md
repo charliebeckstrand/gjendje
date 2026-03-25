@@ -39,24 +39,6 @@ store.reset()
 
 [Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
 
-## API
-
-`get`, `peek`, `set`, `patch`, `reset`, `destroy`, `subscribe`, `watch`, `intercept`, `onChange`
-
-[API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
-
-## Primitives
-
-`computed`, `select`, `previous`, `readonly`, `collection`, `effect`
-
-[Primitives reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/primitives.md)
-
-## Scopes
-
-`memory`, `local`, `session`, `url`, `bucket`, `server`
-
-[Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
-
 ## Framework Bindings
 
 ### React
@@ -95,13 +77,31 @@ const count = useGjendje(counter)
 
 [Vue guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/vue.md)
 
+## API
+
+`get`, `peek`, `set`, `patch`, `reset`, `destroy`, `subscribe`, `watch`, `intercept`, `onChange`
+
+[API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
+
+## Primitives
+
+`computed`, `select`, `previous`, `readonly`, `collection`, `effect`
+
+[Primitives reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/primitives.md)
+
+## Scopes
+
+`memory`, `local`, `session`, `url`, `bucket`, `server`
+
+[Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
+
 ## Utilities
 
 `configure`, `batch`, `snapshot`, `shallowEqual`, `withHistory`, `withWatch`, `withServerSession`
 
 [Utilities reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/utilities.md)
 
-## Configure (global config)
+## Configure
 
 `scope`, `maxKeys`, `prefix`, `requireValidation`, `registry`, `ssr`, `sync`, `warnOnDuplicate`, `onChange`, `onDestroy`, `onError`, `onExpire`, `onHydrate`, `onIntercept`, `onMigrate`, `onQuotaExceeded`, `onRegister`, `onReset`, `onSync`, `onValidationFail`
 
