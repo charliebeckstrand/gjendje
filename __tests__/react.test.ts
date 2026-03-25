@@ -16,48 +16,74 @@ describe('useGjendje', () => {
 		instances.length = 0
 	})
 
-	it('returns the current value', () => {
-		const count = tracked(state('react-get', { default: 42 }))
+	it('returns a [value, set, reset] tuple for writable instances', () => {
+		const count = tracked(state('react-tuple', { default: 0 }))
 
 		const { result } = renderHook(() => useGjendje(count))
 
-		expect(result.current).toBe(42)
+		expect(result.current).toHaveLength(3)
+
+		const [value, set, reset] = result.current
+
+		expect(value).toBe(0)
+		expect(typeof set).toBe('function')
+		expect(typeof reset).toBe('function')
 	})
 
-	it('re-renders on set()', () => {
-		const count = tracked(state('react-set', { default: 0 }))
+	it('returns a plain value for readonly instances', () => {
+		const count = tracked(state('react-readonly-plain', { default: 42 }))
+
+		const ro = readonly(count)
+
+		const { result } = renderHook(() => useGjendje(ro))
+
+		expect(result.current).toBe(42)
+		expect(Array.isArray(result.current)).toBe(false)
+	})
+
+	it('set() from the tuple updates the value', () => {
+		const count = tracked(state('react-tuple-set', { default: 0 }))
 
 		const { result } = renderHook(() => useGjendje(count))
 
-		expect(result.current).toBe(0)
+		act(() => result.current[1](5))
+
+		expect(result.current[0]).toBe(5)
+	})
+
+	it('set() from the tuple supports updater functions', () => {
+		const count = tracked(state('react-tuple-updater', { default: 0 }))
+
+		const { result } = renderHook(() => useGjendje(count))
+
+		act(() => result.current[1]((prev) => prev + 1))
+		act(() => result.current[1]((prev) => prev + 1))
+
+		expect(result.current[0]).toBe(2)
+	})
+
+	it('reset() from the tuple resets to default', () => {
+		const count = tracked(state('react-tuple-reset', { default: 0 }))
+
+		const { result } = renderHook(() => useGjendje(count))
+
+		act(() => result.current[1](99))
+
+		expect(result.current[0]).toBe(99)
+
+		act(() => result.current[2]())
+
+		expect(result.current[0]).toBe(0)
+	})
+
+	it('re-renders on external set()', () => {
+		const count = tracked(state('react-ext-set', { default: 0 }))
+
+		const { result } = renderHook(() => useGjendje(count))
 
 		act(() => count.set(5))
 
-		expect(result.current).toBe(5)
-	})
-
-	it('re-renders on updater function', () => {
-		const count = tracked(state('react-updater', { default: 0 }))
-
-		const { result } = renderHook(() => useGjendje(count))
-
-		act(() => count.set((prev) => prev + 1))
-
-		expect(result.current).toBe(1)
-	})
-
-	it('re-renders on reset()', () => {
-		const count = tracked(state('react-reset', { default: 0 }))
-
-		count.set(99)
-
-		const { result } = renderHook(() => useGjendje(count))
-
-		expect(result.current).toBe(99)
-
-		act(() => count.reset())
-
-		expect(result.current).toBe(0)
+		expect(result.current[0]).toBe(5)
 	})
 
 	it('re-renders on patch()', () => {
@@ -65,11 +91,11 @@ describe('useGjendje', () => {
 
 		const { result } = renderHook(() => useGjendje(user))
 
-		expect(result.current).toEqual({ name: 'Alice', age: 30 })
+		expect(result.current[0]).toEqual({ name: 'Alice', age: 30 })
 
 		act(() => user.patch({ age: 31 }))
 
-		expect(result.current).toEqual({ name: 'Alice', age: 31 })
+		expect(result.current[0]).toEqual({ name: 'Alice', age: 31 })
 	})
 
 	it('unsubscribes on unmount', () => {
@@ -78,9 +104,9 @@ describe('useGjendje', () => {
 		const spy = vi.fn()
 
 		const { unmount } = renderHook(() => {
-			const val = useGjendje(count)
-			spy(val)
-			return val
+			const tuple = useGjendje(count)
+			spy(tuple[0])
+			return tuple
 		})
 
 		expect(spy).toHaveBeenCalledTimes(1)
@@ -89,17 +115,17 @@ describe('useGjendje', () => {
 
 		act(() => count.set(5))
 
-		// Should not have been called again after unmount
 		expect(spy).toHaveBeenCalledTimes(1)
 	})
 
 	describe('selector', () => {
-		it('returns a derived slice', () => {
+		it('returns a plain value (not a tuple)', () => {
 			const user = tracked(state('react-selector', { default: { name: 'Alice', age: 30 } }))
 
 			const { result } = renderHook(() => useGjendje(user, (u) => u.name))
 
 			expect(result.current).toBe('Alice')
+			expect(Array.isArray(result.current)).toBe(false)
 		})
 
 		it('re-renders when selected slice changes', () => {
@@ -125,7 +151,6 @@ describe('useGjendje', () => {
 
 			expect(renderCount).toHaveBeenCalledTimes(1)
 
-			// Change age — name selector should not trigger re-render
 			act(() => user.patch({ age: 31 }))
 
 			expect(renderCount).toHaveBeenCalledTimes(1)
@@ -133,7 +158,7 @@ describe('useGjendje', () => {
 	})
 
 	describe('works with primitives', () => {
-		it('computed instance', () => {
+		it('computed instance returns plain value', () => {
 			const count = tracked(state('react-computed-src', { default: 2 }))
 
 			const doubled = tracked(computed([count], ([c]) => (c ?? 0) * 2))
@@ -141,13 +166,14 @@ describe('useGjendje', () => {
 			const { result } = renderHook(() => useGjendje(doubled))
 
 			expect(result.current).toBe(4)
+			expect(Array.isArray(result.current)).toBe(false)
 
 			act(() => count.set(5))
 
 			expect(result.current).toBe(10)
 		})
 
-		it('select instance', () => {
+		it('select instance returns plain value', () => {
 			const user = tracked(state('react-select-src', { default: { name: 'Alice', age: 30 } }))
 
 			const name = tracked(select(user, (u) => u.name))
@@ -161,30 +187,30 @@ describe('useGjendje', () => {
 			expect(result.current).toBe('Bob')
 		})
 
-		it('readonly instance', () => {
-			const count = tracked(state('react-readonly-src', { default: 0 }))
-
-			const readonlyCount = readonly(count)
-
-			const { result } = renderHook(() => useGjendje(readonlyCount))
-
-			expect(result.current).toBe(0)
-
-			act(() => count.set(5))
-
-			expect(result.current).toBe(5)
-		})
-
-		it('collection instance', () => {
+		it('collection instance returns a tuple', () => {
 			const todos = tracked(collection('react-collection', { default: ['a', 'b'] }))
 
 			const { result } = renderHook(() => useGjendje(todos))
 
-			expect(result.current).toEqual(['a', 'b'])
+			const [items, setItems, resetItems] = result.current
 
-			act(() => todos.add('c'))
+			expect(items).toEqual(['a', 'b'])
+			expect(typeof setItems).toBe('function')
+			expect(typeof resetItems).toBe('function')
+		})
 
-			expect(result.current).toEqual(['a', 'b', 'c'])
+		it('collection set/reset from tuple works', () => {
+			const todos = tracked(collection('react-collection-tuple', { default: ['a'] }))
+
+			const { result } = renderHook(() => useGjendje(todos))
+
+			act(() => todos.add('b'))
+
+			expect(result.current[0]).toEqual(['a', 'b'])
+
+			act(() => result.current[2]())
+
+			expect(result.current[0]).toEqual(['a'])
 		})
 	})
 
@@ -195,9 +221,9 @@ describe('useGjendje', () => {
 			const renderCount = vi.fn()
 
 			renderHook(() => {
-				const val = useGjendje(count)
+				const tuple = useGjendje(count)
 				renderCount()
-				return val
+				return tuple
 			})
 
 			expect(renderCount).toHaveBeenCalledTimes(1)
@@ -210,7 +236,6 @@ describe('useGjendje', () => {
 				})
 			})
 
-			// Should re-render once for the batch, not three times
 			expect(renderCount).toHaveBeenCalledTimes(2)
 		})
 	})
