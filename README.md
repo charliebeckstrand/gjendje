@@ -32,16 +32,6 @@ const { counter } = store.get()
 
 [Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
 
-## Configure
-
-`configure` allows you to set global values for all state instances.
-
----
-
-`scope`, `maxKeys`, `prefix`, `requireValidation`, `registry`, `ssr`, `sync`, `warnOnDuplicate`, `onChange`, `onDestroy`, `onError`, `onExpire`, `onHydrate`, `onIntercept`, `onMigrate`, `onQuotaExceeded`, `onRegister`, `onReset`, `onSync`, `onValidationFail`
-
-[Configure guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
-
 ## Scopes
 
 `memory`, `local`, `session`, `url`, `bucket`, `server`
@@ -65,6 +55,12 @@ const { counter } = store.get()
 `configure`, `batch`, `snapshot`, `shallowEqual`, `withHistory`, `withWatch`, `withServerSession`
 
 [Utilities reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/utilities.md)
+
+## Configure
+
+`scope`, `maxKeys`, `prefix`, `requireValidation`, `registry`, `ssr`, `sync`, `warnOnDuplicate`, `onChange`, `onDestroy`, `onError`, `onExpire`, `onHydrate`, `onIntercept`, `onMigrate`, `onQuotaExceeded`, `onRegister`, `onReset`, `onSync`, `onValidationFail`
+
+[Configure guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
 ## License
 
