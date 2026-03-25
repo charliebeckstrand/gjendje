@@ -84,6 +84,7 @@ import { state } from 'gjendje'
 import { useGjendje } from 'gjendje/vue'
 
 const counter = state({ counter: 0 })
+
 const count = useGjendje(counter)
 </script>
 
