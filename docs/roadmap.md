@@ -1,4 +1,4 @@
-# Adoption Roadmap
+# Roadmap
 
 A prioritized plan to close the gap between gjendje's engineering quality and its developer-facing experience. Each phase builds on the previous one, so they should be completed in order unless noted otherwise.
 
