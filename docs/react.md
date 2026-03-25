@@ -165,3 +165,24 @@ function useGjendje<T, U>(instance: ReadonlyInstance<T>, selector: (value: T) =>
 - **With selector**: just the selected slice
 
 Built on [`useSyncExternalStore`](https://react.dev/reference/react/useSyncExternalStore) for full compatibility with React 18+ concurrent features.
+
+## Caveats
+
+**Selectors must return stable references.** The selector result is compared with `===` to decide whether to re-render. Selectors that return new objects on every call (e.g., `s => ({ name: s.name })`) will cause unnecessary re-renders. Return primitives or existing references instead:
+
+```tsx
+// Bad — new object every time, re-renders on every change
+const slice = useGjendje(user, u => ({ name: u.name }))
+
+// Good — primitive, stable reference
+const name = useGjendje(user, u => u.name)
+```
+
+**`set` and `reset` are not referentially stable.** They are new function references on each render. If you pass them as props to `React.memo` children, wrap them with `useCallback`:
+
+```tsx
+const [count, setCount] = useGjendje(counter)
+
+// For memoized children that depend on referential stability
+const stableSet = useCallback((v: number) => counter.set(v), [counter])
+```

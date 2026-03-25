@@ -57,6 +57,42 @@ store.reset()
 
 [Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
 
+## Framework Bindings
+
+### React
+
+```tsx
+import { useGjendje } from 'gjendje/react'
+
+const counter = state({ counter: 0 })
+
+function Counter() {
+  const [count, setCount, resetCount] = useGjendje(counter)
+
+  return <button onClick={() => setCount(prev => prev + 1)}>{count}</button>
+}
+```
+
+[React guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/react.md)
+
+### Vue
+
+```vue
+<script setup>
+import { state } from 'gjendje'
+import { useGjendje } from 'gjendje/vue'
+
+const counter = state({ counter: 0 })
+const count = useGjendje(counter)
+</script>
+
+<template>
+  <button @click="count++">{{ count }}</button>
+</template>
+```
+
+[Vue guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/vue.md)
+
 ## Utilities
 
 `configure`, `batch`, `snapshot`, `shallowEqual`, `withHistory`, `withWatch`, `withServerSession`

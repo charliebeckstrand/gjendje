@@ -1,9 +1,6 @@
 import { customRef, onScopeDispose, type Ref } from 'vue'
+import { isWritable } from '../is-writable.js'
 import type { BaseInstance, ReadonlyInstance } from '../types.js'
-
-function isWritable<T>(instance: ReadonlyInstance<T>): instance is BaseInstance<T> {
-	return typeof (instance as BaseInstance<T>).set === 'function'
-}
 
 /**
  * Subscribe to a gjendje state instance in Vue.
@@ -27,8 +24,15 @@ export function useGjendje<T>(
 	const writable = !selector && isWritable(instance)
 
 	const ref = customRef<unknown>((track, trigger) => {
-		const unsub = instance.subscribe(() => {
-			trigger()
+		let last: unknown = selector ? selector(instance.get()) : instance.get()
+
+		const unsub = instance.subscribe((next) => {
+			const value = selector ? selector(next) : next
+
+			if (value !== last) {
+				last = value
+				trigger()
+			}
 		})
 
 		onScopeDispose(unsub)

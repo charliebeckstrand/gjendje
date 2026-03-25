@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { isWritable } from '../is-writable.js'
 import type { BaseInstance, ReadonlyInstance } from '../types.js'
 
 /**
@@ -10,10 +11,6 @@ export type UseGjendjeResult<T> = readonly [
 	set: (value: T | ((prev: T) => T)) => void,
 	reset: () => void,
 ]
-
-function isWritable<T>(instance: ReadonlyInstance<T>): instance is BaseInstance<T> {
-	return typeof (instance as BaseInstance<T>).set === 'function'
-}
 
 /**
  * Subscribe to a gjendje state instance in React.

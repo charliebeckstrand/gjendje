@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, isRef, nextTick } from 'vue'
+import { defineComponent, isRef, nextTick, watch as vueWatch } from 'vue'
 import { batch, collection, computed, readonly, select, state } from '../src/index.js'
 import { useGjendje } from '../src/vue/index.js'
 
@@ -9,19 +9,18 @@ import { useGjendje } from '../src/vue/index.js'
  * as a raw ref (bypassing Vue's auto-unwrapping on the render proxy).
  */
 function useSetup<T>(fn: () => T) {
-	let result: T
+	const box = { result: undefined as T }
 
 	const wrapper = mount(
 		defineComponent({
 			setup() {
-				result = fn()
+				box.result = fn()
 				return () => null
 			},
 		}),
 	)
 
-	// biome-ignore lint/style/noNonNullAssertion: assigned synchronously in setup
-	return { result: result!, wrapper }
+	return { result: box.result, wrapper }
 }
 
 describe('useGjendje (vue)', () => {
@@ -173,6 +172,39 @@ describe('useGjendje (vue)', () => {
 			await nextTick()
 
 			expect(result.value).toBe(31)
+
+			wrapper.unmount()
+		})
+
+		it('skips trigger when selected slice is unchanged', async () => {
+			const user = tracked(state('vue-selector-skip', { default: { name: 'Alice', age: 30 } }))
+
+			let triggerCount = 0
+
+			const { wrapper } = useSetup(() => {
+				const name = useGjendje(user, (u) => u.name)
+
+				// Use Vue's watch to count reactive triggers
+				vueWatch(name, () => {
+					triggerCount++
+				})
+
+				return name
+			})
+
+			expect(triggerCount).toBe(0)
+
+			// Change age — name selector should not trigger
+			user.patch({ age: 31 })
+			await nextTick()
+
+			expect(triggerCount).toBe(0)
+
+			// Change name — should trigger
+			user.patch({ name: 'Bob' })
+			await nextTick()
+
+			expect(triggerCount).toBe(1)
 
 			wrapper.unmount()
 		})
