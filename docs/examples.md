@@ -4,6 +4,7 @@
 
 ### Basic
 
+- [Counter](#counter)
 - [Read-only exports](#read-only-exports)
 - [Per-key watchers](#per-key-watchers)
 - [Batching multiple updates](#batching-multiple-updates)
@@ -23,6 +24,27 @@
 ---
 
 ## Basic
+
+### Counter
+
+```ts
+import { state } from 'gjendje'
+
+const count = state({ count: 0 })
+
+// Read
+count.get() // 0
+
+// Write
+count.set(1)
+count.set((n) => n + 1)
+
+// Subscribe
+count.subscribe((value) => console.log(value))
+
+// Reset to initial value
+count.reset()
+```
 
 ### Read-only exports
 
