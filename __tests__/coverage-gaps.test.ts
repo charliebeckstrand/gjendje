@@ -783,10 +783,9 @@ describe('computed advanced', () => {
 	it('computed of computed chains correctly', () => {
 		const a = state('comp-chain-a', { default: 1, scope: 'memory' })
 
-		// biome-ignore lint/suspicious/noExplicitAny: computed deps need BaseInstance
-		const b = computed([a], ([v]) => (v ?? 0) * 2) as any
-		// biome-ignore lint/suspicious/noExplicitAny: computed-of-computed needs BaseInstance cast
-		const c = computed([b] as any, (vals: unknown[]) => ((vals[0] as number) ?? 0) + 10)
+		const b = computed([a], ([v]) => (v ?? 0) * 2)
+
+		const c = computed([b], ([v]) => (v ?? 0) + 10)
 
 		expect(c.get()).toBe(12) // 1*2 + 10
 
@@ -857,11 +856,7 @@ describe('batch advanced', () => {
 	it('batch with computed dependency correctly defers', () => {
 		const a = state('batch-comp-a', { default: 0, scope: 'memory' })
 		const b = state('batch-comp-b', { default: 0, scope: 'memory' })
-		// biome-ignore lint/suspicious/noExplicitAny: computed deps need BaseInstance
-		const sum = computed([a, b] as any, (vals: unknown[]) => {
-			const [av, bv] = vals as [number, number]
-			return av + bv
-		})
+		const sum = computed([a, b], ([av, bv]) => (av ?? 0) + (bv ?? 0))
 
 		const values: number[] = []
 		sum.subscribe((v) => values.push(v))

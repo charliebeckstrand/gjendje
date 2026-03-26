@@ -2,8 +2,8 @@
 
 # gjendje
 
-![NPM Last Update](https://img.shields.io/npm/last-update/gjendje)
 ![NPM Version](https://img.shields.io/npm/v/gjendje)
+![NPM Last Update](https://img.shields.io/npm/last-update/gjendje)
 ![GitHub License](https://img.shields.io/github/license/charliebeckstrand/gjendje)
 
 gjendje is a storage-agnostic state management library for TypeScript and JavaScript. It gives you a single, unified API for reactive state — regardless of where that state lives.
@@ -23,30 +23,59 @@ import { state } from 'gjendje'
 
 const store = state({ count: 0 })
 
-function increment() {
-  store.set((prev) => ({ ...prev, count: prev.count + 1 }))
-}
+// set
+store.set({ count: 1 })
 
-const { counter } = store.get()
+store.set((prev) => ({ ...prev, count: prev.count + 1 }))
+
+// get
+store.get()
+
+const { count } = store.get()
+
+// reset
+store.reset()
 ```
 
 [Examples](https://github.com/charliebeckstrand/gjendje/blob/main/docs/examples.md)
 
-## Configure
+## Framework Bindings
 
-`configure` allows you to set global values for all state instances.
+### React
 
----
+```tsx
+import { state } from 'gjendje'
+import { useGjendje } from 'gjendje/react'
 
-`scope`, `maxKeys`, `prefix`, `requireValidation`, `registry`, `ssr`, `sync`, `warnOnDuplicate`, `onChange`, `onDestroy`, `onError`, `onExpire`, `onHydrate`, `onIntercept`, `onMigrate`, `onQuotaExceeded`, `onRegister`, `onReset`, `onSync`, `onValidationFail`
+const counter = state({ counter: 0 })
 
-[Configure guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
+function Counter() {
+  const [count, setCount, resetCount] = useGjendje(counter)
 
-## Scopes
+  return <button onClick={() => setCount(prev => prev + 1)}>{count}</button>
+}
+```
 
-`memory`, `local`, `session`, `url`, `bucket`, `server`
+[React guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/react.md)
 
-[Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
+### Vue
+
+```vue
+<script setup>
+import { state } from 'gjendje'
+import { useGjendje } from 'gjendje/vue'
+
+const counter = state({ counter: 0 })
+
+const count = useGjendje(counter)
+</script>
+
+<template>
+  <button @click="count++">{{ count }}</button>
+</template>
+```
+
+[Vue guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/vue.md)
 
 ## API
 
@@ -60,11 +89,27 @@ const { counter } = store.get()
 
 [Primitives reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/primitives.md)
 
+## Scopes
+
+`memory`, `local`, `session`, `url`, `bucket`, `server`
+
+[Scope guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/scopes.md)
+
 ## Utilities
 
 `configure`, `batch`, `snapshot`, `shallowEqual`, `withHistory`, `withWatch`, `withServerSession`
 
 [Utilities reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/utilities.md)
+
+## DevTools
+
+[DevTools guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/devtools.md)
+
+## Global Configuration (`Configure`)
+
+`scope`, `maxKeys`, `prefix`, `requireValidation`, `registry`, `ssr`, `sync`, `warnOnDuplicate`, `onChange`, `onDestroy`, `onError`, `onExpire`, `onHydrate`, `onIntercept`, `onMigrate`, `onQuotaExceeded`, `onRegister`, `onReset`, `onSync`, `onValidationFail`
+
+[Configure guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/configure.md)
 
 ## License
 

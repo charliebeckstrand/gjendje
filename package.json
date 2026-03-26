@@ -1,6 +1,6 @@
 {
 	"name": "gjendje",
-	"version": "1.0.9",
+	"version": "1.2.0",
 	"description": "Storage-agnostic state management for TypeScript",
 	"keywords": [
 		"state",
@@ -26,6 +26,7 @@
 	},
 	"packageManager": "pnpm@10.29.3",
 	"type": "module",
+	"sideEffects": false,
 	"exports": {
 		".": {
 			"import": {
@@ -45,6 +46,36 @@
 			"require": {
 				"types": "./dist/server.d.cts",
 				"default": "./dist/server.cjs"
+			}
+		},
+		"./react": {
+			"import": {
+				"types": "./dist/react.d.ts",
+				"default": "./dist/react.js"
+			},
+			"require": {
+				"types": "./dist/react.d.cts",
+				"default": "./dist/react.cjs"
+			}
+		},
+		"./vue": {
+			"import": {
+				"types": "./dist/vue.d.ts",
+				"default": "./dist/vue.js"
+			},
+			"require": {
+				"types": "./dist/vue.d.cts",
+				"default": "./dist/vue.cjs"
+			}
+		},
+		"./devtools": {
+			"import": {
+				"types": "./dist/devtools.d.ts",
+				"default": "./dist/devtools.js"
+			},
+			"require": {
+				"types": "./dist/devtools.d.cts",
+				"default": "./dist/devtools.cjs"
 			}
 		}
 	},
@@ -74,29 +105,52 @@
 		"test:coverage": "vitest run --coverage",
 		"test:watch": "vitest",
 		"typecheck": "tsc --project tsconfig.test.json --skipLibCheck",
+		"bench:setup": "pnpm add -D tsx zustand valtio",
 		"bench": "tsx benchmarks/state-management.bench.ts",
 		"bench:internal": "tsx benchmarks/internal.bench.ts",
 		"bench:extended": "tsx benchmarks/internals-extended.bench.ts",
 		"bench:save": "tsx benchmarks/internal.bench.ts --save",
 		"bench:compare": "tsx benchmarks/internal.bench.ts --compare"
 	},
+	"peerDependencies": {
+		"react": ">=18.0.0",
+		"vue": ">=3.3.0"
+	},
+	"peerDependenciesMeta": {
+		"react": {
+			"optional": true
+		},
+		"vue": {
+			"optional": true
+		}
+	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.6",
 		"@changesets/cli": "^2.27.0",
 		"@size-limit/preset-small-lib": "^11.0.0",
+		"@testing-library/react": "^16.3.2",
 		"@types/node": "^20.0.0",
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.2.3",
 		"@vitest/coverage-v8": "^4.0.0",
+		"@vue/test-utils": "^2.4.6",
 		"happy-dom": "^20.8.7",
 		"lefthook": "^1.6.0",
 		"publint": "^0.3.0",
+		"react": "^19.2.4",
+		"react-dom": "^19.2.4",
 		"size-limit": "^11.0.0",
 		"tinybench": "^6.0.0",
 		"tsup": "^8.0.0",
-		"tsx": "^4.21.0",
 		"typescript": "^5.4.0",
-		"valtio": "^2.3.1",
 		"vite": "^6.0.0",
 		"vitest": "^4.0.0",
-		"zustand": "^5.0.12"
+		"vue": "^3.5.31"
+	},
+	"pnpm": {
+		"overrides": {
+			"picomatch@<2.3.2": "2.3.2",
+			"picomatch@>=4.0.0 <4.0.4": "4.0.4"
+		}
 	}
 }

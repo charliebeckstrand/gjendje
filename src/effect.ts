@@ -1,4 +1,4 @@
-import type { BaseInstance, DepValues } from './types.js'
+import type { DepValues, ReadonlyInstance } from './types.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,7 +36,7 @@ export interface EffectHandle {
  * stop()
  * ```
  */
-export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
+export function effect<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 	deps: TDeps,
 	fn: (values: DepValues<TDeps>) => Cleanup | undefined,
 ): EffectHandle {
@@ -65,7 +65,7 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 		}
 
 		for (let i = 0; i < depLen; i++) {
-			const dep = deps[i] as BaseInstance<unknown>
+			const dep = deps[i] as ReadonlyInstance<unknown>
 
 			;(depValues as unknown[])[i] = dep.get()
 		}
@@ -81,7 +81,7 @@ export function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
 	const unsubscribers = new Array(depLen)
 
 	for (let i = 0; i < depLen; i++) {
-		const dep = deps[i] as BaseInstance<unknown>
+		const dep = deps[i] as ReadonlyInstance<unknown>
 
 		unsubscribers[i] = dep.subscribe(run)
 	}
