@@ -139,7 +139,20 @@ improvement — not worth the complexity.
 2. Structural sharing for large arrays
 3. Batch mutation amortization
 
-**Run with:** `npx tsx benchmarks/experiments/collection-mutations.bench.ts`
+**Result:** POTENTIAL WINS in mutation throughput, but dominated by `set()` pipeline:
+- **add() at size 100:** In-place push is **2.28x faster** than `collection.add()` (164K vs 72K)
+- **update({one}) at size 100:** In-place Object.assign is **2.91x faster** (213K vs 73K)
+- **Batched adds (10 items, size 100):** In-place is **2.41x faster** than `add(...items)`
+- **Watch diffing (1 key, size 10):** Flat-array+bitmask is **1.45x faster** than Map iteration;
+  at 3 keys it's **2.11x faster** for size 10
+- **Watch end-to-end (size 1000):** Current collection.watch() is actually **2.13x faster**
+  than naive in-place — early-exit logic works well at scale
+- **Root cause:** The dominant cost is the `set()` pipeline (interceptors, onChange, notify),
+  not the array operations themselves. In-place mutation bypasses `set()` entirely.
+- **Conclusion:** In-place mutations would be faster but break the reactive contract
+  (subscribers wouldn't fire). The real win is combining with mixin/mutate from the
+  enhancer findings (Priority 5) to reduce collection creation overhead. Watch diffing
+  with flat-array+bitmask is worth investigating for collections with watched keys.
 
 ### 6. Object Pooling for Instances
 **File:** `benchmarks/experiments/allocation-pooling.bench.ts`
