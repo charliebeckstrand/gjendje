@@ -185,8 +185,18 @@ improvement — not worth the complexity.
 - Do NOT change MemoryStateImpl
 - Run A/B bench focused on computed chains and storage adapter patterns
 
-### Priority 5: Phase 2 Winners
-- Implement any phase 2 findings that show >20% improvement
+### Priority 5: Mixin/Mutate for Collection Factory
+- Enhancer chain benchmarks showed mixin/mutate is **7-13x faster** than Object.create
+  for creation cost. Object.create is still fastest for hot-path get/set.
+- `collection()` is creation-heavy (wraps with multiple enhancer layers) and showed
+  138K ops/s create+destroy in internal benchmarks — significantly slower than plain state.
+- Investigate replacing Object.create with mixin/mutate specifically in the collection
+  factory path. Do NOT change the general enhancer pattern.
+- **File to change:** `src/collection.ts`
+- Run `npx tsx benchmarks/internal.bench.ts --compare lifecycle` to verify
+
+### Priority 6: Other Phase 2 Winners
+- Implement any remaining phase 2 findings that show >20% improvement
 - Each change gets its own A/B bench cycle
 - Especially careful with anything touching MemoryStateImpl
 
