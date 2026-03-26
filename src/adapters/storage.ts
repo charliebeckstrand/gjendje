@@ -1,5 +1,6 @@
 import { notify } from '../batch.js'
-import { getConfig, log } from '../config.js'
+import { getConfig, log, reportError } from '../config.js'
+import { StorageWriteError } from '../errors.js'
 import { createListeners } from '../listeners.js'
 import { mergeKeys, pickKeys, readAndMigrate, wrapForStorage } from '../persist.js'
 import type { Adapter, StateOptions } from '../types.js'
@@ -96,17 +97,20 @@ export function createStorageAdapter<T>(
 			cachedValue = undefined
 			cacheValid = false
 
-			log(
-				'error',
-				`Failed to write key "${key}" to storage: ${e instanceof Error ? e.message : String(e)}`,
-			)
-
-			const isQuotaError =
+			const isQuota =
 				e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22)
 
-			if (isQuotaError && options.scope) {
-				getConfig().onQuotaExceeded?.({ key, scope: options.scope, error: e })
+			const scope = options.scope ?? 'local'
+
+			const writeErr = new StorageWriteError(key, scope, e, isQuota)
+
+			log('error', writeErr.message)
+
+			if (isQuota) {
+				getConfig().onQuotaExceeded?.({ key, scope, error: writeErr })
 			}
+
+			reportError(key, scope, writeErr)
 		}
 	}
 

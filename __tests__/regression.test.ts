@@ -679,11 +679,16 @@ describe('createStorageAdapter branches', () => {
 
 		adapter.set('new value')
 
-		expect(onQuotaExceeded).toHaveBeenCalledWith({
-			key: 'quota-test',
-			scope: 'local',
-			error: quotaError,
-		})
+		expect(onQuotaExceeded).toHaveBeenCalledWith(
+			expect.objectContaining({
+				key: 'quota-test',
+				scope: 'local',
+			}),
+		)
+
+		const ctx = onQuotaExceeded.mock.calls[0]?.[0]
+
+		expect(ctx.error.cause).toBe(quotaError)
 
 		spy.mockRestore()
 

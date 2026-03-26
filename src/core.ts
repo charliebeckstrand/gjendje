@@ -6,6 +6,7 @@ import { createUrlAdapter } from './adapters/url.js'
 import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
 import { getConfig, log, PERSISTENT_SCOPES, reportError } from './config.js'
+import { HydrationError } from './errors.js'
 import { safeCall, safeCallChange } from './listeners.js'
 import { getRegistered, registerNew, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
@@ -935,7 +936,9 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 			} catch (err) {
 				log('debug', `Hydration adapter unavailable for state("${key}") — using memory fallback.`)
 
-				reportError(key, scope, err)
+				const hydrationErr = new HydrationError(key, scope, err)
+
+				reportError(key, scope, hydrationErr)
 			} finally {
 				realAdapter?.destroy?.()
 			}

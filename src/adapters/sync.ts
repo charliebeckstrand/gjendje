@@ -1,4 +1,5 @@
 import { getConfig, log, reportError } from '../config.js'
+import { SyncError } from '../errors.js'
 import { createListeners } from '../listeners.js'
 import type { Adapter, Scope, Unsubscribe } from '../types.js'
 
@@ -48,13 +49,12 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 					getConfig().onSync?.({ key, scope, value, source: 'remote' })
 				}
 			} catch (err) {
-				log(
-					'error',
-					`Sync failed for key "${key}": ${err instanceof Error ? err.message : String(err)}`,
-				)
+				const syncErr = new SyncError(key, scope ?? 'local', err)
+
+				log('error', syncErr.message)
 
 				if (scope) {
-					reportError(key, scope, err)
+					reportError(key, scope, syncErr)
 				}
 			}
 		}

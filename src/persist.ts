@@ -1,4 +1,5 @@
 import { getConfig, log } from './config.js'
+import { MigrationError, StorageReadError, ValidationError } from './errors.js'
 import type { Scope, StateOptions, VersionedValue } from './types.js'
 import { isRecord } from './utils.js'
 
@@ -44,7 +45,7 @@ export function readAndMigrate<T>(
 
 		// Run migration chain if behind current version
 		if (storedVersion < currentVersion && options.migrate) {
-			data = runMigrations(data, storedVersion, currentVersion, options.migrate)
+			data = runMigrations(data, storedVersion, currentVersion, options.migrate, key, scope)
 
 			if (key && scope) {
 				getConfig().onMigrate?.({
@@ -60,15 +61,27 @@ export function readAndMigrate<T>(
 		// Validate final shape
 		if (options.validate && !options.validate(data)) {
 			if (key && scope) {
-				getConfig().onValidationFail?.({ key, scope, value: data })
+				const config = getConfig()
+
+				config.onValidationFail?.({ key, scope, value: data })
+
+				const validationErr = new ValidationError(key, scope, data)
+
+				config.onError?.({ key, scope, error: validationErr })
 			}
 
 			return defaultValue
 		}
 
 		return data as T
-	} catch {
+	} catch (err) {
 		log('debug', `Failed to read/migrate stored value — falling back to default.`)
+
+		if (key && scope) {
+			const readErr = new StorageReadError(key, scope, err)
+
+			getConfig().onError?.({ key, scope, error: readErr })
+		}
 
 		return defaultValue
 	}
@@ -136,6 +149,8 @@ function runMigrations(
 	fromVersion: number,
 	toVersion: number,
 	migrations: Record<number, (old: unknown) => unknown>,
+	key?: string,
+	scope?: Scope,
 ): unknown {
 	if (fromVersion < 0 || toVersion - fromVersion > MAX_MIGRATION_STEPS) {
 		log('warn', `Migration range v${fromVersion}→v${toVersion} is out of bounds — skipping.`)
@@ -151,8 +166,14 @@ function runMigrations(
 		if (migrateFn) {
 			try {
 				current = migrateFn(current)
-			} catch {
+			} catch (err) {
 				log('warn', `Migration from v${v} failed — returning partially migrated value.`)
+
+				if (key && scope) {
+					const migrationErr = new MigrationError(key, scope, v, toVersion, err)
+
+					getConfig().onError?.({ key, scope, error: migrationErr })
+				}
 
 				return current
 			}

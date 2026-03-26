@@ -29,6 +29,15 @@ export type { HistoryOptions, WithHistoryInstance } from './enhancers/history.js
 export { withHistory } from './enhancers/history.js'
 export type { WithWatch } from './enhancers/watch.js'
 export { withWatch } from './enhancers/watch.js'
+export {
+	GjendjeError,
+	HydrationError,
+	MigrationError,
+	StorageReadError,
+	StorageWriteError,
+	SyncError,
+	ValidationError,
+} from './errors.js'
 export type { PreviousInstance, PreviousOptions } from './previous.js'
 export { previous } from './previous.js'
 export { readonly } from './readonly.js'
