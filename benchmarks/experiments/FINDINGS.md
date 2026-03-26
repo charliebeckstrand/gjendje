@@ -17,7 +17,7 @@
 **Experiment results:**
 - **Wrapper object `{ fn, gen }` approach:** +27-40% batch throughput, BUT -5-12% regression on non-batched writes (computed chains, effects, interceptors). The `.fn` property indirection on the non-batching hot path causes V8 IC misses.
 - **Function-with-`_gen`-property approach:** Similar batch gains, but same non-batch regressions. V8 treats functions-with-extra-properties poorly.
-- **Map (replacing WeakMap) approach:** Actually **regressed** batch performance by 11-20%. Map is slower than WeakMap for this pattern. Do not use.
+- **Map (replacing WeakMap) approach:** **Catastrophic regression** of -35% to -46% on batch throughput (confirmed with fresh back-to-back A/B). Map is dramatically slower than WeakMap for function-keyed dedup. Do not use.
 - **Conclusion:** The wrapper object approach is a batch-only win that trades non-batch regression. Only worth implementing if the codebase is batch-heavy. Consider implementing a **hybrid approach** that uses wrapper objects only when batching depth > 0, falling back to direct calls otherwise. Needs more research.
 
 ### Trust-the-Cache in Storage Adapter
@@ -180,7 +180,7 @@ The singleListener fast path already in MemoryStateImpl showed no additional gai
 
 | Hypothesis | Result | Notes |
 |---|---|---|
-| Map replacing WeakMap in batch | -11 to -20% regression | Map is slower than WeakMap for this pattern |
+| Map replacing WeakMap in batch | -35% to -46% regression | Map is dramatically slower than WeakMap for function keys |
 | Computed version-counting | -33% to -143% | Current dirty-flag approach is optimal |
 | Lazy subscription in computed | +12% marginal | Not worth the complexity |
 | Early bailout in computed | Net negative | Added overhead exceeds savings |
