@@ -114,7 +114,11 @@ The singleListener fast path already in MemoryStateImpl showed no additional gai
 4. Write cost: JSON.stringify → wrapForStorage overhead
 5. Skip pickKeys/mergeKeys when no `persist` option
 
-**Run with:** `npx tsx benchmarks/experiments/persist-pipeline.bench.ts`
+**Result:** NO BREAKTHROUGH. The pipeline is already near-optimal. `readAndMigrate`
+is only 1-3% slower than raw `JSON.parse`. All checks (`isVersionedValue`, `pickKeys`,
+`mergeKeys`) exit in <0.0001ms when unused. `JSON.parse`/`JSON.stringify` dominate cost
+at 5.6x slower than all pipeline checks combined. Specialized readers show only 3-5%
+improvement — not worth the complexity.
 
 ### 5. Collection Mutation Overhead
 **File:** `benchmarks/experiments/collection-mutations.bench.ts` (19KB)
