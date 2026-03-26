@@ -22,8 +22,7 @@
  *   tsx benchmarks/storage-experiment.bench.ts
  */
 
-import { Bench } from 'tinybench'
-import { defineSuite, printResults, runSuites, uniqueKey } from './helpers.js'
+import { defineSuite, runSuites, uniqueKey } from './helpers.js'
 
 // ---------------------------------------------------------------------------
 // Environment mocks — must be set up before any gjendje imports that branch
@@ -116,11 +115,7 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 // --- Strategy A: Current approach — always call getItem, compare raw string ---
 
-function createCurrentAdapter<T>(
-	storage: Storage,
-	key: string,
-	defaultValue: T,
-) {
+function createCurrentAdapter<T>(storage: Storage, key: string, defaultValue: T) {
 	let cachedRaw: string | null | undefined
 	let cachedValue: T | undefined
 
@@ -224,8 +219,7 @@ function createSharedListenerRegistry(): SharedListenerRegistry {
 	function dispatch(event: StorageEvent) {
 		if (event.key === null) return // storage.clear() — iterate all
 
-		const storageType =
-			event.storageArea === globalThis.localStorage ? 'local' : 'session'
+		const storageType = event.storageArea === globalThis.localStorage ? 'local' : 'session'
 
 		const mapKey = `${storageType}:${event.key}`
 
@@ -245,15 +239,13 @@ function createSharedListenerRegistry(): SharedListenerRegistry {
 		register(storage, key, handler) {
 			ensureRegistered()
 
-			const storageType =
-				storage === globalThis.localStorage ? 'local' : 'session'
+			const storageType = storage === globalThis.localStorage ? 'local' : 'session'
 
 			handlers.set(`${storageType}:${key}`, handler)
 		},
 
 		unregister(storage, key) {
-			const storageType =
-				storage === globalThis.localStorage ? 'local' : 'session'
+			const storageType = storage === globalThis.localStorage ? 'local' : 'session'
 
 			handlers.delete(`${storageType}:${key}`)
 		},
@@ -267,11 +259,7 @@ function createSharedListenerRegistry(): SharedListenerRegistry {
 // Global shared registry (mimics what a real implementation would expose)
 const sharedRegistry = createSharedListenerRegistry()
 
-function createSharedListenerAdapter<T>(
-	storage: Storage,
-	key: string,
-	defaultValue: T,
-) {
+function createSharedListenerAdapter<T>(storage: Storage, key: string, defaultValue: T) {
 	let cachedRaw: string | null | undefined
 	let cachedValue: T | undefined
 
@@ -366,9 +354,9 @@ const getItemCostSuite = defineSuite('getitem-cost', {
 				// Bypass the cache by mutating raw in storage between reads
 				adapterUncached.read()
 				// Force cache miss next iteration by clearing cached state
-				;(adapterUncached as ReturnType<typeof createCurrentAdapter<typeof value>> & {
+				adapterUncached as ReturnType<typeof createCurrentAdapter<typeof value>> & {
 					_cachedRaw?: string
-				})
+				}
 				// Use write to update both storage AND invalidate via different value
 				adapterUncached.write({ ...value, count: Math.random() })
 			})
@@ -462,14 +450,9 @@ const trustCacheSuite = defineSuite('trust-cache', {
 		// Trust-cache approach
 		let trustInvalidate: (() => void) | undefined
 
-		const trusted = createTrustCacheAdapter(
-			store.storage,
-			key,
-			defaultValue,
-			(invalidate) => {
-				trustInvalidate = invalidate
-			},
-		)
+		const trusted = createTrustCacheAdapter(store.storage, key, defaultValue, (invalidate) => {
+			trustInvalidate = invalidate
+		})
 
 		trusted.read() // warm cache
 
@@ -502,14 +485,9 @@ const trustCacheSuite = defineSuite('trust-cache', {
 
 		let trustInvalidate: (() => void) | undefined
 
-		const trusted = createTrustCacheAdapter(
-			store.storage,
-			key,
-			defaultValue,
-			(invalidate) => {
-				trustInvalidate = invalidate
-			},
-		)
+		const trusted = createTrustCacheAdapter(store.storage, key, defaultValue, (invalidate) => {
+			trustInvalidate = invalidate
+		})
 
 		bench
 			.add('current: write + 100 reads', () => {
@@ -644,12 +622,6 @@ const listenerScalingSuite = defineSuite('listener-scaling', {
 
 runSuites(
 	'Storage Adapter Read Path — Optimization Experiments',
-	[
-		rawGetItemSuite,
-		getItemCostSuite,
-		trustCacheSuite,
-		listenerOverheadSuite,
-		listenerScalingSuite,
-	],
+	[rawGetItemSuite, getItemCostSuite, trustCacheSuite, listenerOverheadSuite, listenerScalingSuite],
 	'storage-experiment',
 ).catch(console.error)
