@@ -134,14 +134,16 @@ improvement — not worth the complexity.
 **Run with:** `npx tsx benchmarks/experiments/collection-mutations.bench.ts`
 
 ### 6. Object Pooling for Instances
-**Agent status:** 17 messages, was writing benchmark file (may not have completed)
+**File:** `benchmarks/experiments/allocation-pooling.bench.ts`
 
-**Strategies:**
-1. Object pool for high-churn MemoryStateImpl create+destroy cycles
-2. String interning for registry keys (`scopedKey()`)
-3. Direct fields on instance (no MemoryCore wrapper)
-
-**Run with:** Check if file exists in `benchmarks/experiments/`, run if present.
+**Result:** NO BREAKTHROUGH for hot-path. Mixed results overall:
+- **get+set throughput:** Direct-fields, MemoryCore, and current all within 1-2% — MemoryCore indirection is free
+- **set+notify:** Current MemoryStateImpl is **fastest** (14.92M ops/s) — no change needed
+- **MemoryCore allocation:** Property access (._c.current) is essentially free vs direct fields
+- **Object pooling:** 11-16% slower than direct construction — overhead not worth it
+- **String interning:** Actually **slower** (12.4M cache hit vs 18.4M fresh) — do not intern
+- **GC stress:** Direct-fields 19x faster than current, but registry is the bottleneck, not class shape
+- **Conclusion:** MemoryCore pattern is already optimal. Registry lookup dominates lifecycle cost.
 
 ---
 
