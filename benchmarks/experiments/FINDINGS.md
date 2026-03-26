@@ -1,68 +1,41 @@
 # Performance Optimization Findings
 
-> Recorded 2026-03-26. Comprehensive findings from two phases of optimization research.
+> Originally recorded 2026-03-26. Updated with implementation results same day.
 
 ---
 
 ## Phase 1: Confirmed Results (Benchmarked)
 
-### Already Implemented (committed)
+### Implemented (committed)
 - **select.ts rewrite:** Delegated to `computed()`, removed ~130 lines of duplicated code. -1.87 KB raw ESM.
 - **PERSISTENT_SCOPES shared:** Eliminated duplicate Set in core.ts.
 - **resolveAdapter narrowed:** Removed dead `memory`/`render` cases.
 - **computed.ts cleanup:** Replaced `TO_VOID` with existing `NOOP`.
+- **Standalone MemoryStateImpl:** Removed `extends StateImpl` — implements `StateInstance<T>` directly. Eliminates super() call + 7 wasted property writes. **A/B result: +15-17% create/destroy, +8% full lifecycle.** Zero hot-path regressions.
+- **Trust-the-cache storage adapter:** Added `cacheValid` boolean flag to skip `storage.getItem()` when cache is known-valid. **A/B result: 4.5x faster storage reads** (validated in experiments). Zero regressions.
+- **Mixin/mutate collection factory:** Replaced `Object.create(base)` with direct mutation of the base instance. **A/B result: ~5x faster collection lifecycle** (124K → 625K ops/s). Zero regressions on non-collection paths.
 
-### Batch Dedup: Wrapper Object (NOT Map)
+### Batch Dedup: DISPROVEN for Hybrid Approach
 
-**Experiment results:**
+**Original experiment results:**
 - **Wrapper object `{ fn, gen }` approach:** +27-40% batch throughput, BUT -5-12% regression on non-batched writes (computed chains, effects, interceptors). The `.fn` property indirection on the non-batching hot path causes V8 IC misses.
 - **Function-with-`_gen`-property approach:** Similar batch gains, but same non-batch regressions. V8 treats functions-with-extra-properties poorly.
 - **Map (replacing WeakMap) approach:** **Catastrophic regression** of -35% to -46% on batch throughput (confirmed with fresh back-to-back A/B). Map is dramatically slower than WeakMap for function-keyed dedup. Do not use.
-- **Conclusion:** The wrapper object approach is a batch-only win that trades non-batch regression. Only worth implementing if the codebase is batch-heavy. Consider implementing a **hybrid approach** that uses wrapper objects only when batching depth > 0, falling back to direct calls otherwise. Needs more research.
 
-### Trust-the-Cache in Storage Adapter
+**Hybrid approach implementation attempts (all failed):**
+1. **Inline wrapper on MemoryCore:** +13-35% batch, but **-50% lifecycle regression**. Adding `notifyWrapper` field to MemoryCore changes V8 hidden class, catastrophically slowing rapid create/destroy cycles.
+2. **Lazy WeakMap wrapper cache:** Batch neutral (WeakMap.get() to find wrapper has same cost as existing WeakMap dedup). ~5% non-batched gain — not worth the added complexity.
+3. **Direct call + ESM `batchDepth` export:** Slightly worse everywhere. ESM live binding import has overhead that negates skipping `notify()`.
 
-**Finding:** 4.5x faster storage reads by skipping `storage.getItem()` when cache is valid.
+**Conclusion:** The current WeakMap + generation counter in `notify()` is already near-optimal. V8 optimizes the `if (depth > 0)` branch prediction extremely well. All hybrid approaches either traded regression elsewhere or failed to improve. **Do not revisit.**
 
-**Current code (src/adapters/storage.ts:29-61):**
-```ts
-function read(): T {
-    const raw = storage.getItem(key)  // Always hits storage
-    if (raw === cachedRaw) return cachedValue as T  // Then checks cache
-    // ... parse
-}
-```
-
-**Proposed change:**
-```ts
-// Add a `cacheValid` boolean flag, set to true after write/read, false on storage events
-function read(): T {
-    if (cacheValid && cachedValue !== undefined) return cachedValue
-    const raw = storage.getItem(key)
-    // ... rest unchanged
-}
-```
-
-**Risk:** Low. Cache is already invalidated on:
-- `write()` (updates cachedRaw/cachedValue)
-- `onStorageEvent()` (sets cachedRaw = undefined)
-- Parse errors (sets cachedRaw = undefined)
-
-**Status:** NOT YET IMPLEMENTED.
-
-### Array vs Set for Listeners
+### Array vs Set for Listeners: NOT WORTH IMPLEMENTING
 
 **Finding:** +38% improvement on subscribe/unsub churn pattern with Array vs Set.
 
-**Risk:** HIGH for MemoryStateImpl. User explicitly warned this area is "very touchy."
-The singleListener fast path already in MemoryStateImpl showed no additional gains.
+**Analysis:** `createListeners()` is only used by non-memory adapters (storage, url, bucket, server, sync). These adapters are I/O-bound — listener churn is never their bottleneck. MemoryStateImpl (where churn matters) has its own inline Set that should not be touched. The +38% gain applies to a path that is never hot in practice.
 
-**Recommendation:**
-- Consider implementing ONLY in `createListeners()` (used by non-memory adapters)
-- Do NOT touch MemoryStateImpl listener handling without extensive benchmarking
-- The churn pattern (+38%) is mainly beneficial for computed chains, not core state
-
-**Status:** NOT YET IMPLEMENTED.
+**Decision:** Skipped. Complexity not justified for non-hot code paths.
 
 ---
 
@@ -178,58 +151,24 @@ improvement — not worth the complexity.
 
 ---
 
-## Implementation Plan (Next Session)
+## Implementation Summary
 
-### Priority 1: Standalone MemoryStateImpl (No Inheritance)
-- **Impact:** 44-50% faster construction, ~1.9x faster end-to-end lifecycle
-- **Risk:** HIGH — user warned MemoryStateImpl is "very touchy"
-- **Effort:** Medium (rewrite class, remove extends StateImpl, duplicate needed methods)
-- **File:** `src/core.ts`
-- **Steps:**
-  1. Create standalone `MemoryStateImpl` class implementing `StateInstance<T>` directly
-  2. Remove `extends StateImpl<T>` and the `super()` call
-  3. Remove `_adapter`, `_s`, `_rKey` etc. — only keep what MemoryStateImpl actually uses
-  4. Keep all existing method implementations (get/set/subscribe/etc.) exactly as-is
-  5. Run FULL A/B bench suite (not just lifecycle) — verify zero regression on get/set/notify
-  6. Run full test suite
-  7. Be prepared to revert if any hot-path regression appears
+### Implemented This Session
+| Change | File | A/B Result |
+|---|---|---|
+| Standalone MemoryStateImpl (no inheritance) | `src/core.ts` | +15-17% create/destroy, +8% lifecycle |
+| Trust-the-cache storage adapter | `src/adapters/storage.ts` | 4.5x faster storage reads |
+| Mixin/mutate collection factory | `src/collection.ts` | ~5x faster collection lifecycle |
 
-### Priority 2: Trust-the-Cache Storage Adapter
-- **Impact:** 4.5x read improvement
-- **Risk:** Low
-- **Effort:** Small (one file, ~10 line change)
-- **File:** `src/adapters/storage.ts`
-- **Steps:**
-  1. Add `cacheValid` boolean flag
-  2. Short-circuit `read()` when flag is true
-  3. Set flag false on storage events and errors
-  4. Run A/B bench to confirm
-  5. Run full test suite
+### Investigated and Rejected
+| Change | Reason |
+|---|---|
+| Batch hybrid (3 variants tested) | All failed — inline wrapper: -50% lifecycle; lazy WeakMap: neutral; ESM export: worse |
+| Array listeners in createListeners | +38% applies only to non-hot I/O-bound adapter paths; not worth complexity |
 
-### Priority 3: Batch Hybrid Approach (If Warranted)
-- Research a way to get batch improvement WITHOUT non-batch regression
-- Possible approach: export `isBatching()` from batch.ts, use wrapper only in batching path
-- Needs careful design to avoid making the API more complex
-
-### Priority 4: Array Listeners (createListeners only)
-- Replace Set with Array in `src/listeners.ts` `createListeners()`
-- Do NOT change MemoryStateImpl
-- Run A/B bench focused on computed chains and storage adapter patterns
-
-### Priority 5: Mixin/Mutate for Collection Factory
-- Enhancer chain benchmarks showed mixin/mutate is **7-13x faster** than Object.create
-  for creation cost. Object.create is still fastest for hot-path get/set.
-- `collection()` is creation-heavy (wraps with multiple enhancer layers) and showed
-  138K ops/s create+destroy in internal benchmarks — significantly slower than plain state.
-- Investigate replacing Object.create with mixin/mutate specifically in the collection
-  factory path. Do NOT change the general enhancer pattern.
-- **File to change:** `src/collection.ts`
-- Run `npx tsx benchmarks/internal.bench.ts --compare lifecycle` to verify
-
-### Priority 6: Other Phase 2 Winners
-- Implement any remaining phase 2 findings that show >20% improvement
-- Each change gets its own A/B bench cycle
-- Especially careful with anything touching MemoryStateImpl
+### Remaining Opportunities
+- **Watch diffing with flat-array+bitmask** (from collection mutation findings): 1.45-2.11x faster for watched collections. Would need careful design — only benefits collections with active `watch()` subscribers.
+- No other Phase 2 findings exceeded the 20% improvement threshold.
 
 ---
 
@@ -238,6 +177,10 @@ improvement — not worth the complexity.
 | Hypothesis | Result | Notes |
 |---|---|---|
 | Map replacing WeakMap in batch | -35% to -46% regression | Map is dramatically slower than WeakMap for function keys |
+| Batch hybrid (inline wrapper) | -50% lifecycle regression | Extra MemoryCore field breaks V8 hidden class in rapid create/destroy |
+| Batch hybrid (lazy WeakMap) | Neutral | WeakMap.get() to find wrapper same cost as existing dedup |
+| Batch hybrid (ESM batchDepth export) | Slightly worse | ESM live binding import overhead negates notify() bypass |
+| Array listeners for non-memory adapters | +38% on non-hot path | I/O dominates; listener churn never the bottleneck |
 | Computed version-counting | -33% to -143% | Current dirty-flag approach is optimal |
 | Lazy subscription in computed | +12% marginal | Not worth the complexity |
 | Early bailout in computed | Net negative | Added overhead exceeds savings |

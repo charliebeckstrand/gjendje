@@ -15,8 +15,13 @@ export function createStorageAdapter<T>(
 	const listeners = createListeners<T>()
 
 	// Read cache — avoids re-parsing when the raw string in storage hasn't changed.
+	// `cacheValid` is a fast-path flag: when true, we skip `storage.getItem()`
+	// entirely and return the cached value. It is set to true after every
+	// successful read/write and invalidated on storage events, parse errors,
+	// and destroy.
 	let cachedRaw: string | null | undefined
 	let cachedValue: T | undefined
+	let cacheValid = false
 
 	function parse(raw: string): T {
 		if (serialize) {
@@ -27,17 +32,25 @@ export function createStorageAdapter<T>(
 	}
 
 	function read(): T {
+		// Trust-the-cache fast path: skip storage.getItem() when cache is valid.
+		// Cache is invalidated by storage events (cross-tab), parse errors, and destroy.
+		if (cacheValid) return cachedValue as T
+
 		try {
 			const raw = storage.getItem(key)
 
 			if (raw === null) {
 				cachedRaw = null
-				cachedValue = undefined
+				cachedValue = defaultValue
+				cacheValid = true
 				return defaultValue
 			}
 
 			// Return cached parse result when the raw string is unchanged
-			if (raw === cachedRaw) return cachedValue as T
+			if (raw === cachedRaw) {
+				cacheValid = true
+				return cachedValue as T
+			}
 
 			let value: T
 
@@ -46,6 +59,7 @@ export function createStorageAdapter<T>(
 			} catch {
 				cachedRaw = undefined
 				cachedValue = undefined
+				cacheValid = false
 				return defaultValue
 			}
 
@@ -53,6 +67,7 @@ export function createStorageAdapter<T>(
 
 			cachedRaw = raw
 			cachedValue = value
+			cacheValid = true
 
 			return value
 		} catch {
@@ -74,10 +89,12 @@ export function createStorageAdapter<T>(
 			// mergeKeys re-adds defaults on read, so we merge here too.
 			cachedRaw = raw
 			cachedValue = persist ? mergeKeys(toStore as T, defaultValue, persist) : value
+			cacheValid = true
 		} catch (e) {
 			// Invalidate cache — write may have partially succeeded
 			cachedRaw = undefined
 			cachedValue = undefined
+			cacheValid = false
 
 			log(
 				'error',
@@ -103,6 +120,7 @@ export function createStorageAdapter<T>(
 		// Invalidate cache — another tab changed storage
 		cachedRaw = undefined
 		cachedValue = undefined
+		cacheValid = false
 
 		lastNotifiedValue = read()
 
@@ -133,6 +151,7 @@ export function createStorageAdapter<T>(
 		destroy() {
 			cachedRaw = undefined
 			cachedValue = undefined
+			cacheValid = false
 
 			listeners.clear()
 
