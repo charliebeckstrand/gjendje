@@ -90,7 +90,9 @@ The singleListener fast path already in MemoryStateImpl showed no additional gai
 3. Single `_hasMiddleware` boolean to skip all checks
 4. Config snapshot into local fields at construction time
 
-**Run with:** `npx tsx benchmarks/experiments/config-hotpath.bench.ts`
+**Result:** NO BREAKTHROUGH. All strategies within 1-2% of current optional chaining.
+V8 optimizes `?.()` extremely well — bitfield, null-fn, has-middleware, and snapshot
+approaches all tied. No measurable overhead to eliminate.
 
 ### 3. Enhancer Prototype Chain
 **File:** `benchmarks/experiments/enhancer-chain.bench.ts` (25KB)
