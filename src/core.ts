@@ -5,7 +5,7 @@ import { withSync } from './adapters/sync.js'
 import { createUrlAdapter } from './adapters/url.js'
 import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
-import { getConfig, log, reportError } from './config.js'
+import { getConfig, log, PERSISTENT_SCOPES, reportError } from './config.js'
 import { safeCall, safeCallChange } from './listeners.js'
 import { getRegistered, registerNew, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
@@ -31,7 +31,6 @@ export function registerServerAdapter(factory: ServerAdapterFactory): void {
 // Scope sets (module-level to avoid per-instance allocation)
 // ---------------------------------------------------------------------------
 
-const PERSISTENT_SCOPES = new Set<Scope>(['local', 'session', 'bucket'])
 const SYNCABLE_SCOPES = new Set<Scope>(['local', 'bucket'])
 
 // Shared no-op adapter shim for MemoryStateImpl — allocated once, never per-instance
@@ -62,12 +61,12 @@ function resolveStorageKey<T>(
 // Adapter resolution
 // ---------------------------------------------------------------------------
 
-function resolveAdapter<T>(storageKey: string, scope: Scope, options: StateOptions<T>): Adapter<T> {
+function resolveAdapter<T>(
+	storageKey: string,
+	scope: Exclude<Scope, 'memory' | 'render'>,
+	options: StateOptions<T>,
+): Adapter<T> {
 	switch (scope) {
-		case 'memory':
-		case 'render':
-			return createMemoryAdapter(options.default)
-
 		case 'session':
 			if (typeof sessionStorage === 'undefined') {
 				throw new Error(
@@ -883,9 +882,12 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 
 	const storageKey = resolveStorageKey(key, options, config.prefix)
 
+	// scope is guaranteed non-memory here (fast path returned early above)
+	const nonMemoryScope = scope as Exclude<Scope, 'memory' | 'render'>
+
 	const baseAdapter = useMemoryFallback
 		? createMemoryAdapter(options.default)
-		: resolveAdapter(storageKey, scope, options)
+		: resolveAdapter(storageKey, nonMemoryScope, options)
 
 	const shouldSync = effectiveSync && SYNCABLE_SCOPES.has(scope) && !useMemoryFallback
 
@@ -907,7 +909,7 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 			let realAdapter: Adapter<T> | undefined
 
 			try {
-				realAdapter = resolveAdapter(storageKey, scope, options)
+				realAdapter = resolveAdapter(storageKey, nonMemoryScope, options)
 
 				const storedValue = realAdapter.get()
 
