@@ -78,7 +78,17 @@ The singleListener fast path already in MemoryStateImpl showed no additional gai
 - Standalone class (no StateImpl inheritance) for memory scope
 - Registry isolation benchmarks with `registry: false`
 
-**Run with:** `npx tsx benchmarks/experiments/lifecycle-experiment.bench.ts`
+**Result:** BREAKTHROUGH — standalone MemoryStateImpl (no inheritance).
+- **Constructor (registry=false):** Standalone 13.5M vs current 9.4M ops/s — **44-50% faster**.
+  The `super()` call + wasted `_adapter`/`_s` property writes are pure overhead.
+- **End-to-end with registry:** Standalone ~6.7M vs current ~3.5M ops/s — **~1.9x faster**.
+- **Hot-path get/set:** No difference (<5%) — `_c` indirection doesn't matter post-creation.
+- **MemoryCore shape (class vs literal):** No difference (2-7%). Not worth changing.
+- **Property count:** No difference. V8 handles 6-10 own properties equally well.
+- **scopedKey strategies:** All within 1-7%. Template literals already fast.
+- **Conclusion:** Make MemoryStateImpl a standalone class implementing StateInstance directly
+  (no `extends StateImpl`). Eliminates super() + 2 wasted property writes.
+  CAUTION: MemoryStateImpl is very touchy per user — needs extremely careful A/B benchmarking.
 
 ### 2. Config Callback Hot-Path
 **File:** `benchmarks/experiments/config-hotpath.bench.ts` (24KB)
@@ -170,7 +180,21 @@ improvement — not worth the complexity.
 
 ## Implementation Plan (Next Session)
 
-### Priority 1: Trust-the-Cache Storage Adapter
+### Priority 1: Standalone MemoryStateImpl (No Inheritance)
+- **Impact:** 44-50% faster construction, ~1.9x faster end-to-end lifecycle
+- **Risk:** HIGH — user warned MemoryStateImpl is "very touchy"
+- **Effort:** Medium (rewrite class, remove extends StateImpl, duplicate needed methods)
+- **File:** `src/core.ts`
+- **Steps:**
+  1. Create standalone `MemoryStateImpl` class implementing `StateInstance<T>` directly
+  2. Remove `extends StateImpl<T>` and the `super()` call
+  3. Remove `_adapter`, `_s`, `_rKey` etc. — only keep what MemoryStateImpl actually uses
+  4. Keep all existing method implementations (get/set/subscribe/etc.) exactly as-is
+  5. Run FULL A/B bench suite (not just lifecycle) — verify zero regression on get/set/notify
+  6. Run full test suite
+  7. Be prepared to revert if any hot-path regression appears
+
+### Priority 2: Trust-the-Cache Storage Adapter
 - **Impact:** 4.5x read improvement
 - **Risk:** Low
 - **Effort:** Small (one file, ~10 line change)
@@ -181,12 +205,6 @@ improvement — not worth the complexity.
   3. Set flag false on storage events and errors
   4. Run A/B bench to confirm
   5. Run full test suite
-
-### Priority 2: Run Phase 2 Benchmarks
-- Run each of the 6 experiment files listed above
-- Record results
-- Identify any new breakthroughs (>20% improvement)
-- Delete experiment files after recording results
 
 ### Priority 3: Batch Hybrid Approach (If Warranted)
 - Research a way to get batch improvement WITHOUT non-batch regression
