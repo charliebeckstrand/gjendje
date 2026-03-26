@@ -25,8 +25,6 @@ export interface ComputedOptions {
 
 const NOOP: () => void = () => {}
 
-const TO_VOID: () => undefined = () => undefined
-
 let computedCounter = 0
 
 // ---------------------------------------------------------------------------
@@ -166,11 +164,11 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 			settledArr[i] = dep.settled
 		}
 
-		readyPromise = Promise.all(readyArr).then(TO_VOID)
+		readyPromise = Promise.all(readyArr).then(NOOP)
 
-		hydratedPromise = Promise.all(hydratedArr).then(TO_VOID)
+		hydratedPromise = Promise.all(hydratedArr).then(NOOP)
 
-		settledPromise = Promise.all(settledArr).then(TO_VOID)
+		settledPromise = Promise.all(settledArr).then(NOOP)
 	}
 
 	return {

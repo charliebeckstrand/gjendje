@@ -160,7 +160,7 @@ export interface GjendjeConfig {
 
 let globalConfig: GjendjeConfig = {}
 
-const PERSISTENT_SCOPES = new Set<Scope>(['local', 'session', 'bucket'])
+export const PERSISTENT_SCOPES = new Set<Scope>(['local', 'session', 'bucket'])
 
 export function configure(config: GjendjeConfig): void {
 	globalConfig = { ...globalConfig, ...config }

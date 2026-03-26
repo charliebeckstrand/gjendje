@@ -1,7 +1,5 @@
-import { notify } from './batch.js'
-import { safeCall } from './listeners.js'
-import type { Listener, ReadonlyInstance, Unsubscribe } from './types.js'
-import { createLazyDestroyed, RESOLVED } from './utils.js'
+import { computed } from './computed.js'
+import type { ReadonlyInstance } from './types.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,8 +20,6 @@ export interface SelectOptions {
 // ---------------------------------------------------------------------------
 // Auto-incrementing key counter
 // ---------------------------------------------------------------------------
-
-const NOOP: () => void = () => {}
 
 let selectCounter = 0
 
@@ -50,131 +46,7 @@ export function select<TSource, TResult>(
 	fn: (value: TSource) => TResult,
 	options?: SelectOptions,
 ): SelectInstance<TResult> {
-	const listenerSet = new Set<Listener<TResult>>()
-
-	let singleListener: Listener<TResult> | undefined
-
-	let listenerCount = 0
-
-	const instanceKey = options?.key ?? `select:${selectCounter++}`
-
-	let cached: TResult
-
-	let isDirty = true
-
-	let isDestroyed = false
-
-	const lazyDestroyed = createLazyDestroyed()
-
-	function recompute(): TResult {
-		if (!isDirty) return cached
-
-		cached = fn(source.get())
-
-		isDirty = false
-
-		return cached
-	}
-
-	const notifyListeners = () => {
-		const prev = cached
-
-		const value = recompute()
-
-		if (value === prev) return
-
-		if (singleListener !== undefined) {
-			safeCall(singleListener, value)
-
-			return
-		}
-
-		for (const l of listenerSet) {
-			safeCall(l, value)
-		}
-	}
-
-	const markDirty = () => {
-		isDirty = true
-
-		notify(notifyListeners)
-	}
-
-	const unsubscribe = source.subscribe(markDirty)
-
-	// Compute initial value eagerly so first get() is synchronous
-	recompute()
-
-	return {
-		key: instanceKey,
-		scope: 'memory',
-
-		get ready(): Promise<void> {
-			return source.ready
-		},
-
-		get settled(): Promise<void> {
-			return source.settled
-		},
-
-		get hydrated(): Promise<void> {
-			return source.hydrated
-		},
-
-		get destroyed(): Promise<void> {
-			if (isDestroyed) return RESOLVED
-
-			return lazyDestroyed.promise
-		},
-
-		get isDestroyed() {
-			return isDestroyed
-		},
-
-		get() {
-			return recompute()
-		},
-
-		peek() {
-			return cached
-		},
-
-		subscribe(listener: Listener<TResult>): Unsubscribe {
-			if (isDestroyed) return NOOP
-
-			listenerSet.add(listener)
-
-			listenerCount++
-
-			singleListener = listenerCount === 1 ? listener : undefined
-
-			return () => {
-				listenerSet.delete(listener)
-
-				listenerCount--
-
-				if (listenerCount === 1) {
-					singleListener = listenerSet.values().next().value
-				} else {
-					singleListener = undefined
-				}
-			}
-		},
-
-		destroy() {
-			if (isDestroyed) return
-
-			isDestroyed = true
-
-			unsubscribe()
-
-			listenerSet.clear()
-
-			listenerCount = 0
-
-			singleListener = undefined
-
-			lazyDestroyed.resolve()
-		},
-	}
+	return computed([source], (values) => fn(values[0] as TSource), {
+		key: options?.key ?? `select:${selectCounter++}`,
+	})
 }
