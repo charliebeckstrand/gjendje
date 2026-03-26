@@ -103,7 +103,15 @@ approaches all tied. No measurable overhead to eliminate.
 2. Method access overhead through prototype chain depth
 3. Property shadowing patterns
 
-**Run with:** `npx tsx benchmarks/experiments/enhancer-chain.bench.ts`
+**Result:** NO HOT-PATH BREAKTHROUGH. Mixed findings:
+- **get/set throughput:** All approaches within 1-11%. Object.create is actually fastest
+  for mixed get+set at depth 3 (17.91M vs 16.11M flat copy).
+- **Creation cost:** Mixin/mutate is **7-13x faster** than Object.create for enhancer
+  wrapping (2.73M vs 398K at depth 1). Flat copy is even slower than Object.create.
+- **Realistic use (create+10 gets+destroy):** Mixin 5-13x faster than Object.create.
+- **Conclusion:** Object.create is correct for hot-path performance. But mixin/mutate
+  could dramatically speed up creation-heavy patterns like `collection()` factory.
+  Worth investigating as a targeted change for collection, not a general rewrite.
 
 ### 4. Persist Pipeline Fast Path
 **File:** `benchmarks/experiments/persist-pipeline.bench.ts` (20KB)
