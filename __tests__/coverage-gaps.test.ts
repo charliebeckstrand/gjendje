@@ -484,6 +484,7 @@ describe('state recreation', () => {
 
 	it('new instance after destroy reads from storage if persisted', () => {
 		const storage = makeStorage()
+
 		storage.setItem('recreate-persist', JSON.stringify(99))
 
 		Object.defineProperty(globalThis, 'localStorage', {

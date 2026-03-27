@@ -108,6 +108,7 @@ describe('settled', () => {
 	it('resolves on computed when all deps are settled', async () => {
 		const a = state('settled-comp-a', { default: 0 })
 		const b = state('settled-comp-b', { default: 0 })
+
 		const c = computed([a, b], ([x, y]) => (x ?? 0) + (y ?? 0))
 
 		a.set(1)
@@ -158,6 +159,7 @@ describe('hydrated', () => {
 	it('resolves on computed when all deps are hydrated', async () => {
 		const a = state('hydrated-comp-a', { default: 0 })
 		const b = state('hydrated-comp-b', { default: 0 })
+
 		const c = computed([a, b], ([x, y]) => (x ?? 0) + (y ?? 0))
 
 		await expect(c.hydrated).resolves.toBeUndefined()
@@ -211,6 +213,7 @@ describe('destroyed', () => {
 
 	it('resolves on computed when destroy is called', async () => {
 		const a = state('destroyed-comp-a', { default: 0 })
+
 		const c = computed([a], ([x]) => (x ?? 0) * 2)
 
 		const promise = c.destroyed
