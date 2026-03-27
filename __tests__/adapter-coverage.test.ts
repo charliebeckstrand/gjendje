@@ -496,8 +496,9 @@ describe('adapter config callback isolation', () => {
 			},
 		})
 
-		// Falls back to partially-migrated (original) value despite onError throwing
-		expect(x.get()).toBe('old')
+		// Migration failure now throws instead of returning partial data,
+		// so state falls back to default
+		expect(x.get()).toBe('default')
 		expect(spy).toHaveBeenCalled()
 
 		spy.mockRestore()

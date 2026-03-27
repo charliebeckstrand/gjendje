@@ -64,8 +64,25 @@ function flush(): void {
 		if (++iterations > MAX_FLUSH_ITERATIONS) {
 			console.error(
 				'[gjendje] Batch flush exceeded maximum iterations — possible infinite loop. ' +
-					'Remaining queued notifications have been dropped.',
+					'Delivering remaining notifications once before stopping.',
 			)
+
+			// Best-effort delivery: fire each remaining notification exactly once
+			// so subscribers see the final state. Any new notifications enqueued
+			// during this pass are discarded to guarantee termination.
+			const remaining = queue
+			queue = []
+
+			for (let i = 0; i < remaining.length; i++) {
+				const fn = remaining[i]
+
+				try {
+					if (fn) fn()
+				} catch (err) {
+					console.error('[gjendje] Notification threw during best-effort delivery:', err)
+				}
+			}
+
 			queue = []
 			break
 		}

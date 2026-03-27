@@ -39,6 +39,40 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 
 	if (Array.isArray(b)) return false
 
+	// Set: compare size and shallow-compare elements
+	if (a instanceof Set) {
+		if (!(b instanceof Set)) return false
+		if (a.size !== b.size) return false
+
+		for (const item of a) {
+			if (!b.has(item)) return false
+		}
+
+		return true
+	}
+
+	// Map: compare size and shallow-compare entries
+	if (a instanceof Map) {
+		if (!(b instanceof Map)) return false
+		if (a.size !== b.size) return false
+
+		for (const [key, val] of a) {
+			if (!b.has(key) || !Object.is(val, b.get(key))) return false
+		}
+
+		return true
+	}
+
+	// Date: compare timestamps
+	if (a instanceof Date) {
+		return b instanceof Date && a.getTime() === b.getTime()
+	}
+
+	// RegExp: compare string representation
+	if (a instanceof RegExp) {
+		return b instanceof RegExp && a.toString() === b.toString()
+	}
+
 	// Already narrowed to non-null objects above — safe to index
 	const objA = a as Record<PropertyKey, unknown>
 
