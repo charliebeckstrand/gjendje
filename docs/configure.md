@@ -2,7 +2,7 @@
 
 `configure` allows you to set global values for all state instances.
 
-Import and call once at your app entry point:
+Call once at your app entry point:
 
 ```ts
 import { configure } from 'gjendje'
