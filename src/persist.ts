@@ -7,7 +7,16 @@ import { isRecord } from './utils.js'
 function isVersionedValue(value: unknown): value is VersionedValue<unknown> {
 	if (!isRecord(value)) return false
 
-	return 'v' in value && 'data' in value && Number.isSafeInteger(value.v)
+	// Strict check: envelope must have EXACTLY { v, data } — no extra keys.
+	// wrapForStorage() only creates { v, data }, so real envelopes always match.
+	// Without this, user data shaped like { v: 1, data: "x", status: "ok" }
+	// would be misidentified as an envelope, silently dropping extra properties.
+	return (
+		Object.keys(value).length === 2 &&
+		'v' in value &&
+		'data' in value &&
+		Number.isSafeInteger(value.v)
+	)
 }
 
 /**
@@ -23,6 +32,7 @@ export function readAndMigrate<T>(
 	options: StateOptions<T>,
 	key?: string,
 	scope?: Scope,
+	onFallback?: () => void,
 ): T {
 	const currentVersion = options.version ?? 1
 
@@ -71,6 +81,8 @@ export function readAndMigrate<T>(
 				safeCallConfig(config.onError, { key, scope, error: validationErr })
 			}
 
+			onFallback?.()
+
 			return defaultValue
 		}
 
@@ -83,6 +95,8 @@ export function readAndMigrate<T>(
 
 			safeCallConfig(getConfig().onError, { key, scope, error: readErr })
 		}
+
+		onFallback?.()
 
 		return defaultValue
 	}

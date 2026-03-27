@@ -679,7 +679,7 @@ describe('createStorageAdapter branches', () => {
 			scope: 'local',
 		})
 
-		adapter.set('new value')
+		expect(() => adapter.set('new value')).toThrow('quota exceeded')
 
 		expect(onQuotaExceeded).toHaveBeenCalledWith(
 			expect.objectContaining({

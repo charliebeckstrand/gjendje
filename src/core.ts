@@ -6,7 +6,7 @@ import { createUrlAdapter } from './adapters/url.js'
 import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
 import { getConfig, log, PERSISTENT_SCOPES, reportError } from './config.js'
-import { HydrationError } from './errors.js'
+import { HydrationError, StorageWriteError } from './errors.js'
 import { safeCall, safeCallChange, safeCallConfig } from './listeners.js'
 import { getRegistered, registerNew, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
@@ -129,6 +129,7 @@ function resolveAdapter<T>(
 interface MutableState<T> {
 	lastValue: T
 	isDestroyed: boolean
+	hasUserWrite: boolean
 	interceptors: Set<(next: T, prev: T) => T> | undefined
 	changeHandlers: Set<(next: T, prev: T) => void> | undefined
 	settled: Promise<void>
@@ -175,6 +176,7 @@ class StateImpl<T> implements StateInstance<T> {
 		this._s = preallocatedState ?? {
 			lastValue: adapter.get(),
 			isDestroyed: false,
+			hasUserWrite: false,
 			interceptors: undefined,
 			changeHandlers: undefined,
 			settled: RESOLVED,
@@ -257,9 +259,18 @@ class StateImpl<T> implements StateInstance<T> {
 
 		if (this._options.isEqual?.(next, prev)) return
 
-		s.lastValue = next
+		try {
+			this._adapter.set(next)
+		} catch (err) {
+			// Persistent adapter write failure (quota exceeded, SecurityError, etc.)
+			// — already reported by the adapter. Don't update state or notify.
+			if (err instanceof StorageWriteError) return
 
-		this._adapter.set(next)
+			throw err
+		}
+
+		s.lastValue = next
+		s.hasUserWrite = true
 
 		s.settled = this._adapter.ready
 
@@ -281,9 +292,16 @@ class StateImpl<T> implements StateInstance<T> {
 
 		if (this._options.isEqual?.(next, prev)) return
 
-		s.lastValue = next
+		try {
+			this._adapter.set(next)
+		} catch (err) {
+			if (err instanceof StorageWriteError) return
 
-		this._adapter.set(next)
+			throw err
+		}
+
+		s.lastValue = next
+		s.hasUserWrite = true
 
 		s.settled = this._adapter.ready
 
@@ -941,8 +959,11 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 	if (isSsrMode && !isServer()) {
 		instance._s.hydrated = afterHydration(() => {
 			// If the instance was destroyed or the user already called
-			// set() before hydration fired, skip the overwrite.
-			if (instance.isDestroyed) return
+			// set()/reset() before hydration fired, skip the overwrite.
+			// The hasUserWrite flag catches the edge case where the user
+			// explicitly set a value equal to the default — shallowEqual
+			// alone can't distinguish that from "never written".
+			if (instance.isDestroyed || instance._s.hasUserWrite) return
 
 			const currentValue = instance.get()
 

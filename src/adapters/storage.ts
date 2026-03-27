@@ -24,6 +24,23 @@ export function createStorageAdapter<T>(
 	let cachedValue: T | undefined
 	let cacheValid = false
 
+	const backupKey = `${key}:__gjendje_backup`
+
+	function backupRawData(raw: string): void {
+		try {
+			// Only backup once — preserve the earliest original data.
+			if (storage.getItem(backupKey) === null) {
+				storage.setItem(backupKey, raw)
+				log(
+					'warn',
+					`Original data for key "${key}" backed up to "${backupKey}" after migration/validation failure.`,
+				)
+			}
+		} catch {
+			// Storage may be full — can't backup. Silently ignore.
+		}
+	}
+
 	function parse(raw: string): T {
 		if (serialize) {
 			const value = serialize.parse(raw)
@@ -40,13 +57,15 @@ export function createStorageAdapter<T>(
 
 				safeCallConfig(config.onError, { key, scope, error: validationErr })
 
+				backupRawData(raw)
+
 				return defaultValue
 			}
 
 			return value as T
 		}
 
-		return readAndMigrate(raw, options, key, options.scope)
+		return readAndMigrate(raw, options, key, options.scope, () => backupRawData(raw))
 	}
 
 	function read(): T {
@@ -128,6 +147,10 @@ export function createStorageAdapter<T>(
 			}
 
 			reportError(key, scope, writeErr)
+
+			// Re-throw so callers (adapter set, StateImpl) know the write failed
+			// and can skip notifications to prevent state/storage divergence.
+			throw writeErr
 		}
 	}
 
@@ -163,7 +186,6 @@ export function createStorageAdapter<T>(
 			write(value)
 
 			lastNotifiedValue = value
-
 			notify(notifyListeners)
 		},
 

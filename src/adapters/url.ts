@@ -1,4 +1,6 @@
 import { notify } from '../batch.js'
+import { log, reportError } from '../config.js'
+import { StorageWriteError } from '../errors.js'
 import { createListeners } from '../listeners.js'
 import { mergeKeys, pickKeys } from '../persist.js'
 import type { Adapter, Serializer } from '../types.js'
@@ -88,11 +90,18 @@ export function createUrlAdapter<T>(
 			// Use the new search string (with '?' prefix) to match location.search.
 			cachedSearch = search ? `?${search}` : ''
 			cachedValue = persist ? mergeKeys(toStore as T, defaultValue, persist) : value
-		} catch {
-			// Serialization or pushState can fail (e.g. sandboxed iframes,
-			// SecurityError). The in-memory value is still updated via set().
+		} catch (e) {
 			// Invalidate cache since URL state is uncertain.
 			cachedSearch = undefined
+
+			const writeErr = new StorageWriteError(key, 'url', e)
+
+			log('error', writeErr.message)
+			reportError(key, 'url', writeErr)
+
+			// Re-throw so callers know the write failed and can skip
+			// notifications to prevent state/URL divergence.
+			throw writeErr
 		}
 	}
 
