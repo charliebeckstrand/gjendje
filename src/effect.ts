@@ -1,3 +1,4 @@
+import { reportError } from './config.js'
 import type { DepValues, ReadonlyInstance } from './types.js'
 
 // ---------------------------------------------------------------------------
@@ -10,6 +11,17 @@ export interface EffectHandle {
 	/** Stop the effect and run the last cleanup function if any */
 	stop(): void
 }
+
+export interface EffectOptions {
+	/** Optional key for debugging and error attribution. */
+	key?: string
+}
+
+// ---------------------------------------------------------------------------
+// Auto-incrementing key counter
+// ---------------------------------------------------------------------------
+
+let effectCounter = 0
 
 // ---------------------------------------------------------------------------
 // effect
@@ -39,10 +51,13 @@ export interface EffectHandle {
 export function effect<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 	deps: TDeps,
 	fn: (values: DepValues<TDeps>) => Cleanup | undefined,
+	options?: EffectOptions,
 ): EffectHandle {
 	let cleanup: Cleanup | undefined
 
 	let isStopped = false
+
+	const effectKey = options?.key ?? `effect:${effectCounter++}`
 
 	// Reuse a single array to avoid allocation on every run
 	const depLen = deps.length
@@ -59,6 +74,7 @@ export function effect<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 				cleanup()
 			} catch (err) {
 				console.error('[gjendje] Effect cleanup threw:', err)
+				reportError(effectKey, 'memory', err)
 			}
 
 			cleanup = undefined
@@ -74,6 +90,7 @@ export function effect<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 			cleanup = fn(depValues)
 		} catch (err) {
 			console.error('[gjendje] Effect callback threw:', err)
+			reportError(effectKey, 'memory', err)
 		}
 	}
 
@@ -104,6 +121,7 @@ export function effect<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 					cleanup()
 				} catch (err) {
 					console.error('[gjendje] Effect cleanup threw:', err)
+					reportError(effectKey, 'memory', err)
 				}
 
 				cleanup = undefined

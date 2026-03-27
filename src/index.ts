@@ -19,10 +19,10 @@ export type {
 	SyncContext,
 	ValidationFailContext,
 } from './config.js'
-export { configure } from './config.js'
+export { configure, resetConfig } from './config.js'
 export type { StateSnapshot } from './devtools.js'
 export { snapshot } from './devtools.js'
-export type { EffectHandle } from './effect.js'
+export type { EffectHandle, EffectOptions } from './effect.js'
 export { effect } from './effect.js'
 // Enhancers — for extending state with custom capabilities
 export type { HistoryOptions, WithHistoryInstance } from './enhancers/history.js'
@@ -41,6 +41,7 @@ export {
 export type { PreviousInstance, PreviousOptions } from './previous.js'
 export { previous } from './previous.js'
 export { readonly } from './readonly.js'
+export { destroyAll } from './registry.js'
 export type { SelectInstance, SelectOptions } from './select.js'
 export { select } from './select.js'
 export type { StateFunction } from './shortcuts.js'

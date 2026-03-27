@@ -83,6 +83,16 @@ const listener = vi.fn()
 
 Run `npx tsx benchmarks/internal.bench.ts lifecycle batch-scaling effect` to verify performance before and after any changes to this class.
 
+## Audits
+
+Audit reports live in [`docs/audits/`](docs/audits/). Each file is named by date (e.g. `2025-03-27.md`) and contains findings grouped by severity with checkboxes tracking resolution.
+
+**Before performing a new audit**, read all existing files in `docs/audits/` to:
+
+1. Avoid re-reporting issues that are already tracked
+2. Prioritize unresolved items (unchecked boxes) from prior audits before looking for new issues
+3. Append new findings to a new dated file — never edit prior audit files except to check off resolved items
+
 ## Agent Behavior
 
 - When busy with a task and the user requests something else, delegate the new task to a sub-agent using the Agent tool rather than interrupting current work.

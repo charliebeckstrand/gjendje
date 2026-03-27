@@ -239,7 +239,7 @@ todos.get() // []
 
 ---
 
-## `effect(deps, fn)`
+## `effect(deps, fn, options?)`
 
 Runs a side effect when dependencies change. Runs immediately at creation, then re-runs on any dependency change.
 
@@ -247,6 +247,7 @@ Runs a side effect when dependencies change. Runs immediately at creation, then 
 function effect<TDeps extends ReadonlyArray<BaseInstance<unknown>>>(
   deps: TDeps,
   fn: (values: DepValues<TDeps>) => (() => void) | undefined,
+  options?: EffectOptions,
 ): EffectHandle
 ```
 
@@ -278,8 +279,10 @@ handle.stop()
 |-----------|------|-------------|
 | `deps` | `ReadonlyArray<BaseInstance>` | State instances to track |
 | `fn` | `(values) => cleanup \| undefined` | Effect callback. May return a cleanup function. |
+| `options` | `{ key?: string }` | Optional key for debugging and error attribution |
 
 - **Cleanup** — if the callback returns a function, it runs before the next execution and on `stop()`.
+- **Error reporting** — effect callback and cleanup errors are routed through `onError` (if configured) so they appear alongside other gjendje errors.
 - **Framework-agnostic** — works in React, Vue, Svelte, vanilla JS, or Node.
 - **Batching** — participates in `batch()`.
 

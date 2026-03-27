@@ -9,6 +9,7 @@ export function createUrlAdapter<T>(
 	defaultValue: T,
 	serializer: Serializer<T>,
 	persist?: string[],
+	urlReplace?: boolean,
 ): Adapter<T> {
 	if (typeof window === 'undefined') {
 		throw new Error('[gjendje] URL scope is not available in this environment.')
@@ -77,7 +78,11 @@ export function createUrlAdapter<T>(
 				? `${window.location.pathname}?${search}${window.location.hash}`
 				: `${window.location.pathname}${window.location.hash}`
 
-			window.history.pushState(null, '', newUrl)
+			if (urlReplace) {
+				window.history.replaceState(null, '', newUrl)
+			} else {
+				window.history.pushState(null, '', newUrl)
+			}
 
 			// Pre-populate cache so the next read() hits the fast path.
 			// Use the new search string (with '?' prefix) to match location.search.
