@@ -86,3 +86,4 @@ Run `npx tsx benchmarks/internal.bench.ts lifecycle batch-scaling effect` to ver
 ## Agent Behavior
 
 - When busy with a task and the user requests something else, delegate the new task to a sub-agent using the Agent tool rather than interrupting current work.
+- **When spawning sub-agents that write code or tests**, always include the formatting rules from "Code Quality" and "Variable grouping examples" sections in the agent prompt. Sub-agents do not automatically read CLAUDE.md — the rules must be passed explicitly in the prompt. At minimum, include: "Add blank lines between logically unrelated variable declaration groups (e.g., state instances vs listeners/mocks, source state vs derived state). Related declarations of the same kind stay together."
