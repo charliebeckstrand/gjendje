@@ -7,7 +7,7 @@ import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
 import { getConfig, log, PERSISTENT_SCOPES, reportError } from './config.js'
 import { HydrationError } from './errors.js'
-import { safeCall, safeCallChange } from './listeners.js'
+import { safeCall, safeCallChange, safeCallConfig } from './listeners.js'
 import { getRegistered, registerNew, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
 import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
@@ -201,12 +201,17 @@ class StateImpl<T> implements StateInstance<T> {
 
 		const original = next
 
-		for (const interceptor of s.interceptors) {
-			next = interceptor(next, prev)
+		try {
+			for (const interceptor of s.interceptors) {
+				next = interceptor(next, prev)
+			}
+		} catch (err) {
+			reportError(this.key, this.scope, err)
+			throw err
 		}
 
 		if (!Object.is(original, next)) {
-			this._config.onIntercept?.({
+			safeCallConfig(this._config.onIntercept, {
 				key: this.key,
 				scope: this.scope,
 				original,
@@ -226,7 +231,12 @@ class StateImpl<T> implements StateInstance<T> {
 			}
 		}
 
-		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
+		safeCallConfig(this._config.onChange, {
+			key: this.key,
+			scope: this.scope,
+			value: next,
+			previousValue: prev,
+		})
 	}
 
 	set(valueOrUpdater: T | ((prev: T) => T)): void {
@@ -275,7 +285,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		s.settled = this._adapter.ready
 
-		this._config.onReset?.({ key: this.key, scope: this.scope, previousValue: prev })
+		safeCallConfig(this._config.onReset, { key: this.key, scope: this.scope, previousValue: prev })
 
 		this._notifyChange(next, prev)
 	}
@@ -388,7 +398,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		unregisterByKey(this._rKey)
 
-		this._config.onDestroy?.({ key: this.key, scope: this.scope })
+		safeCallConfig(this._config.onDestroy, { key: this.key, scope: this.scope })
 
 		if (s.resolveDestroyed) {
 			s.resolveDestroyed()
@@ -550,12 +560,17 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 		if (ext !== undefined && ext.interceptors !== undefined && ext.interceptors.size > 0) {
 			const original = next
 
-			for (const interceptor of ext.interceptors) {
-				next = interceptor(next, prev)
+			try {
+				for (const interceptor of ext.interceptors) {
+					next = interceptor(next, prev)
+				}
+			} catch (err) {
+				reportError(this.key, this.scope, err)
+				throw err
 			}
 
 			if (!Object.is(original, next)) {
-				this._config.onIntercept?.({
+				safeCallConfig(this._config.onIntercept, {
 					key: this.key,
 					scope: this.scope,
 					original,
@@ -578,7 +593,12 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 			}
 		}
 
-		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
+		safeCallConfig(this._config.onChange, {
+			key: this.key,
+			scope: this.scope,
+			value: next,
+			previousValue: prev,
+		})
 	}
 
 	subscribe(listener: Listener<T>): Unsubscribe {
@@ -619,12 +639,17 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 		if (ext !== undefined && ext.interceptors !== undefined && ext.interceptors.size > 0) {
 			const original = next
 
-			for (const interceptor of ext.interceptors) {
-				next = interceptor(next, prev)
+			try {
+				for (const interceptor of ext.interceptors) {
+					next = interceptor(next, prev)
+				}
+			} catch (err) {
+				reportError(this.key, this.scope, err)
+				throw err
 			}
 
 			if (!Object.is(original, next)) {
-				this._config.onIntercept?.({
+				safeCallConfig(this._config.onIntercept, {
 					key: this.key,
 					scope: this.scope,
 					original,
@@ -647,9 +672,14 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 			}
 		}
 
-		this._config.onReset?.({ key: this.key, scope: this.scope, previousValue: prev })
+		safeCallConfig(this._config.onReset, { key: this.key, scope: this.scope, previousValue: prev })
 
-		this._config.onChange?.({ key: this.key, scope: this.scope, value: next, previousValue: prev })
+		safeCallConfig(this._config.onChange, {
+			key: this.key,
+			scope: this.scope,
+			value: next,
+			previousValue: prev,
+		})
 	}
 
 	get ready(): Promise<void> {
@@ -782,7 +812,7 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 		if (this._rKey) unregisterByKey(this._rKey)
 
-		this._config.onDestroy?.({ key: this.key, scope: this.scope })
+		safeCallConfig(this._config.onDestroy, { key: this.key, scope: this.scope })
 
 		if (ext?.resolveDestroyed) {
 			ext.resolveDestroyed()

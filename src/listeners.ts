@@ -28,6 +28,22 @@ export function safeCallChange<T>(handler: (next: T, prev: T) => void, next: T, 
 }
 
 /**
+ * Invoke a global config callback (e.g. `onIntercept`, `onChange`) inside a
+ * try/catch so that a faulty user-provided callback cannot crash the state
+ * operation that triggered it. Extracted to a separate function so V8 can
+ * optimise callers independently (no exception-handling metadata in hot paths).
+ */
+export function safeCallConfig<A>(fn: ((arg: A) => void) | undefined, arg: A): void {
+	if (fn === undefined) return
+
+	try {
+		fn(arg)
+	} catch (err) {
+		console.error('[gjendje] Config callback threw:', err)
+	}
+}
+
+/**
  * Create a lightweight listener set with subscribe, notify, and clear.
  * Used internally by adapters and computed to avoid duplicating
  * the same Set + iterate + add/delete boilerplate.
