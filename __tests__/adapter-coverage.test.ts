@@ -566,3 +566,168 @@ describe('url adapter error recovery', () => {
 		x.destroy()
 	})
 })
+
+// ---------------------------------------------------------------------------
+// Config callback isolation in adapters and persist pipeline
+// ---------------------------------------------------------------------------
+
+describe('adapter config callback isolation', () => {
+	beforeEach(() => {
+		configure({
+			onError: undefined,
+			onValidationFail: undefined,
+			onMigrate: undefined,
+			onQuotaExceeded: undefined,
+			logLevel: undefined,
+		})
+	})
+
+	it('throwing onValidationFail does not crash state read', () => {
+		localStorage.setItem('cfg-valfail-err', JSON.stringify({ bad: true }))
+
+		configure({
+			onValidationFail: () => {
+				throw new Error('onValidationFail boom')
+			},
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const x = state('cfg-valfail-err', {
+			default: 'safe',
+			scope: 'local',
+			validate: (v: unknown): v is string => typeof v === 'string',
+		})
+
+		// Falls back to default despite onValidationFail throwing
+		expect(x.get()).toBe('safe')
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('[gjendje] Config callback threw:'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+		x.destroy()
+	})
+
+	it('throwing onError in validation path does not crash state read', () => {
+		localStorage.setItem('cfg-onerr-val', JSON.stringify(123))
+
+		configure({
+			onError: () => {
+				throw new Error('onError boom')
+			},
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const x = state('cfg-onerr-val', {
+			default: 'fallback',
+			scope: 'local',
+			validate: (v: unknown): v is string => typeof v === 'string',
+		})
+
+		expect(x.get()).toBe('fallback')
+		expect(spy).toHaveBeenCalled()
+
+		spy.mockRestore()
+		x.destroy()
+	})
+
+	it('throwing onMigrate does not crash state read', () => {
+		localStorage.setItem('cfg-mig-err', JSON.stringify({ v: 1, data: 'old' }))
+
+		configure({
+			onMigrate: () => {
+				throw new Error('onMigrate boom')
+			},
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const x = state('cfg-mig-err', {
+			default: 'default',
+			scope: 'local',
+			version: 2,
+			migrate: { 1: (old: unknown) => `${old}-migrated` },
+		})
+
+		// Migration still runs — only the onMigrate callback is isolated
+		expect(x.get()).toBe('old-migrated')
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('[gjendje] Config callback threw:'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+		x.destroy()
+	})
+
+	it('throwing onError in migration failure path does not crash state read', () => {
+		localStorage.setItem('cfg-onerr-mig', JSON.stringify({ v: 1, data: 'old' }))
+
+		configure({
+			onError: () => {
+				throw new Error('onError in migration boom')
+			},
+			logLevel: 'silent',
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const x = state('cfg-onerr-mig', {
+			default: 'default',
+			scope: 'local',
+			version: 2,
+			migrate: {
+				1: () => {
+					throw new Error('migration itself fails')
+				},
+			},
+		})
+
+		// Falls back to partially-migrated (original) value despite onError throwing
+		expect(x.get()).toBe('old')
+		expect(spy).toHaveBeenCalled()
+
+		spy.mockRestore()
+		x.destroy()
+	})
+
+	it('throwing onQuotaExceeded does not crash storage write', () => {
+		const quota = makeStorage()
+
+		quota.setItem = () => {
+			throw new DOMException('quota exceeded', 'QuotaExceededError')
+		}
+
+		Object.defineProperty(globalThis, 'localStorage', {
+			value: quota,
+			configurable: true,
+		})
+
+		configure({
+			onQuotaExceeded: () => {
+				throw new Error('onQuotaExceeded boom')
+			},
+			logLevel: 'silent',
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const x = state('cfg-quota-err', {
+			default: 'ok',
+			scope: 'local',
+		})
+
+		// set() triggers quota error internally but doesn't throw
+		expect(() => x.set('big-data')).not.toThrow()
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('[gjendje] Config callback threw:'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+		x.destroy()
+	})
+})

@@ -6,7 +6,9 @@ Improve error handling consistency and test coverage across the codebase
 
 ### Config callback isolation
 
-All global config callbacks (`onIntercept`, `onChange`, `onReset`, `onDestroy`, `onSync`) are now wrapped in try-catch via a new `safeCallConfig` helper. Previously, a throwing callback would crash the `set()`, `reset()`, or `destroy()` operation. Now errors are caught and logged to `console.error`, matching the existing isolation behavior of listeners and change handlers.
+All global config callbacks are now wrapped in try-catch via `safeCallConfig`. Previously, a throwing callback could crash the operation that triggered it. Now errors are caught and logged to `console.error`, matching the existing isolation behavior of listeners and change handlers.
+
+Wrapped callbacks: `onIntercept`, `onChange`, `onReset`, `onDestroy`, `onSync`, `onExpire`, `onQuotaExceeded`, `onMigrate`, `onValidationFail`, `onError`.
 
 ### Interceptor error reporting
 
@@ -26,9 +28,9 @@ The cross-tab BroadcastChannel sync adapter (`withSync`) now handles all failure
 
 ### Test coverage
 
-Added 28 new tests covering previously untested paths:
+Added 37 new tests covering previously untested paths:
 
-- Config callback isolation (`onIntercept`, `onChange`, `onReset`, `onDestroy` throwing)
+- Config callback isolation for all callbacks (`onIntercept`, `onChange`, `onReset`, `onDestroy`, `onValidationFail`, `onMigrate`, `onQuotaExceeded`, `onError`)
 - Interceptor error reporting through `onError` pipeline
 - Bucket adapter initialization failure reporting
 - Sync adapter failure paths (constructor, postMessage, onSync, close)

@@ -1,6 +1,6 @@
 import { notify } from '../batch.js'
 import { getConfig, log, reportError } from '../config.js'
-import { createListeners } from '../listeners.js'
+import { createListeners, safeCallConfig } from '../listeners.js'
 import type { Adapter, BucketOptions, StateOptions } from '../types.js'
 import { shallowEqual } from '../utils.js'
 import { createStorageAdapter } from './storage.js'
@@ -190,7 +190,7 @@ export function createBucketAdapter<T>(
 			const bucketValue = delegate.get()
 
 			if (hadUserWrite && shallowEqual(bucketValue, defaultValue)) {
-				getConfig().onExpire?.({ key, scope: 'bucket', expiredAt: Date.now() })
+				safeCallConfig(getConfig().onExpire, { key, scope: 'bucket', expiredAt: Date.now() })
 			}
 
 			// Migrate: if user wrote during init, carry that value into the bucket
