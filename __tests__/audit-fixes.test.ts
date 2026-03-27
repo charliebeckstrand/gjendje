@@ -32,6 +32,7 @@ describe('batch flush infinite loop protection', () => {
 		expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('maximum iterations'))
 
 		errorSpy.mockRestore()
+
 		a.destroy()
 		b.destroy()
 	})
@@ -56,6 +57,7 @@ describe('batch flush infinite loop protection', () => {
 		expect(loopMessage).toBeDefined()
 
 		errorSpy.mockRestore()
+
 		x.destroy()
 	})
 })
@@ -151,6 +153,7 @@ describe('effect error routing to onError', () => {
 		)
 
 		errorSpy.mockRestore()
+
 		handle.stop()
 		s.destroy()
 	})
@@ -180,6 +183,7 @@ describe('effect error routing to onError', () => {
 		)
 
 		errorSpy.mockRestore()
+
 		handle.stop()
 		s.destroy()
 	})
