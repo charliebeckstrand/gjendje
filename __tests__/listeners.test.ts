@@ -58,6 +58,7 @@ describe('safeCallChange', () => {
 describe('createListeners', () => {
 	it('notify calls all subscribed listeners', () => {
 		const listeners = createListeners<number>()
+
 		const a = vi.fn()
 		const b = vi.fn()
 
@@ -86,6 +87,7 @@ describe('createListeners', () => {
 
 	it('clear removes all listeners', () => {
 		const listeners = createListeners<string>()
+
 		const a = vi.fn()
 		const b = vi.fn()
 
@@ -103,6 +105,7 @@ describe('createListeners', () => {
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 		const listeners = createListeners<number>()
+
 		const good = vi.fn()
 
 		listeners.subscribe(() => {

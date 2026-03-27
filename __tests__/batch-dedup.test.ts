@@ -27,6 +27,7 @@ describe('batch notification deduplication', () => {
 	it('multiple instances in a batch each notify exactly once', () => {
 		const a = state('batch-dedup-a', { default: 0, scope: 'memory' })
 		const b = state('batch-dedup-b', { default: 0, scope: 'memory' })
+
 		const listenerA = vi.fn()
 		const listenerB = vi.fn()
 
@@ -49,6 +50,7 @@ describe('batch notification deduplication', () => {
 	it('notification that re-enqueues itself during flush is deduped', () => {
 		const a = state('batch-dedup-reenter', { default: 0, scope: 'memory' })
 		const b = state('batch-dedup-reenter-b', { default: 0, scope: 'memory' })
+
 		const calls: string[] = []
 
 		a.subscribe((v) => {

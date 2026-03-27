@@ -11,6 +11,7 @@ describe('isWritable', () => {
 
 	it('returns false for a readonly wrapper', () => {
 		const s = state('iw-readonly', { default: 0, scope: 'memory' })
+
 		const ro = readonly(s)
 
 		expect(isWritable(ro)).toBe(false)
@@ -18,6 +19,7 @@ describe('isWritable', () => {
 
 	it('returns false for a computed instance', () => {
 		const s = state('iw-comp-src', { default: 0, scope: 'memory' })
+
 		const c = computed([s], ([v]) => (v ?? 0) * 2)
 
 		expect(isWritable(c)).toBe(false)
