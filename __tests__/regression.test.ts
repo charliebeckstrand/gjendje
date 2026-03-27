@@ -480,6 +480,7 @@ describe('createMemoryAdapter', () => {
 
 		// After unsubscribe, listener should not be in the set
 		expect(adapter.get()).toBe(1)
+		expect(listener).not.toHaveBeenCalled()
 	})
 
 	it('destroy clears all listeners', () => {
@@ -494,6 +495,7 @@ describe('createMemoryAdapter', () => {
 		adapter.set(1)
 
 		expect(adapter.get()).toBe(1)
+		expect(listener).not.toHaveBeenCalled()
 	})
 
 	it('ready resolves immediately', async () => {
@@ -558,7 +560,7 @@ describe('afterHydration', () => {
 		const promise = afterHydration(fn)
 
 		// Wait for microtask + rAF
-		await new Promise((resolve) => setTimeout(resolve, 50))
+		await new Promise((resolve) => setTimeout(resolve, 20))
 
 		await promise
 

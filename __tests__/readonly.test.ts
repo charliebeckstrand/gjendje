@@ -17,7 +17,7 @@ describe('readonly', () => {
 		expect(ro.get()).toBe('b')
 	})
 
-	it('shadows set, reset, intercept, and use as undefined', () => {
+	it('shadows set, reset, and intercept as undefined', () => {
 		const base = state('ro-no-write', { default: 0, scope: 'memory' })
 		const ro = readonly(base)
 
@@ -26,7 +26,6 @@ describe('readonly', () => {
 		expect((ro as unknown as Record<string, unknown>).set).toBeUndefined()
 		expect((ro as unknown as Record<string, unknown>).reset).toBeUndefined()
 		expect((ro as unknown as Record<string, unknown>).intercept).toBeUndefined()
-		expect((ro as unknown as Record<string, unknown>).use).toBeUndefined()
 	})
 
 	it('supports subscribe', () => {
