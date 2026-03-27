@@ -64,6 +64,7 @@ describe('server scope', () => {
 
 	it('notifies subscribers within a session', async () => {
 		const value = state('srv-notify', { default: 0, scope: 'server' })
+
 		const calls: number[] = []
 
 		value.subscribe((v) => calls.push(v))

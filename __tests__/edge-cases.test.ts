@@ -118,6 +118,7 @@ describe('destroyed instance', () => {
 describe('computed edge cases', () => {
 	it('peek() returns cached value without triggering recomputation', () => {
 		let computeCount = 0
+
 		const a = state('comp-peek-a', { default: 1, scope: 'memory' })
 
 		const c = computed([a], ([v]) => {
@@ -144,6 +145,7 @@ describe('computed edge cases', () => {
 
 	it('handles destroyed dependency gracefully', () => {
 		const a = state('comp-destroyed-dep', { default: 1, scope: 'memory' })
+
 		const c = computed([a], ([v]) => (v ?? 0) * 2)
 
 		expect(c.get()).toBe(2)
@@ -156,6 +158,7 @@ describe('computed edge cases', () => {
 
 	it('diamond dependency computes correctly within a batch', () => {
 		const a = state('diamond-a', { default: 1, scope: 'memory' })
+
 		const b = computed([a], ([v]) => (v ?? 0) * 2)
 		const c = computed([a], ([v]) => (v ?? 0) * 3)
 
@@ -178,6 +181,7 @@ describe('computed edge cases', () => {
 describe('effect edge cases', () => {
 	it('cleanup runs before next execution', () => {
 		const log: string[] = []
+
 		const a = state('effect-cleanup', { default: 0, scope: 'memory' })
 
 		const handle = effect([a], () => {
@@ -201,6 +205,7 @@ describe('effect edge cases', () => {
 
 	it('stop() is idempotent', () => {
 		const a = state('effect-stop', { default: 0, scope: 'memory' })
+
 		const handle = effect([a], () => undefined)
 
 		handle.stop()
@@ -291,6 +296,7 @@ describe('watch edge cases', () => {
 describe('withHistory edge cases', () => {
 	it('undo/redo still works after interceptor throws', () => {
 		const base = state('hist-intercept-err', { default: 0, scope: 'memory' })
+
 		const h = withHistory(base)
 
 		h.set(1)
@@ -315,6 +321,7 @@ describe('withHistory edge cases', () => {
 
 	it('reset is tracked in history', () => {
 		const base = state('hist-reset', { default: 0, scope: 'memory' })
+
 		const h = withHistory(base)
 
 		h.set(1)
@@ -336,6 +343,7 @@ describe('withHistory edge cases', () => {
 describe('batch edge cases', () => {
 	it('flushes even if fn throws', () => {
 		const s = state('batch-throw', { default: 0, scope: 'memory' })
+
 		const listener = vi.fn()
 
 		s.subscribe(listener)
