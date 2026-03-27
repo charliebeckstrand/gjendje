@@ -45,6 +45,15 @@ const step = state.session({ 'wizard-step': 1 })
 const query = state.url({ q: '' })
 ```
 
+Use `urlReplace: true` to update the URL with `replaceState` instead of `pushState`. This prevents creating a new browser history entry on every `set()` call — ideal for rapid updates like search-as-you-type or slider inputs:
+
+```ts
+const query = state('q', { default: '', scope: 'url', urlReplace: true })
+
+query.set('hel')  // replaces URL, no new history entry
+query.set('hello') // replaces URL again
+```
+
 ---
 
 ## `bucket` (Storage Buckets API)

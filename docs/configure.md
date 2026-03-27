@@ -12,6 +12,22 @@ configure({
 })
 ```
 
+**Clearing a value** — pass `undefined` explicitly to remove a previously set option:
+
+```ts
+configure({ onError: undefined }) // removes the onError callback
+```
+
+**Resetting all config** — use `resetConfig()` to restore all settings to defaults. Useful in tests or HMR scenarios:
+
+```ts
+import { resetConfig } from 'gjendje'
+
+afterEach(() => {
+  resetConfig()
+})
+```
+
 ---
 
 ## `scope`

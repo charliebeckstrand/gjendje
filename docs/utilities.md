@@ -82,6 +82,37 @@ interface StateSnapshot {
 
 ---
 
+## `destroyAll()`
+
+Destroys all registered state instances and clears the global registry. Useful for test teardown, HMR cleanup, or SPA route transitions where stale instances should not persist.
+
+```ts
+function destroyAll(): void
+```
+
+```ts
+import { state, destroyAll } from 'gjendje'
+
+const a = state('a', { default: 0 })
+const b = state('b', { default: '' })
+
+destroyAll()
+
+a.isDestroyed // true
+b.isDestroyed // true
+```
+
+<details>
+<summary>Details</summary>
+
+- **Safe** — skips already-destroyed instances.
+- **Complete** — clears the registry after destruction, so subsequent `state()` calls create fresh instances.
+- **Testing** — call in `afterEach` to prevent state leaking between tests.
+
+</details>
+
+---
+
 ## `shallowEqual(a, b)`
 
 Shallow equality check for primitives, arrays, and plain objects. Returns `true` if values are structurally equal one level deep.

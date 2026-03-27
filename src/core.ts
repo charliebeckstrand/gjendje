@@ -84,6 +84,7 @@ function resolveAdapter<T>(
 				options.default,
 				options.serialize ?? { stringify: JSON.stringify, parse: JSON.parse },
 				options.persist,
+				options.urlReplace,
 			)
 
 		case 'server':

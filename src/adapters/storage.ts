@@ -1,6 +1,6 @@
 import { notify } from '../batch.js'
 import { getConfig, log, reportError } from '../config.js'
-import { StorageWriteError } from '../errors.js'
+import { StorageWriteError, ValidationError } from '../errors.js'
 import { createListeners, safeCallConfig } from '../listeners.js'
 import { mergeKeys, pickKeys, readAndMigrate, wrapForStorage } from '../persist.js'
 import type { Adapter, StateOptions } from '../types.js'
@@ -26,7 +26,24 @@ export function createStorageAdapter<T>(
 
 	function parse(raw: string): T {
 		if (serialize) {
-			return serialize.parse(raw)
+			const value = serialize.parse(raw)
+
+			// When a custom serializer is used, validate and migrate are still
+			// honoured so users can combine serialize + validate safely.
+			if (options.validate && !options.validate(value)) {
+				const scope = options.scope ?? 'local'
+				const config = getConfig()
+
+				safeCallConfig(config.onValidationFail, { key, scope, value })
+
+				const validationErr = new ValidationError(key, scope, value)
+
+				safeCallConfig(config.onError, { key, scope, error: validationErr })
+
+				return defaultValue
+			}
+
+			return value as T
 		}
 
 		return readAndMigrate(raw, options, key, options.scope)

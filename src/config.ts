@@ -163,7 +163,17 @@ let globalConfig: GjendjeConfig = {}
 export const PERSISTENT_SCOPES = new Set<Scope>(['local', 'session', 'bucket'])
 
 export function configure(config: GjendjeConfig): void {
-	globalConfig = { ...globalConfig, ...config }
+	// Iterate entries so that explicitly passing `undefined` clears a key,
+	// which plain spread does not accomplish.
+	for (const key of Object.keys(config)) {
+		const value = (config as Record<string, unknown>)[key]
+
+		if (value === undefined) {
+			delete (globalConfig as Record<string, unknown>)[key]
+		} else {
+			;(globalConfig as Record<string, unknown>)[key] = value
+		}
+	}
 
 	if (
 		globalConfig.registry === false &&
@@ -175,6 +185,13 @@ export function configure(config: GjendjeConfig): void {
 			`registry: false has no effect on scope "${globalConfig.scope}" — persistent scopes always use the registry.`,
 		)
 	}
+}
+
+/**
+ * Reset all configuration to defaults. Useful in tests and HMR scenarios.
+ */
+export function resetConfig(): void {
+	globalConfig = {}
 }
 
 export function getConfig(): Readonly<GjendjeConfig> {

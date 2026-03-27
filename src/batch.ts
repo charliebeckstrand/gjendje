@@ -55,8 +55,21 @@ export function notify(fn: Notification): void {
 	fn()
 }
 
+const MAX_FLUSH_ITERATIONS = 100
+
 function flush(): void {
+	let iterations = 0
+
 	while (queue.length > 0) {
+		if (++iterations > MAX_FLUSH_ITERATIONS) {
+			console.error(
+				'[gjendje] Batch flush exceeded maximum iterations — possible infinite loop. ' +
+					'Remaining queued notifications have been dropped.',
+			)
+			queue = []
+			break
+		}
+
 		generation++
 
 		const current = queue

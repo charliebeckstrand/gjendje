@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react'
 import { isWritable } from '../is-writable.js'
 import type { BaseInstance, ReadonlyInstance } from '../types.js'
 
@@ -26,19 +26,35 @@ export function useGjendje<T>(
 	instance: ReadonlyInstance<T>,
 	selector?: (value: T) => unknown,
 ): unknown {
-	const getSnapshot = selector ? () => selector(instance.get()) : () => instance.get()
+	// Stabilize the selector ref so getSnapshot identity doesn't change
+	// when the caller passes an inline arrow.
+	const selectorRef = useRef(selector)
+	selectorRef.current = selector
 
-	const value = useSyncExternalStore(
-		(onStoreChange) => instance.subscribe(onStoreChange),
-		getSnapshot,
-		getSnapshot,
+	const subscribe = useCallback(
+		(onStoreChange: () => void) => instance.subscribe(onStoreChange),
+		[instance],
 	)
 
-	if (selector) return value
+	const getSnapshot = useCallback(
+		() => (selectorRef.current ? selectorRef.current(instance.get()) : instance.get()),
+		[instance],
+	)
 
-	if (isWritable(instance)) {
-		return [value, (v: T | ((prev: T) => T)) => instance.set(v), () => instance.reset()] as const
-	}
+	const value = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 
-	return value
+	const writable = !selector && isWritable(instance)
+
+	const set = useCallback(
+		(v: T | ((prev: T) => T)) => (instance as BaseInstance<T>).set(v),
+		[instance],
+	)
+
+	const reset = useCallback(() => (instance as BaseInstance<T>).reset(), [instance])
+
+	return useMemo(() => {
+		if (selector) return value
+		if (writable) return [value, set, reset] as const
+		return value
+	}, [selector, writable, value, set, reset])
 }

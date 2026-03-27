@@ -236,6 +236,16 @@ export interface StateOptions<T> {
 	 * structurally equal objects.
 	 */
 	isEqual?: (a: T, b: T) => boolean
+
+	/**
+	 * When true and scope is 'url', use `replaceState` instead of `pushState`
+	 * for URL updates. This prevents creating a new browser history entry on
+	 * every set() call — useful for rapid updates like search-as-you-type or
+	 * slider inputs.
+	 *
+	 * Defaults to false (pushState).
+	 */
+	urlReplace?: boolean
 }
 
 // ---------------------------------------------------------------------------
