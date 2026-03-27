@@ -1,6 +1,6 @@
 {
 	"name": "gjendje",
-	"version": "1.3.0",
+	"version": "1.3.1",
 	"description": "Storage-agnostic state management library for TypeScript and JavaScript",
 	"keywords": [
 		"state",
