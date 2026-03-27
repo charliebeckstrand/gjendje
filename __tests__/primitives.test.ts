@@ -31,6 +31,7 @@ beforeEach(() => {
 describe('computed', () => {
 	it('derives a value from a single dependency', () => {
 		const count = state('cmp-single', { default: 2 })
+
 		const doubled = computed([count], ([n]) => (n as number) * 2)
 
 		expect(doubled.get()).toBe(4)
@@ -42,6 +43,7 @@ describe('computed', () => {
 	it('derives a value from multiple dependencies', () => {
 		const first = state('cmp-first', { default: 'Jane' })
 		const last = state('cmp-last', { default: 'Doe' })
+
 		const fullName = computed([first, last], ([f, l]) => `${f as string} ${l as string}`)
 
 		expect(fullName.get()).toBe('Jane Doe')
@@ -53,6 +55,7 @@ describe('computed', () => {
 
 	it('updates when a dependency changes', () => {
 		const count = state('cmp-update', { default: 1 })
+
 		const doubled = computed([count], ([n]) => (n as number) * 2)
 
 		count.set(5)
@@ -65,7 +68,9 @@ describe('computed', () => {
 
 	it('notifies subscribers when recomputed', () => {
 		const count = state('cmp-notify', { default: 0 })
+
 		const doubled = computed([count], ([n]) => (n as number) * 2)
+
 		const listener = vi.fn()
 
 		doubled.subscribe(listener)
@@ -80,7 +85,9 @@ describe('computed', () => {
 
 	it('only recomputes when a dependency actually changes', () => {
 		const count = state('cmp-cache', { default: 1 })
+
 		const fn = vi.fn((values: number[]) => (values[0] as number) * 2)
+
 		const doubled = computed([count], fn)
 
 		doubled.get()
@@ -102,6 +109,7 @@ describe('computed', () => {
 
 	it('peek() returns current value', () => {
 		const count = state('cmp-peek', { default: 3 })
+
 		const doubled = computed([count], ([n]) => (n as number) * 2)
 
 		expect(doubled.peek()).toBe(6)
@@ -112,7 +120,9 @@ describe('computed', () => {
 
 	it('stops listening after destroy', () => {
 		const count = state('cmp-destroy', { default: 0 })
+
 		const doubled = computed([count], ([n]) => (n as number) * 2)
+
 		const listener = vi.fn()
 
 		doubled.subscribe(listener)
@@ -126,7 +136,9 @@ describe('computed', () => {
 
 	it('unsubscribes cleanly', () => {
 		const count = state('cmp-unsub', { default: 0 })
+
 		const doubled = computed([count], ([n]) => (n as number) * 2)
+
 		const listener = vi.fn()
 
 		const unsub = doubled.subscribe(listener)
@@ -149,6 +161,7 @@ describe('computed', () => {
 describe('effect', () => {
 	it('runs immediately with current values', () => {
 		const count = state('eff-immediate', { default: 42 })
+
 		const fn = vi.fn()
 
 		const handle = effect([count], fn)
@@ -162,6 +175,7 @@ describe('effect', () => {
 
 	it('re-runs when a dependency changes', () => {
 		const count = state('eff-rerun', { default: 0 })
+
 		const fn = vi.fn()
 
 		const handle = effect([count], fn)
@@ -177,6 +191,7 @@ describe('effect', () => {
 
 	it('runs cleanup before next execution', () => {
 		const count = state('eff-cleanup', { default: 0 })
+
 		const calls: string[] = []
 
 		const handle = effect([count], () => {
@@ -194,6 +209,7 @@ describe('effect', () => {
 
 	it('runs cleanup when stopped', () => {
 		const count = state('eff-stop-cleanup', { default: 0 })
+
 		const cleanup = vi.fn()
 
 		const handle = effect([count], () => cleanup)
@@ -207,6 +223,7 @@ describe('effect', () => {
 
 	it('does not re-run after stop', () => {
 		const count = state('eff-no-rerun', { default: 0 })
+
 		const fn = vi.fn()
 
 		const handle = effect([count], fn)
@@ -223,6 +240,7 @@ describe('effect', () => {
 	it('works with multiple dependencies', () => {
 		const a = state('eff-multi-a', { default: 1 })
 		const b = state('eff-multi-b', { default: 2 })
+
 		const fn = vi.fn()
 
 		const handle = effect([a, b], fn)
@@ -240,6 +258,7 @@ describe('effect', () => {
 
 	it('calling stop twice does not throw', () => {
 		const count = state('eff-stop-twice', { default: 0 })
+
 		const handle = effect([count], () => undefined)
 
 		handle.stop()
@@ -419,6 +438,7 @@ describe('collection', () => {
 
 	it('notifies subscribers on mutation', () => {
 		const todos = collection('col-notify', { default: [] as Todo[] })
+
 		const listener = vi.fn()
 
 		todos.subscribe(listener)
@@ -516,6 +536,7 @@ describe('edge cases', () => {
 
 	it('computed handles errors from compute function gracefully', () => {
 		const count = state('edge-cmp-throw', { default: 0 })
+
 		const risky = computed([count], ([n]) => {
 			if ((n as number) > 0) throw new Error('boom')
 
@@ -537,7 +558,9 @@ describe('edge cases', () => {
 
 	it('effect cleanup throwing does not prevent stop', () => {
 		const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
 		const x = state('edge-eff-cleanup-throw', { default: 0 })
+
 		const handle = effect([x], () => {
 			return () => {
 				throw new Error('cleanup boom')
@@ -550,6 +573,7 @@ describe('edge cases', () => {
 		consoleSpy.mockRestore()
 		// After stop, no further re-runs
 		const fn = vi.fn()
+
 		const handle2 = effect([x], fn)
 
 		x.set(1)
@@ -568,7 +592,9 @@ describe('edge cases', () => {
 describe('computed + batch', () => {
 	it('defers computed notifications inside batch', () => {
 		const count = state('cmp-batch-count', { default: 0 })
+
 		const doubled = computed([count], ([n]) => (n as number) * 2)
+
 		const calls: number[] = []
 
 		doubled.subscribe((v) => calls.push(v))
@@ -589,7 +615,9 @@ describe('computed + batch', () => {
 	it('flushes computed notifications after batch', () => {
 		const a = state('cmp-batch-a', { default: 0 })
 		const b = state('cmp-batch-b', { default: 0 })
+
 		const sum = computed([a, b], ([av, bv]) => (av as number) + (bv as number))
+
 		const listener = vi.fn()
 
 		sum.subscribe(listener)
@@ -643,6 +671,7 @@ describe('withWatch cleanup on destroy', () => {
 describe('collection.watch', () => {
 	it('fires when a watched key changes on any item', () => {
 		const todos = collection('col-watch-basic', { default: [] as Todo[] })
+
 		const listener = vi.fn()
 
 		todos.add({ id: '1', text: 'hello', done: false })
@@ -656,6 +685,7 @@ describe('collection.watch', () => {
 
 	it('does not fire when an unwatched key changes', () => {
 		const todos = collection('col-watch-unrelated', { default: [] as Todo[] })
+
 		const listener = vi.fn()
 
 		todos.add({ id: '1', text: 'hello', done: false })
@@ -671,6 +701,7 @@ describe('collection.watch', () => {
 
 	it('receives the full updated array', () => {
 		const todos = collection('col-watch-array', { default: [] as Todo[] })
+
 		const received: Todo[][] = []
 
 		todos.add({ id: '1', text: 'hello', done: false })
@@ -685,6 +716,7 @@ describe('collection.watch', () => {
 
 	it('fires when items are added', () => {
 		const todos = collection('col-watch-add', { default: [] as Todo[] })
+
 		const listener = vi.fn()
 
 		todos.add({ id: '1', text: 'first', done: false })

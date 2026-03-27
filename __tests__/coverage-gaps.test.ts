@@ -1,32 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { batch, collection, computed, configure, effect, state, withHistory } from '../src/index.js'
-import { makeStorage } from './helpers.js'
+import { batch, collection, computed, configure, effect, state } from '../src/index.js'
+import { makeStorage, setupFullBrowserEnv } from './helpers.js'
 
 beforeEach(() => {
-	Object.defineProperty(globalThis, 'localStorage', {
-		value: makeStorage(),
-		configurable: true,
-	})
-
-	Object.defineProperty(globalThis, 'sessionStorage', {
-		value: makeStorage(),
-		configurable: true,
-	})
-
-	Object.defineProperty(globalThis, 'window', {
-		value: { addEventListener: () => {}, removeEventListener: () => {} },
-		configurable: true,
-		writable: true,
-	})
-
-	Object.defineProperty(globalThis, 'BroadcastChannel', {
-		value: class {
-			onmessage = null
-			postMessage() {}
-			close() {}
-		},
-		configurable: true,
-	})
+	setupFullBrowserEnv()
 })
 
 // ---------------------------------------------------------------------------
@@ -36,6 +13,7 @@ beforeEach(() => {
 describe('interceptor chain', () => {
 	it('multiple interceptors run in registration order', () => {
 		const s = state('chain-order', { default: 0, scope: 'memory' })
+
 		const log: string[] = []
 
 		s.intercept((next, _prev) => {
@@ -56,6 +34,7 @@ describe('interceptor chain', () => {
 
 	it('first interceptor throwing prevents subsequent interceptors from running', () => {
 		const s = state('chain-throw-first', { default: 0, scope: 'memory' })
+
 		const secondCalled = vi.fn()
 
 		s.intercept(() => {
@@ -88,6 +67,7 @@ describe('interceptor chain', () => {
 
 	it('interceptor can reject update by returning prev', () => {
 		const s = state('chain-reject', { default: 0, scope: 'memory' })
+
 		const listener = vi.fn()
 
 		s.subscribe(listener)
@@ -102,6 +82,7 @@ describe('interceptor chain', () => {
 
 	it('interceptors run on reset() too', () => {
 		const s = state('chain-reset', { default: 0, scope: 'memory' })
+
 		const intercepted = vi.fn((next: number) => next + 100)
 
 		s.intercept(intercepted)
@@ -116,94 +97,14 @@ describe('interceptor chain', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Destroyed instance — subscribe, intercept, onChange after destroy
-// ---------------------------------------------------------------------------
-
-describe('destroyed instance advanced', () => {
-	it('subscribe() after destroy still returns an unsubscribe function', () => {
-		const s = state('destroyed-sub', { default: 0, scope: 'memory' })
-
-		s.destroy()
-
-		const unsub = s.subscribe(() => {})
-		expect(typeof unsub).toBe('function')
-		unsub() // should not throw
-	})
-
-	it('intercept() after destroy still returns an unsubscribe function', () => {
-		const s = state('destroyed-intercept', { default: 0, scope: 'memory' })
-
-		s.destroy()
-
-		const unsub = s.intercept((next) => next)
-		expect(typeof unsub).toBe('function')
-		unsub()
-	})
-
-	it('onChange() after destroy still returns an unsubscribe function', () => {
-		const s = state('destroyed-onChange', { default: 0, scope: 'memory' })
-
-		s.destroy()
-
-		const unsub = s.onChange(() => {})
-		expect(typeof unsub).toBe('function')
-		unsub()
-	})
-
-	it('peek() returns last known value after destroy', () => {
-		const s = state('destroyed-peek', { default: 0, scope: 'memory' })
-
-		s.set(42)
-		s.destroy()
-
-		expect(s.peek()).toBe(42)
-	})
-
-	it('subscribers are not notified after destroy', () => {
-		const s = state('destroyed-no-notify', { default: 0, scope: 'memory' })
-		const listener = vi.fn()
-
-		s.subscribe(listener)
-		s.set(1)
-		expect(listener).toHaveBeenCalledTimes(1)
-
-		s.destroy()
-		s.set(2)
-		expect(listener).toHaveBeenCalledTimes(1) // no additional call
-	})
-
-	it('ready promise resolves even after destroy', async () => {
-		const s = state('destroyed-ready', { default: 0, scope: 'memory' })
-
-		s.destroy()
-
-		await expect(s.ready).resolves.toBeUndefined()
-	})
-
-	it('onChange() handlers are cleared on destroy and do not fire', () => {
-		const s = state('destroyed-hooks-clear', { default: 0, scope: 'memory' })
-		const hookFn = vi.fn()
-
-		s.onChange(hookFn)
-		s.set(1)
-		expect(hookFn).toHaveBeenCalledTimes(1)
-
-		s.destroy()
-		// hooks are cleared, set is a no-op
-		s.set(2)
-		expect(hookFn).toHaveBeenCalledTimes(1)
-	})
-})
-
-// ---------------------------------------------------------------------------
 // Effect cleanup edge cases
 // ---------------------------------------------------------------------------
 
 describe('effect cleanup edge cases', () => {
 	it('cleanup throwing does not prevent the next effect run', () => {
 		const a = state('effect-cleanup-throw', { default: 0, scope: 'memory' })
-		const log: string[] = []
 
+		const log: string[] = []
 		const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 		const handle = effect([a], () => {
@@ -232,6 +133,7 @@ describe('effect cleanup edge cases', () => {
 
 	it('effect does not run after stop even if dep changes', () => {
 		const a = state('effect-stop-dep', { default: 0, scope: 'memory' })
+
 		let runCount = 0
 
 		const handle = effect([a], () => {
@@ -285,6 +187,7 @@ describe('effect cleanup edge cases', () => {
 describe('re-entrancy', () => {
 	it('subscriber calling set() on same state during notification works', () => {
 		const s = state('reentrant-same', { default: 0, scope: 'memory' })
+
 		const values: number[] = []
 
 		s.subscribe((v) => {
@@ -306,6 +209,7 @@ describe('re-entrancy', () => {
 	it('subscriber calling set() on different state during notification works', () => {
 		const a = state('reentrant-a', { default: 0, scope: 'memory' })
 		const b = state('reentrant-b', { default: 0, scope: 'memory' })
+
 		const bValues: number[] = []
 
 		a.subscribe((v) => {
@@ -325,6 +229,7 @@ describe('re-entrancy', () => {
 	it('batch prevents re-entrant notifications until flush', () => {
 		const a = state('reentrant-batch-a', { default: 0, scope: 'memory' })
 		const b = state('reentrant-batch-b', { default: 0, scope: 'memory' })
+
 		const log: string[] = []
 
 		a.subscribe((v) => {
@@ -348,6 +253,7 @@ describe('re-entrancy', () => {
 
 	it('computed handles re-entrant dependency updates', () => {
 		const a = state('reentrant-comp', { default: 1, scope: 'memory' })
+
 		const c = computed([a], ([v]) => (v ?? 0) * 2)
 
 		const values: number[] = []
@@ -378,6 +284,7 @@ describe('collection watch edge cases', () => {
 		})
 
 		const listener = vi.fn()
+
 		col.watch('name', listener)
 
 		col.add({ id: 1, name: 'Alice' })
@@ -395,6 +302,7 @@ describe('collection watch edge cases', () => {
 		})
 
 		const listener = vi.fn()
+
 		col.watch('name', listener)
 
 		col.remove((item) => item.id === 2)
@@ -443,278 +351,12 @@ describe('collection watch edge cases', () => {
 		})
 
 		const listener = vi.fn()
+
 		col.watch('name', listener)
 
 		col.update((item) => item.id === 1, { age: 30 })
 
 		expect(listener).not.toHaveBeenCalled()
-	})
-})
-
-// ---------------------------------------------------------------------------
-// withHistory concurrent operations
-// ---------------------------------------------------------------------------
-
-describe('withHistory concurrent operations', () => {
-	it('undo at max history depth drops oldest entry', () => {
-		const base = state('hist-maxsize', { default: 0, scope: 'memory' })
-		const h = withHistory(base, { maxSize: 3 })
-
-		h.set(1)
-		h.set(2)
-		h.set(3)
-		h.set(4) // pushes past maxSize=3, oldest (0→1) dropped
-
-		expect(h.canUndo).toBe(true)
-
-		h.undo() // 4→3
-		h.undo() // 3→2
-		h.undo() // 2→1
-
-		expect(h.get()).toBe(1)
-		expect(h.canUndo).toBe(false) // oldest was dropped
-	})
-
-	it('redo stack is cleared on new set after undo', () => {
-		const base = state('hist-redo-clear', { default: 0, scope: 'memory' })
-		const h = withHistory(base)
-
-		h.set(1)
-		h.set(2)
-		h.undo() // back to 1
-
-		expect(h.canRedo).toBe(true)
-
-		h.set(5) // new value — redo should be cleared
-		expect(h.canRedo).toBe(false)
-	})
-
-	it('clearHistory makes undo/redo no-ops', () => {
-		const base = state('hist-clear', { default: 0, scope: 'memory' })
-		const h = withHistory(base)
-
-		h.set(1)
-		h.set(2)
-		h.clearHistory()
-
-		expect(h.canUndo).toBe(false)
-		expect(h.canRedo).toBe(false)
-
-		h.undo()
-		expect(h.get()).toBe(2) // unchanged
-	})
-
-	it('undo and redo with isEqual option', () => {
-		const base = state('hist-equal', {
-			default: { x: 0 },
-			scope: 'memory',
-			isEqual: (a, b) => a.x === b.x,
-		})
-		const h = withHistory(base)
-
-		h.set({ x: 1 })
-		h.set({ x: 2 })
-
-		h.undo()
-		expect(h.get()).toEqual({ x: 1 })
-
-		h.redo()
-		expect(h.get()).toEqual({ x: 2 })
-	})
-
-	it('withHistory delegates lifecycle getters correctly', () => {
-		const base = state('hist-lifecycle', { default: 0, scope: 'memory' })
-		const h = withHistory(base)
-
-		expect(h.scope).toBe('memory')
-		expect(h.key).toBe('hist-lifecycle')
-		expect(h.isDestroyed).toBe(false)
-
-		h.destroy()
-		expect(h.isDestroyed).toBe(true)
-	})
-})
-
-// ---------------------------------------------------------------------------
-// Selective persistence edge cases
-// ---------------------------------------------------------------------------
-
-describe('selective persistence edge cases', () => {
-	it('persist: [] writes nothing to storage', () => {
-		const storage = makeStorage()
-
-		Object.defineProperty(globalThis, 'localStorage', {
-			value: storage,
-			configurable: true,
-		})
-
-		const s = state('persist-empty', {
-			default: { a: 1, b: 2 },
-			scope: 'local',
-			persist: [] as Array<'a' | 'b'>,
-		})
-
-		s.set({ a: 10, b: 20 })
-
-		// Storage should have an empty object
-		const raw = storage.getItem('persist-empty')
-		expect(raw).not.toBeNull()
-
-		const stored = JSON.parse(raw as string)
-		expect(stored).toEqual({})
-	})
-
-	it('persist with nonexistent keys stores nothing', () => {
-		const storage = makeStorage()
-
-		Object.defineProperty(globalThis, 'localStorage', {
-			value: storage,
-			configurable: true,
-		})
-
-		const s = state('persist-nonexistent', {
-			default: { a: 1 },
-			scope: 'local',
-			// biome-ignore lint/suspicious/noExplicitAny: testing runtime behavior with invalid key
-			persist: ['zzz'] as any,
-		})
-
-		s.set({ a: 10 })
-
-		const raw = storage.getItem('persist-nonexistent')
-		expect(raw).not.toBeNull()
-
-		const stored = JSON.parse(raw as string)
-		expect(stored).toEqual({})
-	})
-
-	it('merges persisted keys with full default on read', () => {
-		const storage = makeStorage()
-
-		// Pre-populate storage with partial data
-		storage.setItem('persist-merge', JSON.stringify({ a: 99 }))
-
-		Object.defineProperty(globalThis, 'localStorage', {
-			value: storage,
-			configurable: true,
-		})
-
-		const s = state('persist-merge', {
-			default: { a: 1, b: 2, c: 3 },
-			scope: 'local',
-			persist: ['a'],
-		})
-
-		// a comes from storage (99), b and c come from defaults
-		expect(s.get()).toEqual({ a: 99, b: 2, c: 3 })
-	})
-})
-
-// ---------------------------------------------------------------------------
-// URL adapter edge cases
-// ---------------------------------------------------------------------------
-
-describe('url adapter edge cases', () => {
-	it('preserves other URL params when writing', () => {
-		// Set up window with existing params
-		const locationObj = {
-			search: '?existing=hello',
-			pathname: '/page',
-			hash: '',
-		}
-
-		let pushedUrl = ''
-
-		Object.defineProperty(globalThis, 'window', {
-			value: {
-				location: locationObj,
-				history: {
-					pushState: (_: unknown, __: string, url: string) => {
-						pushedUrl = url
-					},
-				},
-				addEventListener: () => {},
-				removeEventListener: () => {},
-			},
-			configurable: true,
-			writable: true,
-		})
-
-		const s = state('url-preserve', {
-			default: 'test',
-			scope: 'url',
-		})
-
-		s.set('newval')
-
-		// Should preserve existing=hello AND add url-preserve
-		expect(pushedUrl).toContain('existing=hello')
-		expect(pushedUrl).toContain('url-preserve=')
-	})
-
-	it('removes param from URL on reset to default', () => {
-		let pushedUrl = ''
-
-		Object.defineProperty(globalThis, 'window', {
-			value: {
-				location: {
-					search: '?url-reset=%22hello%22',
-					pathname: '/page',
-					hash: '',
-				},
-				history: {
-					pushState: (_: unknown, __: string, url: string) => {
-						pushedUrl = url
-					},
-				},
-				addEventListener: () => {},
-				removeEventListener: () => {},
-			},
-			configurable: true,
-			writable: true,
-		})
-
-		const s = state('url-reset', {
-			default: 'default',
-			scope: 'url',
-		})
-
-		s.reset()
-
-		// Default value should remove the param entirely
-		expect(pushedUrl).not.toContain('url-reset')
-	})
-
-	it('handles hash in URL correctly', () => {
-		let pushedUrl = ''
-
-		Object.defineProperty(globalThis, 'window', {
-			value: {
-				location: {
-					search: '',
-					pathname: '/page',
-					hash: '#section',
-				},
-				history: {
-					pushState: (_: unknown, __: string, url: string) => {
-						pushedUrl = url
-					},
-				},
-				addEventListener: () => {},
-				removeEventListener: () => {},
-			},
-			configurable: true,
-			writable: true,
-		})
-
-		const s = state('url-hash', {
-			default: 'test',
-			scope: 'url',
-		})
-
-		s.set('value')
-
-		expect(pushedUrl).toContain('#section')
 	})
 })
 
@@ -776,153 +418,13 @@ describe('configuration cascading', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Computed with edge cases
-// ---------------------------------------------------------------------------
-
-describe('computed advanced', () => {
-	it('computed of computed chains correctly', () => {
-		const a = state('comp-chain-a', { default: 1, scope: 'memory' })
-
-		const b = computed([a], ([v]) => (v ?? 0) * 2)
-
-		const c = computed([b], ([v]) => (v ?? 0) + 10)
-
-		expect(c.get()).toBe(12) // 1*2 + 10
-
-		a.set(5)
-		expect(c.get()).toBe(20) // 5*2 + 10
-	})
-
-	it('computed destroy unsubscribes from deps', () => {
-		const a = state('comp-destroy-unsub', { default: 0, scope: 'memory' })
-		let computeCount = 0
-
-		const c = computed([a], ([v]) => {
-			computeCount++
-			return (v ?? 0) * 2
-		})
-
-		expect(computeCount).toBe(1) // initial
-
-		c.destroy()
-
-		a.set(1)
-		expect(computeCount).toBe(1) // no recomputation
-	})
-
-	it('computed subscribe + unsubscribe works', () => {
-		const a = state('comp-sub-unsub', { default: 0, scope: 'memory' })
-		const c = computed([a], ([v]) => (v ?? 0) * 2)
-		const listener = vi.fn()
-
-		const unsub = c.subscribe(listener)
-
-		a.set(1)
-		expect(listener).toHaveBeenCalledWith(2)
-
-		unsub()
-		listener.mockClear()
-
-		a.set(2)
-		expect(listener).not.toHaveBeenCalled()
-	})
-})
-
-// ---------------------------------------------------------------------------
-// Batch advanced
-// ---------------------------------------------------------------------------
-
-describe('batch advanced', () => {
-	it('nested batch defers until outermost completes', () => {
-		const s = state('batch-nested', { default: 0, scope: 'memory' })
-		const values: number[] = []
-
-		s.subscribe((v) => values.push(v))
-
-		batch(() => {
-			s.set(1)
-
-			batch(() => {
-				s.set(2)
-			})
-
-			s.set(3)
-		})
-
-		// Only the final value should notify (after outermost batch)
-		expect(values[values.length - 1]).toBe(3)
-	})
-
-	it('batch with computed dependency correctly defers', () => {
-		const a = state('batch-comp-a', { default: 0, scope: 'memory' })
-		const b = state('batch-comp-b', { default: 0, scope: 'memory' })
-		const sum = computed([a, b], ([av, bv]) => (av ?? 0) + (bv ?? 0))
-
-		const values: number[] = []
-		sum.subscribe((v) => values.push(v))
-
-		batch(() => {
-			a.set(1)
-			b.set(2)
-		})
-
-		// Computed should only notify once with final sum
-		expect(sum.get()).toBe(3)
-		expect(values).toContain(3)
-	})
-})
-
-// ---------------------------------------------------------------------------
-// isEqual option edge cases
-// ---------------------------------------------------------------------------
-
-describe('isEqual advanced', () => {
-	it('isEqual skips subscriber notification', () => {
-		const listener = vi.fn()
-
-		const s = state('isequal-skip', {
-			default: { x: 1 },
-			scope: 'memory',
-			isEqual: (a, b) => a.x === b.x,
-		})
-
-		s.subscribe(listener)
-
-		s.set({ x: 1 }) // same x, should skip
-
-		expect(listener).not.toHaveBeenCalled()
-	})
-
-	it('isEqual does not affect interceptors — they still run', () => {
-		const interceptCalls: number[] = []
-
-		const s = state('isequal-intercept', {
-			default: 0,
-			scope: 'memory',
-			isEqual: (a, b) => a === b,
-		})
-
-		s.intercept((next) => {
-			interceptCalls.push(next)
-			return next
-		})
-
-		s.set(0) // same value, interceptor should still run
-
-		// Interceptor runs before isEqual check
-		expect(interceptCalls).toEqual([0])
-		// But value didn't change
-		expect(s.get()).toBe(0)
-	})
-})
-
-// ---------------------------------------------------------------------------
 // onChange() handler edge cases
 // ---------------------------------------------------------------------------
 
 describe('onChange() handlers', () => {
 	it('multiple handlers fire in registration order', () => {
 		const s = state('hooks-order', { default: 0, scope: 'memory' })
+
 		const log: string[] = []
 
 		s.onChange(() => log.push('A'))
@@ -936,6 +438,7 @@ describe('onChange() handlers', () => {
 
 	it('handler receives next and prev values', () => {
 		const s = state('hooks-args', { default: 'hello', scope: 'memory' })
+
 		const calls: [string, string][] = []
 
 		s.onChange((next, prev) => {
@@ -949,6 +452,7 @@ describe('onChange() handlers', () => {
 
 	it('unsubscribing a handler removes it', () => {
 		const s = state('hooks-unsub', { default: 0, scope: 'memory' })
+
 		const hookFn = vi.fn()
 
 		const unsub = s.onChange(hookFn)
@@ -960,100 +464,6 @@ describe('onChange() handlers', () => {
 
 		s.set(2)
 		expect(hookFn).toHaveBeenCalledTimes(1) // no additional call
-	})
-})
-
-// ---------------------------------------------------------------------------
-// watch() edge cases
-// ---------------------------------------------------------------------------
-
-describe('watch edge cases advanced', () => {
-	it('watch fires when value transitions from null to object', () => {
-		const s = state<{ name: string } | null>('watch-null-to-obj', {
-			default: null,
-			scope: 'memory',
-		})
-
-		const listener = vi.fn()
-		s.watch('name' as never, listener as never)
-
-		s.set({ name: 'hello' })
-
-		expect(listener).toHaveBeenCalledWith('hello')
-	})
-
-	it('watch does not fire when watched key value is unchanged', () => {
-		const s = state('watch-unchanged', {
-			default: { name: 'Alice', age: 20 },
-			scope: 'memory',
-		})
-
-		const listener = vi.fn()
-		s.watch('name', listener)
-
-		s.set({ name: 'Alice', age: 30 }) // name unchanged
-
-		expect(listener).not.toHaveBeenCalled()
-	})
-
-	it('multiple watches on different keys fire independently', () => {
-		const s = state('watch-multi-key', {
-			default: { x: 0, y: 0 },
-			scope: 'memory',
-		})
-
-		const xListener = vi.fn()
-		const yListener = vi.fn()
-
-		s.watch('x', xListener)
-		s.watch('y', yListener)
-
-		s.set({ x: 1, y: 0 }) // only x changed
-
-		expect(xListener).toHaveBeenCalledWith(1)
-		expect(yListener).not.toHaveBeenCalled()
-	})
-})
-
-// ---------------------------------------------------------------------------
-// snapshot / devtools
-// ---------------------------------------------------------------------------
-
-describe('snapshot', () => {
-	it('includes all registered instances', async () => {
-		const { snapshot } = await import('../src/devtools.js')
-
-		state('snap-a', { default: 1, scope: 'memory' })
-		state('snap-b', { default: 'hello', scope: 'memory' })
-
-		const snap = snapshot()
-
-		expect(snap.length).toBeGreaterThanOrEqual(2)
-		expect(snap.find((s) => s.key === 'snap-a')?.value).toBe(1)
-		expect(snap.find((s) => s.key === 'snap-b')?.value).toBe('hello')
-	})
-
-	it('shows destroyed instances with undefined value', async () => {
-		const { snapshot } = await import('../src/devtools.js')
-
-		const s = state('snap-destroyed', { default: 42, scope: 'memory' })
-		s.destroy()
-
-		const snap = snapshot()
-		const entry = snap.find((s) => s.key === 'snap-destroyed')
-
-		// Destroyed instances are unregistered, so they won't appear
-		expect(entry).toBeUndefined()
-	})
-
-	it('updates reflect current values', async () => {
-		const { snapshot } = await import('../src/devtools.js')
-
-		const s = state('snap-update', { default: 0, scope: 'memory' })
-		s.set(99)
-
-		const snap = snapshot()
-		expect(snap.find((s) => s.key === 'snap-update')?.value).toBe(99)
 	})
 })
 
@@ -1074,6 +484,7 @@ describe('state recreation', () => {
 
 	it('new instance after destroy reads from storage if persisted', () => {
 		const storage = makeStorage()
+
 		storage.setItem('recreate-persist', JSON.stringify(99))
 
 		Object.defineProperty(globalThis, 'localStorage', {

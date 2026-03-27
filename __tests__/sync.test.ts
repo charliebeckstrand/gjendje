@@ -100,6 +100,7 @@ describe('sync option', () => {
 
 	it('ignores malformed broadcast messages', () => {
 		const a = state('sync-malformed', { default: 0, scope: 'local', sync: true })
+
 		const listener = vi.fn()
 
 		a.subscribe(listener)
@@ -120,6 +121,7 @@ describe('sync option', () => {
 
 	it('notifies local subscribers on set', () => {
 		const x = state('sync-local-notify', { default: 0, scope: 'local', sync: true })
+
 		const listener = vi.fn()
 
 		x.subscribe(listener)

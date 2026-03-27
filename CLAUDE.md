@@ -47,8 +47,31 @@ Never commit without ensuring new code matches these quality guidelines:
 - Run `pnpm lint` (and fix any issues with `pnpm lint:fix`) before committing
 - Run `pnpm test` and ensure all tests pass before committing
 - Follow the formatting and linting rules listed above
-- Add blank lines between consecutive variable declarations (`const`/`let`) — each declaration should be visually separated
+- Add blank lines between **logically unrelated** variable declaration groups — related declarations can stay together, but a new "kind" of variable starts a new group. For example, state instances are one group, listeners/mocks are another, derived instances (computed, select, readonly) are another. See examples below.
 - New features must include tests
+
+### Variable grouping examples
+
+```typescript
+// GOOD — state instances grouped, then blank line, then listeners
+const a = state('a', { default: 0 })
+const b = state('b', { default: 0 })
+
+const listenerA = vi.fn()
+const listenerB = vi.fn()
+
+// GOOD — source state, blank line, derived instance, blank line, mock
+const base = state('x', { default: 0, scope: 'memory' })
+
+const derived = computed([base], ([v]) => (v ?? 0) * 2)
+
+const listener = vi.fn()
+
+// BAD — everything crammed together with no visual separation
+const base = state('x', { default: 0, scope: 'memory' })
+const derived = computed([base], ([v]) => (v ?? 0) * 2)
+const listener = vi.fn()
+```
 
 ## Performance-Critical Architecture
 
@@ -63,3 +86,4 @@ Run `npx tsx benchmarks/internal.bench.ts lifecycle batch-scaling effect` to ver
 ## Agent Behavior
 
 - When busy with a task and the user requests something else, delegate the new task to a sub-agent using the Agent tool rather than interrupting current work.
+- **When spawning sub-agents that write code or tests**, always include the formatting rules from "Code Quality" and "Variable grouping examples" sections in the agent prompt. Sub-agents do not automatically read CLAUDE.md — the rules must be passed explicitly in the prompt. At minimum, include: "Add blank lines between logically unrelated variable declaration groups (e.g., state instances vs listeners/mocks, source state vs derived state). Related declarations of the same kind stay together."

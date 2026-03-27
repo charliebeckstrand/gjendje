@@ -83,6 +83,7 @@ describe('intercept', () => {
 
 	it('does not run after destroy', () => {
 		const count = state('intercept-destroy', { default: 0 })
+
 		const fn = vi.fn((next: number) => next)
 
 		count.intercept(fn)
@@ -96,6 +97,7 @@ describe('intercept', () => {
 
 	it('receives prev as the current adapter value', () => {
 		const count = state('intercept-prev', { default: 0 })
+
 		const calls: Array<[number, number]> = []
 
 		count.intercept((next, prev) => {
@@ -119,6 +121,7 @@ describe('intercept', () => {
 describe('onChange', () => {
 	it('fires after set with next and prev', () => {
 		const count = state('onChange-basic', { default: 0 })
+
 		const calls: Array<[number, number]> = []
 
 		count.onChange((next, prev) => {
@@ -175,6 +178,7 @@ describe('onChange', () => {
 
 	it('returns an unsubscribe function', () => {
 		const count = state('onChange-unsub', { default: 0 })
+
 		const fn = vi.fn()
 
 		const unsub = count.onChange(fn)
@@ -194,6 +198,7 @@ describe('onChange', () => {
 
 	it('does not fire after destroy', () => {
 		const count = state('onChange-destroy', { default: 0 })
+
 		const fn = vi.fn()
 
 		count.onChange(fn)
@@ -207,6 +212,7 @@ describe('onChange', () => {
 
 	it('multiple handlers fire in registration order', () => {
 		const count = state('onChange-order', { default: 0 })
+
 		const order: string[] = []
 
 		count.onChange(() => {
@@ -240,6 +246,7 @@ describe('collection intercept and onChange', () => {
 
 	it('onChange fires on collection add', () => {
 		const items = collection('col-onChange', { default: [] as number[] })
+
 		const calls: Array<[number[], number[]]> = []
 
 		items.onChange((next, prev) => {
