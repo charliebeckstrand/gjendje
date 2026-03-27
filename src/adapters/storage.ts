@@ -36,8 +36,16 @@ export function createStorageAdapter<T>(
 					`Original data for key "${key}" backed up to "${backupKey}" after migration/validation failure.`,
 				)
 			}
-		} catch {
-			// Storage may be full — can't backup. Silently ignore.
+		} catch (backupErr) {
+			// Storage may be full — can't backup. Log so the failure is visible
+			// and fire onError so programmatic handlers can react (e.g. send to server).
+			const scope = options.scope ?? 'local'
+
+			log(
+				'error',
+				`Failed to backup data for key "${key}" to "${backupKey}" — original data may be lost.`,
+			)
+			reportError(key, scope, backupErr)
 		}
 	}
 

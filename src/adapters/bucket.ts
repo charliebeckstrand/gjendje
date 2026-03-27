@@ -126,6 +126,8 @@ export function createBucketAdapter<T>(
 	const ready = (async (): Promise<void> => {
 		if (!isBucketSupported()) return
 
+		let hadUserWrite = false
+
 		try {
 			const openOptions: Parameters<StorageBucketManager['open']>[1] = {
 				persisted: bucketOptions.persisted ?? false,
@@ -172,7 +174,7 @@ export function createBucketAdapter<T>(
 
 			// Capture any value the user wrote to the fallback during init
 			const currentValue = delegate.get()
-			const hadUserWrite = !shallowEqual(currentValue, defaultValue)
+			hadUserWrite = !shallowEqual(currentValue, defaultValue)
 
 			// Swap to the bucket delegate
 			delegate.destroy?.()
@@ -207,13 +209,19 @@ export function createBucketAdapter<T>(
 
 		if (isDestroyed) return
 
-		// Notify subscribers if the stored value differs from the default
-		const storedValue = delegate.get()
+		// Notify subscribers if the stored value differs from the default,
+		// but only when the value wasn't already written by the user during init.
+		// When hadUserWrite is true, the outer set() already notified subscribers
+		// and we just migrated that same value into the bucket — a second
+		// notification with the same value would be a spurious duplicate.
+		if (!hadUserWrite) {
+			const storedValue = delegate.get()
 
-		if (!shallowEqual(storedValue, defaultValue)) {
-			lastNotifiedValue = storedValue
+			if (!shallowEqual(storedValue, defaultValue)) {
+				lastNotifiedValue = storedValue
 
-			notify(notifyListeners)
+				notify(notifyListeners)
+			}
 		}
 
 		// Forward future storage events from the delegate to our listeners

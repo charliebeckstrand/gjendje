@@ -365,14 +365,14 @@ describe('batch edge cases', () => {
 // ---------------------------------------------------------------------------
 
 describe('shallowEqual additional edge cases', () => {
-	it('treats Date objects as plain objects (no special handling)', async () => {
+	it('compares Date objects by timestamp', async () => {
 		const { shallowEqual } = await import('../src/utils.js')
 
-		// Dates have no own enumerable keys, so shallowEqual treats them as equal empty objects
+		// Dates with the same timestamp are equal
 		expect(shallowEqual(new Date(0), new Date(0))).toBe(true)
 
-		// Different types still return false
-		expect(shallowEqual(new Date(0), {})).toBe(true) // both have 0 own keys
+		// Date vs plain object returns false
+		expect(shallowEqual(new Date(0), {})).toBe(false)
 	})
 
 	it('returns false for nested objects', async () => {

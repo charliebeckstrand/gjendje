@@ -182,15 +182,21 @@ function runMigrations(
 			try {
 				current = migrateFn(current)
 			} catch (err) {
-				log('warn', `Migration from v${v} failed — returning partially migrated value.`)
+				log('warn', `Migration from v${v} failed — discarding partially migrated data.`)
+
+				const migrationErr = new MigrationError(key ?? '', scope ?? 'memory', v, toVersion, err)
 
 				if (key && scope) {
-					const migrationErr = new MigrationError(key, scope, v, toVersion, err)
-
 					safeCallConfig(getConfig().onError, { key, scope, error: migrationErr })
 				}
 
-				return current
+				// Throw instead of returning partial data. The caller (readAndMigrate)
+				// catches this, falls back to defaultValue, and triggers onFallback()
+				// which backs up the original raw data. Returning partial data here
+				// would poison the version envelope on the next set() — the partially
+				// migrated value would be stamped with the current version, permanently
+				// blocking the missing migration steps from ever running.
+				throw migrationErr
 			}
 		}
 	}
