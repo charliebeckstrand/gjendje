@@ -207,6 +207,7 @@ class StateImpl<T> implements StateInstance<T> {
 			}
 		} catch (err) {
 			reportError(this.key, this.scope, err)
+			
 			throw err
 		}
 
