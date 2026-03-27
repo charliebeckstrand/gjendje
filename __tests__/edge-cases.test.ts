@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { batch, collection, computed, effect, state, withHistory } from '../src/index.js'
+import { batch, collection, computed, configure, effect, state, withHistory } from '../src/index.js'
 import { makeStorage } from './helpers.js'
 
 beforeEach(() => {
@@ -383,5 +383,167 @@ describe('shallowEqual additional edge cases', () => {
 		const obj = { a: 1, b: 2 }
 
 		expect(shallowEqual(obj, obj)).toBe(true)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Config callback isolation
+// ---------------------------------------------------------------------------
+
+describe('config callback isolation', () => {
+	beforeEach(() => {
+		configure({
+			onIntercept: undefined,
+			onChange: undefined,
+			onReset: undefined,
+			onDestroy: undefined,
+			onError: undefined,
+		})
+	})
+
+	it('throwing onIntercept does not crash set()', () => {
+		configure({
+			onIntercept: () => {
+				throw new Error('onIntercept boom')
+			},
+		})
+
+		const s = state('cfg-intercept-err', { default: 0, scope: 'memory' })
+
+		s.intercept((next) => next + 1)
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		s.set(5)
+
+		expect(s.get()).toBe(6)
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('[gjendje] Config callback threw:'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+	})
+
+	it('throwing onChange does not crash set()', () => {
+		configure({
+			onChange: () => {
+				throw new Error('onChange boom')
+			},
+		})
+
+		const s = state('cfg-onchange-err', { default: 0, scope: 'memory' })
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		s.set(42)
+
+		expect(s.get()).toBe(42)
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('[gjendje] Config callback threw:'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+	})
+
+	it('throwing onReset does not crash reset()', () => {
+		configure({
+			onReset: () => {
+				throw new Error('onReset boom')
+			},
+		})
+
+		const s = state('cfg-onreset-err', { default: 0, scope: 'memory' })
+
+		s.set(10)
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		s.reset()
+
+		expect(s.get()).toBe(0)
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('[gjendje] Config callback threw:'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+	})
+
+	it('throwing onDestroy does not crash destroy()', () => {
+		configure({
+			onDestroy: () => {
+				throw new Error('onDestroy boom')
+			},
+		})
+
+		const s = state('cfg-ondestroy-err', { default: 0, scope: 'memory' })
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		s.destroy()
+
+		expect(s.isDestroyed).toBe(true)
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('[gjendje] Config callback threw:'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Interceptor error reporting
+// ---------------------------------------------------------------------------
+
+describe('interceptor error reporting', () => {
+	beforeEach(() => {
+		configure({
+			onError: undefined,
+		})
+	})
+
+	it('throwing interceptor triggers onError before propagating', () => {
+		const onError = vi.fn()
+
+		configure({ onError })
+
+		const s = state('intercept-report', { default: 0, scope: 'memory' })
+
+		s.intercept(() => {
+			throw new Error('interceptor fail')
+		})
+
+		expect(() => s.set(1)).toThrow('interceptor fail')
+		expect(s.get()).toBe(0)
+		expect(onError).toHaveBeenCalledWith({
+			key: 'intercept-report',
+			scope: 'memory',
+			error: expect.any(Error),
+		})
+	})
+
+	it('throwing interceptor on reset() triggers onError before propagating', () => {
+		const onError = vi.fn()
+
+		configure({ onError })
+
+		const s = state('intercept-report-reset', { default: 0, scope: 'memory' })
+
+		s.set(5)
+
+		s.intercept(() => {
+			throw new Error('interceptor reset fail')
+		})
+
+		expect(() => s.reset()).toThrow('interceptor reset fail')
+		expect(s.get()).toBe(5)
+		expect(onError).toHaveBeenCalledWith({
+			key: 'intercept-report-reset',
+			scope: 'memory',
+			error: expect.any(Error),
+		})
 	})
 })

@@ -1,5 +1,5 @@
 import { notify } from '../batch.js'
-import { getConfig, log } from '../config.js'
+import { getConfig, log, reportError } from '../config.js'
 import { createListeners } from '../listeners.js'
 import type { Adapter, BucketOptions, StateOptions } from '../types.js'
 import { shallowEqual } from '../utils.js'
@@ -197,8 +197,12 @@ export function createBucketAdapter<T>(
 			if (hadUserWrite) {
 				delegate.set(currentValue)
 			}
-		} catch {
-			// Storage Buckets failed — keep using the fallback delegate
+		} catch (err) {
+			log(
+				'warn',
+				`Storage Bucket initialization failed for key "${key}" — using ${fallbackScope} fallback.`,
+			)
+			reportError(key, 'bucket', err)
 		}
 
 		if (isDestroyed) return

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { state } from '../src/index.js'
+import { configure, state } from '../src/index.js'
 import { makeStorage } from './helpers.js'
 
 const fallbackStorage = makeStorage()
@@ -37,6 +37,11 @@ beforeEach(() => {
 		value: {},
 		configurable: true,
 		writable: true,
+	})
+
+	configure({
+		onError: undefined,
+		logLevel: undefined,
 	})
 })
 
@@ -370,5 +375,44 @@ describe('bucket scope — destroy during init', () => {
 
 		// Listener should not have been called after destroy
 		expect(listener).not.toHaveBeenCalled()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Bucket initialization error reporting
+// ---------------------------------------------------------------------------
+
+describe('bucket scope — error reporting', () => {
+	it('reports error via onError when Storage Buckets API throws', async () => {
+		const onError = vi.fn()
+
+		configure({ onError, logLevel: 'silent' })
+
+		Object.defineProperty(globalThis, 'navigator', {
+			value: {
+				storageBuckets: {
+					open: () => Promise.reject(new Error('bucket API failure')),
+				},
+			},
+			configurable: true,
+			writable: true,
+		})
+
+		const s = state('bkt-err-report', {
+			default: 'fallback-val',
+			scope: 'bucket',
+			bucket: { name: 'err-bucket' },
+		})
+
+		await s.ready
+
+		expect(onError).toHaveBeenCalledWith({
+			key: 'bkt-err-report',
+			scope: 'bucket',
+			error: expect.any(Error),
+		})
+
+		// Falls back gracefully — value still accessible
+		expect(s.get()).toBe('fallback-val')
 	})
 })
