@@ -4,6 +4,7 @@ import { previous, state } from '../src/index.js'
 describe('previous', () => {
 	it('returns undefined before the first change', () => {
 		const counter = state('prev-init', { default: 0, scope: 'memory' })
+
 		const prev = previous(counter)
 
 		expect(prev.get()).toBeUndefined()
@@ -11,6 +12,7 @@ describe('previous', () => {
 
 	it('returns the previous value after a change', () => {
 		const counter = state('prev-basic', { default: 0, scope: 'memory' })
+
 		const prev = previous(counter)
 
 		counter.set(1)
@@ -25,6 +27,7 @@ describe('previous', () => {
 
 	it('notifies subscribers when previous value changes', () => {
 		const counter = state('prev-notify', { default: 0, scope: 'memory' })
+
 		const prev = previous(counter)
 
 		const listener = vi.fn()
@@ -43,6 +46,7 @@ describe('previous', () => {
 			default: { name: 'Jane', age: 30 },
 			scope: 'memory',
 		})
+
 		const prev = previous(user)
 
 		const original = user.get()
@@ -53,6 +57,7 @@ describe('previous', () => {
 
 	it('auto-generates unique keys', () => {
 		const s = state('prev-key-auto', { default: 0, scope: 'memory' })
+
 		const a = previous(s)
 		const b = previous(s)
 
@@ -63,6 +68,7 @@ describe('previous', () => {
 
 	it('uses provided key', () => {
 		const s = state('prev-key-custom', { default: 0, scope: 'memory' })
+
 		const prev = previous(s, { key: 'my-previous' })
 
 		expect(prev.key).toBe('my-previous')
@@ -70,6 +76,7 @@ describe('previous', () => {
 
 	it('peek returns same as get', () => {
 		const counter = state('prev-peek', { default: 0, scope: 'memory' })
+
 		const prev = previous(counter)
 
 		counter.set(1)
@@ -78,6 +85,7 @@ describe('previous', () => {
 
 	it('destroy stops listening', () => {
 		const counter = state('prev-destroy', { default: 0, scope: 'memory' })
+
 		const prev = previous(counter)
 
 		const listener = vi.fn()
@@ -92,6 +100,7 @@ describe('previous', () => {
 
 	it('has memory scope', () => {
 		const s = state('prev-scope', { default: 0, scope: 'memory' })
+
 		const prev = previous(s)
 
 		expect(prev.scope).toBe('memory')

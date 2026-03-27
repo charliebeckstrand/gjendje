@@ -77,6 +77,7 @@ describe('patch', () => {
 
 	it('triggers subscribe listeners', () => {
 		const store = state('patch-sub', { default: { a: 1, b: 2 } })
+
 		const listener = vi.fn()
 
 		store.subscribe(listener)
@@ -90,6 +91,7 @@ describe('patch', () => {
 
 	it('triggers onChange handlers', () => {
 		const store = state('patch-onchange', { default: { a: 1, b: 2 } })
+
 		const handler = vi.fn()
 
 		store.onChange(handler)
@@ -115,6 +117,7 @@ describe('patch', () => {
 
 	it('respects isEqual', () => {
 		const listener = vi.fn()
+
 		const store = state('patch-isequal', {
 			default: { a: 1, b: 2 },
 			isEqual: (a, b) => a.a === b.a && a.b === b.b,
@@ -135,6 +138,7 @@ describe('patch', () => {
 
 	it('watch fires only for changed keys', () => {
 		const store = state('patch-watch', { default: { a: 1, b: 2 } })
+
 		const watchA = vi.fn()
 		const watchB = vi.fn()
 
@@ -179,6 +183,7 @@ describe('patch', () => {
 
 	it('works inside batch()', () => {
 		const store = state('patch-batch', { default: { a: 1, b: 2 } })
+
 		const listener = vi.fn()
 
 		store.subscribe(listener)

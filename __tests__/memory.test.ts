@@ -44,6 +44,7 @@ describe('memory scope', () => {
 
 	it('notifies subscribers on change', () => {
 		const theme = state('memory-notify', { default: 'light' as 'light' | 'dark' })
+
 		const listener = vi.fn()
 
 		theme.subscribe(listener)
@@ -57,6 +58,7 @@ describe('memory scope', () => {
 
 	it('unsubscribes cleanly', () => {
 		const theme = state('memory-unsub', { default: 'light' })
+
 		const listener = vi.fn()
 
 		const unsub = theme.subscribe(listener)
@@ -72,6 +74,7 @@ describe('memory scope', () => {
 
 	it('supports multiple subscribers', () => {
 		const value = state('memory-multi-sub', { default: 0 })
+
 		const a = vi.fn()
 		const b = vi.fn()
 
@@ -119,6 +122,7 @@ describe('memory scope', () => {
 
 	it('stops notifying after destroy', () => {
 		const x = state('memory-post-destroy', { default: 0 })
+
 		const listener = vi.fn()
 
 		x.subscribe(listener)

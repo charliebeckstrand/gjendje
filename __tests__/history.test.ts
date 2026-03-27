@@ -5,6 +5,7 @@ import { state } from '../src/index.js'
 describe('withHistory', () => {
 	it('tracks history on set()', () => {
 		const base = state('h-basic', { default: 0, scope: 'memory' })
+
 		const h = withHistory(base)
 
 		h.set(1)
@@ -18,6 +19,7 @@ describe('withHistory', () => {
 
 	it('undo reverts to previous value', () => {
 		const base = state('h-undo', { default: 'a', scope: 'memory' })
+
 		const h = withHistory(base)
 
 		h.set('b')
@@ -34,6 +36,7 @@ describe('withHistory', () => {
 
 	it('redo re-applies undone value', () => {
 		const base = state('h-redo', { default: 0, scope: 'memory' })
+
 		const h = withHistory(base)
 
 		h.set(1)
@@ -50,6 +53,7 @@ describe('withHistory', () => {
 
 	it('new set() after undo clears redo stack', () => {
 		const base = state('h-clear-redo', { default: 0, scope: 'memory' })
+
 		const h = withHistory(base)
 
 		h.set(1)
@@ -67,6 +71,7 @@ describe('withHistory', () => {
 
 	it('respects maxSize option', () => {
 		const base = state('h-max', { default: 0, scope: 'memory' })
+
 		const h = withHistory(base, { maxSize: 3 })
 
 		h.set(1)
@@ -85,6 +90,7 @@ describe('withHistory', () => {
 
 	it('clearHistory empties both stacks', () => {
 		const base = state('h-clear', { default: 0, scope: 'memory' })
+
 		const h = withHistory(base)
 
 		h.set(1)
@@ -102,6 +108,7 @@ describe('withHistory', () => {
 
 	it('undo/redo are no-ops when stacks are empty', () => {
 		const base = state('h-noop', { default: 42, scope: 'memory' })
+
 		const h = withHistory(base)
 
 		h.undo()
@@ -113,6 +120,7 @@ describe('withHistory', () => {
 
 	it('notifies subscribers on undo/redo', () => {
 		const base = state('h-notify', { default: 0, scope: 'memory' })
+
 		const h = withHistory(base)
 
 		h.set(1)
@@ -130,6 +138,7 @@ describe('withHistory', () => {
 
 	it('delegates lifecycle properties from the wrapped instance', () => {
 		const base = state('h-delegate', { default: 0, scope: 'memory' })
+
 		const h = withHistory(base)
 
 		expect(h.key).toBe('h-delegate')
@@ -139,6 +148,7 @@ describe('withHistory', () => {
 
 	it('destroy cleans up history', () => {
 		const base = state('h-destroy', { default: 0, scope: 'memory' })
+
 		const h = withHistory(base)
 
 		h.set(1)

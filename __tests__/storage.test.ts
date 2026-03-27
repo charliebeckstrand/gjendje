@@ -66,6 +66,7 @@ describe('local scope', () => {
 
 	it('notifies subscribers on set', () => {
 		const theme = state('stor-local-notify', { default: 'light', scope: 'local' })
+
 		const listener = vi.fn()
 
 		theme.subscribe(listener)
@@ -259,6 +260,7 @@ describe('session scope', () => {
 
 	it('notifies subscribers on set', () => {
 		const step = state('stor-session-notify', { default: 1, scope: 'session' })
+
 		const listener = vi.fn()
 
 		step.subscribe(listener)

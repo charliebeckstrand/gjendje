@@ -13,6 +13,7 @@ beforeEach(() => {
 describe('interceptor chain', () => {
 	it('multiple interceptors run in registration order', () => {
 		const s = state('chain-order', { default: 0, scope: 'memory' })
+
 		const log: string[] = []
 
 		s.intercept((next, _prev) => {
@@ -33,6 +34,7 @@ describe('interceptor chain', () => {
 
 	it('first interceptor throwing prevents subsequent interceptors from running', () => {
 		const s = state('chain-throw-first', { default: 0, scope: 'memory' })
+
 		const secondCalled = vi.fn()
 
 		s.intercept(() => {
@@ -65,6 +67,7 @@ describe('interceptor chain', () => {
 
 	it('interceptor can reject update by returning prev', () => {
 		const s = state('chain-reject', { default: 0, scope: 'memory' })
+
 		const listener = vi.fn()
 
 		s.subscribe(listener)
@@ -79,6 +82,7 @@ describe('interceptor chain', () => {
 
 	it('interceptors run on reset() too', () => {
 		const s = state('chain-reset', { default: 0, scope: 'memory' })
+
 		const intercepted = vi.fn((next: number) => next + 100)
 
 		s.intercept(intercepted)
@@ -99,8 +103,8 @@ describe('interceptor chain', () => {
 describe('effect cleanup edge cases', () => {
 	it('cleanup throwing does not prevent the next effect run', () => {
 		const a = state('effect-cleanup-throw', { default: 0, scope: 'memory' })
-		const log: string[] = []
 
+		const log: string[] = []
 		const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
 		const handle = effect([a], () => {
@@ -129,6 +133,7 @@ describe('effect cleanup edge cases', () => {
 
 	it('effect does not run after stop even if dep changes', () => {
 		const a = state('effect-stop-dep', { default: 0, scope: 'memory' })
+
 		let runCount = 0
 
 		const handle = effect([a], () => {
@@ -182,6 +187,7 @@ describe('effect cleanup edge cases', () => {
 describe('re-entrancy', () => {
 	it('subscriber calling set() on same state during notification works', () => {
 		const s = state('reentrant-same', { default: 0, scope: 'memory' })
+
 		const values: number[] = []
 
 		s.subscribe((v) => {
@@ -203,6 +209,7 @@ describe('re-entrancy', () => {
 	it('subscriber calling set() on different state during notification works', () => {
 		const a = state('reentrant-a', { default: 0, scope: 'memory' })
 		const b = state('reentrant-b', { default: 0, scope: 'memory' })
+
 		const bValues: number[] = []
 
 		a.subscribe((v) => {
@@ -222,6 +229,7 @@ describe('re-entrancy', () => {
 	it('batch prevents re-entrant notifications until flush', () => {
 		const a = state('reentrant-batch-a', { default: 0, scope: 'memory' })
 		const b = state('reentrant-batch-b', { default: 0, scope: 'memory' })
+
 		const log: string[] = []
 
 		a.subscribe((v) => {
@@ -245,6 +253,7 @@ describe('re-entrancy', () => {
 
 	it('computed handles re-entrant dependency updates', () => {
 		const a = state('reentrant-comp', { default: 1, scope: 'memory' })
+
 		const c = computed([a], ([v]) => (v ?? 0) * 2)
 
 		const values: number[] = []
@@ -275,6 +284,7 @@ describe('collection watch edge cases', () => {
 		})
 
 		const listener = vi.fn()
+
 		col.watch('name', listener)
 
 		col.add({ id: 1, name: 'Alice' })
@@ -292,6 +302,7 @@ describe('collection watch edge cases', () => {
 		})
 
 		const listener = vi.fn()
+
 		col.watch('name', listener)
 
 		col.remove((item) => item.id === 2)
@@ -340,6 +351,7 @@ describe('collection watch edge cases', () => {
 		})
 
 		const listener = vi.fn()
+
 		col.watch('name', listener)
 
 		col.update((item) => item.id === 1, { age: 30 })
@@ -412,6 +424,7 @@ describe('configuration cascading', () => {
 describe('onChange() handlers', () => {
 	it('multiple handlers fire in registration order', () => {
 		const s = state('hooks-order', { default: 0, scope: 'memory' })
+
 		const log: string[] = []
 
 		s.onChange(() => log.push('A'))
@@ -425,6 +438,7 @@ describe('onChange() handlers', () => {
 
 	it('handler receives next and prev values', () => {
 		const s = state('hooks-args', { default: 'hello', scope: 'memory' })
+
 		const calls: [string, string][] = []
 
 		s.onChange((next, prev) => {
@@ -438,6 +452,7 @@ describe('onChange() handlers', () => {
 
 	it('unsubscribing a handler removes it', () => {
 		const s = state('hooks-unsub', { default: 0, scope: 'memory' })
+
 		const hookFn = vi.fn()
 
 		const unsub = s.onChange(hookFn)

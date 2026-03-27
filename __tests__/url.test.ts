@@ -72,6 +72,7 @@ describe('url scope', () => {
 
 	it('notifies subscribers on set', () => {
 		const page = state('url-notify', { default: 1, scope: 'url' })
+
 		const listener = vi.fn()
 
 		page.subscribe(listener)
