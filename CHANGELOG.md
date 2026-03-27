@@ -1,5 +1,51 @@
 # gjendje
 
+## 1.3.0
+
+### Minor Changes
+
+- b537ba3: Add typed error classes for structured error handling
+
+  Previously, all errors flowing through the `onError` callback had `error: unknown`, making it impossible to programmatically distinguish between storage failures, validation rejections, migration errors, and sync issues.
+
+  **New error classes** (all extend `GjendjeError` which extends `Error`):
+
+  - **`StorageReadError`** — emitted when reading from storage fails (corrupt data, parse errors)
+  - **`StorageWriteError`** — emitted on write failures, with an `isQuotaError` flag for quota-specific handling
+  - **`MigrationError`** — emitted when a schema migration function throws, includes `fromVersion` and `toVersion`
+  - **`ValidationError`** — emitted when `validate()` rejects a stored value, includes `rejectedValue`
+  - **`SyncError`** — emitted when a cross-tab BroadcastChannel sync fails
+  - **`HydrationError`** — emitted when SSR hydration can't read the real storage value
+
+  All error classes carry `key`, `scope`, and `cause` (the original error), enabling precise error discrimination:
+
+  ```ts
+  import { configure, StorageWriteError, MigrationError } from "gjendje";
+
+  configure({
+    onError({ error }) {
+      if (error instanceof StorageWriteError && error.isQuotaError) {
+        // clear old data to free space
+      } else if (error instanceof MigrationError) {
+        // log migration failure with version context
+        console.error(
+          `Migration v${error.fromVersion}→v${error.toVersion} failed`
+        );
+      }
+    },
+  });
+  ```
+
+### Patch Changes
+
+- ad51275: Improve error handling consistency across the codebase
+
+  **Global config callback isolation:** All global config callbacks (`onIntercept`, `onChange`, `onReset`, `onDestroy`) are now wrapped in try-catch via a new `safeCallConfig` helper. Previously, a throwing callback would crash the `set()`, `reset()`, or `destroy()` operation. Now errors are caught and logged to `console.error`, matching the existing isolation behavior of listeners and change handlers.
+
+  **Interceptor error reporting:** When an interceptor throws, the error is now reported through the `onError` global callback via `reportError()` before being re-thrown. This makes interceptor failures observable through the same error pipeline used by storage, migration, and validation errors — without changing the existing throw-to-reject behavior.
+
+  **Bucket adapter error reporting:** The Storage Buckets API initialization catch block previously swallowed all errors silently. It now logs a warning and reports the error through `onError`, so users know when their bucket storage failed to initialize and the fallback adapter is being used.
+
 ## 1.2.1
 
 ### Patch Changes
