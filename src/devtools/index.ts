@@ -83,13 +83,23 @@ let devToolsEnabled = false
 // Config callback wrappers
 // ---------------------------------------------------------------------------
 
+function callOriginal<A>(fn: ((arg: A) => void) | undefined, arg: A): void {
+	if (fn === undefined) return
+
+	try {
+		fn(arg)
+	} catch (err) {
+		console.error('[gjendje] DevTools: original config callback threw:', err)
+	}
+}
+
 function onChangeHandler(ctx: {
 	key: string
 	scope: Scope
 	value: unknown
 	previousValue: unknown
 }): void {
-	originalOnChange?.(ctx)
+	callOriginal(originalOnChange, ctx)
 
 	dispatchChange(ctx.key, ctx.scope, ctx.value, ctx.previousValue)
 
@@ -97,7 +107,7 @@ function onChangeHandler(ctx: {
 }
 
 function onResetHandler(ctx: { key: string; scope: Scope; previousValue: unknown }): void {
-	originalOnReset?.(ctx)
+	callOriginal(originalOnReset, ctx)
 
 	dispatchReset(ctx.key, ctx.scope, ctx.previousValue)
 
@@ -105,7 +115,7 @@ function onResetHandler(ctx: { key: string; scope: Scope; previousValue: unknown
 }
 
 function onRegisterHandler(ctx: { key: string; scope: Scope }): void {
-	originalOnRegister?.(ctx)
+	callOriginal(originalOnRegister, ctx)
 
 	dispatchRegister(ctx.key, ctx.scope)
 
@@ -113,7 +123,7 @@ function onRegisterHandler(ctx: { key: string; scope: Scope }): void {
 }
 
 function onDestroyHandler(ctx: { key: string; scope: Scope }): void {
-	originalOnDestroy?.(ctx)
+	callOriginal(originalOnDestroy, ctx)
 
 	dispatchDestroy(ctx.key, ctx.scope)
 

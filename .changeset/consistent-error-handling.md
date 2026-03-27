@@ -30,9 +30,17 @@ The cross-tab BroadcastChannel sync adapter (`withSync`) now handles all failure
 
 Additionally, `reportError()` itself is now hardened — if the user's `onError` callback throws, the error is caught and logged rather than crashing the operation.
 
+### DevTools error isolation
+
+The devtools orchestrator, logger, and Redux DevTools adapter now handle all failure paths gracefully:
+
+- **Original config callbacks**: When devtools chains with a user's existing `onChange`/`onReset`/`onRegister`/`onDestroy` callback, a throwing callback no longer prevents devtools logging and Redux DevTools dispatch from firing for that event.
+- **Custom logger/filter**: Throwing `logger` or `filter` functions in `LoggerOptions` no longer crash state operations.
+- **Redux DevTools `send()`**: A misbehaving DevTools extension no longer crashes state operations.
+
 ### Test coverage
 
-Added 39 new tests covering previously untested paths:
+Added 44 new tests covering previously untested paths:
 
 - Config callback isolation for all callbacks (`onIntercept`, `onChange`, `onReset`, `onDestroy`, `onValidationFail`, `onMigrate`, `onQuotaExceeded`, `onError`, `onRegister`)
 - Interceptor error reporting through `onError` pipeline
@@ -41,3 +49,4 @@ Added 39 new tests covering previously untested paths:
 - Custom serializer bypassing validation and migration (documenting intentional behavior)
 - Collection persistence with validation, migration, and corrupted data
 - URL adapter edge cases (parse errors, pushState failures, special characters, persist option)
+- DevTools error isolation (original callbacks, logger, filter, Redux DevTools send)

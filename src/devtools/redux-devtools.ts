@@ -170,6 +170,16 @@ export function isReduxDevToolsConnected(): boolean {
 // Integration hooks — called from the devtools orchestrator
 // ---------------------------------------------------------------------------
 
+function safeSend(action: DevToolsAction): void {
+	if (!devTools) return
+
+	try {
+		devTools.send(action, getGlobalState())
+	} catch (err) {
+		console.error('[gjendje] Redux DevTools send failed:', err)
+	}
+}
+
 /** @internal */
 export function dispatchChange(
 	key: string,
@@ -177,28 +187,20 @@ export function dispatchChange(
 	value: unknown,
 	previousValue: unknown,
 ): void {
-	if (!devTools) return
-
-	devTools.send({ type: 'set', key, scope, value, previousValue }, getGlobalState())
+	safeSend({ type: 'set', key, scope, value, previousValue })
 }
 
 /** @internal */
 export function dispatchReset(key: string, scope: Scope, previousValue: unknown): void {
-	if (!devTools) return
-
-	devTools.send({ type: 'reset', key, scope, previousValue }, getGlobalState())
+	safeSend({ type: 'reset', key, scope, previousValue })
 }
 
 /** @internal */
 export function dispatchRegister(key: string, scope: Scope): void {
-	if (!devTools) return
-
-	devTools.send({ type: 'register', key, scope }, getGlobalState())
+	safeSend({ type: 'register', key, scope })
 }
 
 /** @internal */
 export function dispatchDestroy(key: string, scope: Scope): void {
-	if (!devTools) return
-
-	devTools.send({ type: 'destroy', key, scope }, getGlobalState())
+	safeSend({ type: 'destroy', key, scope })
 }

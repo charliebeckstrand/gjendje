@@ -132,60 +132,60 @@ export function isLoggerEnabled(): boolean {
 // Integration hooks — called from the devtools orchestrator
 // ---------------------------------------------------------------------------
 
+function matchesFilter(key: string, scope: Scope): boolean {
+	if (!loggerOptions?.filter) return true
+
+	try {
+		return loggerOptions.filter(key, scope)
+	} catch (err) {
+		console.error('[gjendje] Logger filter threw:', err)
+
+		return false
+	}
+}
+
+function safeLog(entry: LogEntry): void {
+	const logger = loggerOptions?.logger ?? defaultLogger
+
+	try {
+		logger(entry)
+	} catch (err) {
+		console.error('[gjendje] Logger callback threw:', err)
+	}
+}
+
 /** @internal */
 export function logChange(key: string, scope: Scope, value: unknown, previousValue: unknown): void {
 	if (!loggerActive) return
 
-	if (loggerOptions?.filter && !loggerOptions.filter(key, scope)) return
+	if (!matchesFilter(key, scope)) return
 
-	const entry: LogEntry = { type: 'set', key, scope, value, previousValue, timestamp: Date.now() }
-
-	const logger = loggerOptions?.logger ?? defaultLogger
-
-	logger(entry)
+	safeLog({ type: 'set', key, scope, value, previousValue, timestamp: Date.now() })
 }
 
 /** @internal */
 export function logReset(key: string, scope: Scope, previousValue: unknown): void {
 	if (!loggerActive) return
 
-	if (loggerOptions?.filter && !loggerOptions.filter(key, scope)) return
+	if (!matchesFilter(key, scope)) return
 
-	const entry: LogEntry = {
-		type: 'reset',
-		key,
-		scope,
-		previousValue,
-		timestamp: Date.now(),
-	}
-
-	const logger = loggerOptions?.logger ?? defaultLogger
-
-	logger(entry)
+	safeLog({ type: 'reset', key, scope, previousValue, timestamp: Date.now() })
 }
 
 /** @internal */
 export function logRegister(key: string, scope: Scope): void {
 	if (!loggerActive) return
 
-	if (loggerOptions?.filter && !loggerOptions.filter(key, scope)) return
+	if (!matchesFilter(key, scope)) return
 
-	const entry: LogEntry = { type: 'register', key, scope, timestamp: Date.now() }
-
-	const logger = loggerOptions?.logger ?? defaultLogger
-
-	logger(entry)
+	safeLog({ type: 'register', key, scope, timestamp: Date.now() })
 }
 
 /** @internal */
 export function logDestroy(key: string, scope: Scope): void {
 	if (!loggerActive) return
 
-	if (loggerOptions?.filter && !loggerOptions.filter(key, scope)) return
+	if (!matchesFilter(key, scope)) return
 
-	const entry: LogEntry = { type: 'destroy', key, scope, timestamp: Date.now() }
-
-	const logger = loggerOptions?.logger ?? defaultLogger
-
-	logger(entry)
+	safeLog({ type: 'destroy', key, scope, timestamp: Date.now() })
 }
