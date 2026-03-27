@@ -1,6 +1,6 @@
 import { getConfig, log, reportError } from '../config.js'
 import { SyncError } from '../errors.js'
-import { createListeners } from '../listeners.js'
+import { createListeners, safeCallConfig } from '../listeners.js'
 import type { Adapter, Scope, Unsubscribe } from '../types.js'
 
 /**
@@ -10,7 +10,21 @@ import type { Adapter, Scope, Unsubscribe } from '../types.js'
 export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Adapter<T> {
 	const channelName = `state:${key}`
 
-	const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(channelName) : null
+	let channel: BroadcastChannel | null = null
+
+	if (typeof BroadcastChannel !== 'undefined') {
+		try {
+			channel = new BroadcastChannel(channelName)
+		} catch (err) {
+			const syncErr = new SyncError(key, scope ?? 'local', err)
+
+			log('warn', `Failed to create BroadcastChannel for key "${key}" — cross-tab sync disabled.`)
+
+			if (scope) {
+				reportError(key, scope, syncErr)
+			}
+		}
+	}
 
 	const listeners = createListeners<T>()
 
@@ -46,7 +60,7 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 				adapter.set(value)
 
 				if (scope) {
-					getConfig().onSync?.({ key, scope, value, source: 'remote' })
+					safeCallConfig(getConfig().onSync, { key, scope, value, source: 'remote' })
 				}
 			} catch (err) {
 				const syncErr = new SyncError(key, scope ?? 'local', err)
@@ -72,7 +86,19 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 		set(value) {
 			adapter.set(value)
 
-			channel?.postMessage({ value })
+			if (channel) {
+				try {
+					channel.postMessage({ value })
+				} catch (err) {
+					const syncErr = new SyncError(key, scope ?? 'local', err)
+
+					log('error', syncErr.message)
+
+					if (scope) {
+						reportError(key, scope, syncErr)
+					}
+				}
+			}
 		},
 
 		subscribe(listener): Unsubscribe {
@@ -86,7 +112,13 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 
 			listeners.clear()
 
-			channel?.close()
+			try {
+				channel?.close()
+			} catch {
+				// BroadcastChannel.close() failure is non-critical — the channel
+				// will be garbage-collected regardless. Swallow to ensure the
+				// remaining cleanup (adapter.destroy) always runs.
+			}
 
 			adapter.destroy?.()
 		},

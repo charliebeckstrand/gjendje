@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { state } from '../src/index.js'
+import { configure, state } from '../src/index.js'
 import { makeStorage } from './helpers.js'
 
 type MessageHandler = (event: { data: unknown }) => void
@@ -214,5 +214,142 @@ describe('sync option', () => {
 		expect(channels).toBeUndefined()
 
 		x.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Sync adapter error handling
+// ---------------------------------------------------------------------------
+
+describe('sync error handling', () => {
+	beforeEach(() => {
+		configure({
+			onError: undefined,
+			onSync: undefined,
+			logLevel: undefined,
+		})
+	})
+
+	it('gracefully handles BroadcastChannel constructor throwing', () => {
+		const onError = vi.fn()
+
+		configure({ onError, logLevel: 'silent' })
+
+		Object.defineProperty(globalThis, 'BroadcastChannel', {
+			value: class {
+				constructor() {
+					throw new Error('BroadcastChannel blocked')
+				}
+			},
+			configurable: true,
+			writable: true,
+		})
+
+		const x = state('sync-ctor-err', { default: 0, scope: 'local', sync: true })
+
+		// State still works — just without cross-tab sync
+		x.set(42)
+		expect(x.get()).toBe(42)
+
+		expect(onError).toHaveBeenCalledWith({
+			key: 'sync-ctor-err',
+			scope: 'local',
+			error: expect.objectContaining({ name: 'SyncError' }),
+		})
+
+		x.destroy()
+	})
+
+	it('gracefully handles postMessage throwing', () => {
+		const onError = vi.fn()
+
+		configure({ onError, logLevel: 'silent' })
+
+		Object.defineProperty(globalThis, 'BroadcastChannel', {
+			value: class {
+				onmessage = null
+
+				postMessage() {
+					throw new Error('postMessage failed')
+				}
+
+				close() {}
+			},
+			configurable: true,
+			writable: true,
+		})
+
+		const x = state('sync-post-err', { default: 0, scope: 'local', sync: true })
+
+		// set() should still succeed locally even if broadcast fails
+		x.set(99)
+		expect(x.get()).toBe(99)
+
+		expect(onError).toHaveBeenCalledWith({
+			key: 'sync-post-err',
+			scope: 'local',
+			error: expect.objectContaining({ name: 'SyncError' }),
+		})
+
+		x.destroy()
+	})
+
+	it('throwing onSync callback does not crash sync message processing', () => {
+		configure({
+			onSync: () => {
+				throw new Error('onSync boom')
+			},
+		})
+
+		const a = state('sync-onsync-err', { default: 0, scope: 'local', sync: true })
+
+		const listener = vi.fn()
+
+		a.subscribe(listener)
+
+		const channels = MockBroadcastChannel.channels.get('state:sync-onsync-err')
+		const channel = channels ? [...channels][0] : undefined
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		// Simulate incoming broadcast — should not throw
+		channel?.onmessage?.({ data: { value: 77 } })
+
+		// Value was applied despite onSync throwing
+		expect(listener).toHaveBeenCalledWith(77)
+
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('[gjendje] Config callback threw:'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+		a.destroy()
+	})
+
+	it('channel.close() failure does not prevent adapter cleanup', () => {
+		let closeThrew = false
+
+		Object.defineProperty(globalThis, 'BroadcastChannel', {
+			value: class {
+				onmessage = null
+
+				postMessage() {}
+
+				close() {
+					closeThrew = true
+					throw new Error('close failed')
+				}
+			},
+			configurable: true,
+			writable: true,
+		})
+
+		const x = state('sync-close-err', { default: 0, scope: 'local', sync: true })
+
+		// Destroy should not throw even if channel.close() fails
+		expect(() => x.destroy()).not.toThrow()
+		expect(closeThrew).toBe(true)
+		expect(x.isDestroyed).toBe(true)
 	})
 })
