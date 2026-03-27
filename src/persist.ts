@@ -1,5 +1,6 @@
 import { getConfig, log } from './config.js'
 import { MigrationError, StorageReadError, ValidationError } from './errors.js'
+import { safeCallConfig } from './listeners.js'
 import type { Scope, StateOptions, VersionedValue } from './types.js'
 import { isRecord } from './utils.js'
 
@@ -48,7 +49,7 @@ export function readAndMigrate<T>(
 			data = runMigrations(data, storedVersion, currentVersion, options.migrate, key, scope)
 
 			if (key && scope) {
-				getConfig().onMigrate?.({
+				safeCallConfig(getConfig().onMigrate, {
 					key,
 					scope,
 					fromVersion: storedVersion,
@@ -63,11 +64,11 @@ export function readAndMigrate<T>(
 			if (key && scope) {
 				const config = getConfig()
 
-				config.onValidationFail?.({ key, scope, value: data })
+				safeCallConfig(config.onValidationFail, { key, scope, value: data })
 
 				const validationErr = new ValidationError(key, scope, data)
 
-				config.onError?.({ key, scope, error: validationErr })
+				safeCallConfig(config.onError, { key, scope, error: validationErr })
 			}
 
 			return defaultValue
@@ -80,7 +81,7 @@ export function readAndMigrate<T>(
 		if (key && scope) {
 			const readErr = new StorageReadError(key, scope, err)
 
-			getConfig().onError?.({ key, scope, error: readErr })
+			safeCallConfig(getConfig().onError, { key, scope, error: readErr })
 		}
 
 		return defaultValue
@@ -172,7 +173,7 @@ function runMigrations(
 				if (key && scope) {
 					const migrationErr = new MigrationError(key, scope, v, toVersion, err)
 
-					getConfig().onError?.({ key, scope, error: migrationErr })
+					safeCallConfig(getConfig().onError, { key, scope, error: migrationErr })
 				}
 
 				return current

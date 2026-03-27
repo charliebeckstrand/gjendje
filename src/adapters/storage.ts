@@ -1,7 +1,7 @@
 import { notify } from '../batch.js'
 import { getConfig, log, reportError } from '../config.js'
 import { StorageWriteError } from '../errors.js'
-import { createListeners } from '../listeners.js'
+import { createListeners, safeCallConfig } from '../listeners.js'
 import { mergeKeys, pickKeys, readAndMigrate, wrapForStorage } from '../persist.js'
 import type { Adapter, StateOptions } from '../types.js'
 import { RESOLVED } from '../utils.js'
@@ -107,7 +107,7 @@ export function createStorageAdapter<T>(
 			log('error', writeErr.message)
 
 			if (isQuota) {
-				getConfig().onQuotaExceeded?.({ key, scope, error: writeErr })
+				safeCallConfig(getConfig().onQuotaExceeded, { key, scope, error: writeErr })
 			}
 
 			reportError(key, scope, writeErr)

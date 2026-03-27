@@ -649,4 +649,171 @@ describe('enableDevTools', () => {
 
 		expect(isDevToolsEnabled()).toBe(false)
 	})
+
+	it('throwing original onChange does not crash set or skip devtools', () => {
+		const customLogger = vi.fn()
+
+		configure({
+			onChange: () => {
+				throw new Error('original onChange boom')
+			},
+		})
+
+		enableDevTools({
+			reduxDevTools: false,
+			loggerOptions: { logger: customLogger },
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const s = state('dt-err-change', { default: 0 })
+
+		s.set(42)
+
+		expect(s.get()).toBe(42)
+
+		// Logger still fired despite original callback throwing
+		const setCall = customLogger.mock.calls.find(
+			(call) => (call[0] as { type: string }).type === 'set',
+		)
+
+		expect(setCall).toBeDefined()
+
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('original config callback threw'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+
+		disableDevTools()
+
+		s.destroy()
+	})
+
+	it('throwing original onDestroy does not crash destroy or skip devtools', () => {
+		const customLogger = vi.fn()
+
+		configure({
+			onDestroy: () => {
+				throw new Error('original onDestroy boom')
+			},
+		})
+
+		enableDevTools({
+			reduxDevTools: false,
+			loggerOptions: { logger: customLogger },
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const s = state('dt-err-destroy', { default: 0 })
+
+		s.destroy()
+
+		// Logger still fired for destroy event
+		const destroyCall = customLogger.mock.calls.find(
+			(call) => (call[0] as { type: string }).type === 'destroy',
+		)
+
+		expect(destroyCall).toBeDefined()
+
+		spy.mockRestore()
+
+		disableDevTools()
+	})
+
+	it('throwing logger function does not crash set', () => {
+		enableDevTools({
+			reduxDevTools: false,
+			loggerOptions: {
+				logger: () => {
+					throw new Error('logger boom')
+				},
+			},
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const s = state('dt-err-logger', { default: 0 })
+
+		s.set(42)
+
+		expect(s.get()).toBe(42)
+
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('Logger callback threw'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+
+		disableDevTools()
+
+		s.destroy()
+	})
+
+	it('throwing filter function does not crash set', () => {
+		const customLogger = vi.fn()
+
+		enableDevTools({
+			reduxDevTools: false,
+			loggerOptions: {
+				logger: customLogger,
+				filter: () => {
+					throw new Error('filter boom')
+				},
+			},
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const s = state('dt-err-filter', { default: 0 })
+
+		s.set(42)
+
+		expect(s.get()).toBe(42)
+
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('Logger filter threw'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+
+		disableDevTools()
+
+		s.destroy()
+	})
+
+	it('throwing devTools.send does not crash set', () => {
+		const mock = createMockDevTools()
+
+		mock.instance.send.mockImplementation(() => {
+			throw new Error('devtools send boom')
+		})
+
+		installMockExtension(mock)
+
+		enableDevTools({ logger: false })
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const s = state('dt-err-send', { default: 0 })
+
+		s.set(42)
+
+		expect(s.get()).toBe(42)
+
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('Redux DevTools send failed'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+
+		disableDevTools()
+
+		s.destroy()
+	})
 })

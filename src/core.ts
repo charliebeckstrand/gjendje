@@ -958,7 +958,7 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 					instance.set(storedValue)
 				}
 
-				config.onHydrate?.({
+				safeCallConfig(config.onHydrate, {
 					key,
 					scope,
 					serverValue: options.default,
