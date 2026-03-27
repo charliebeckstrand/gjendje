@@ -730,4 +730,68 @@ describe('adapter config callback isolation', () => {
 		spy.mockRestore()
 		x.destroy()
 	})
+
+	it('throwing onRegister does not crash state creation', () => {
+		configure({
+			onRegister: () => {
+				throw new Error('onRegister boom')
+			},
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const x = state('cfg-register-err', { default: 0, scope: 'memory' })
+
+		// State was created successfully despite onRegister throwing
+		expect(x.get()).toBe(0)
+		x.set(42)
+		expect(x.get()).toBe(42)
+
+		expect(spy).toHaveBeenCalledWith(
+			expect.stringContaining('[gjendje] Config callback threw:'),
+			expect.any(Error),
+		)
+
+		spy.mockRestore()
+		x.destroy()
+	})
+
+	it('throwing onError in reportError does not crash the operation', () => {
+		configure({
+			onError: () => {
+				throw new Error('onError itself throws')
+			},
+			logLevel: 'silent',
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		// reportError is called internally; we trigger it via a write failure
+		// by creating a storage adapter with a full quota
+		const original = localStorage.setItem
+
+		// biome-ignore lint/suspicious/noExplicitAny: test mock
+		;(localStorage as any).setItem = () => {
+			throw new DOMException('QuotaExceededError')
+		}
+
+		const x = state('cfg-report-err', {
+			default: 'safe',
+			scope: 'local',
+		})
+
+		x.set('boom')
+
+		// biome-ignore lint/suspicious/noExplicitAny: test mock
+		;(localStorage as any).setItem = original
+
+		const onErrorCall = spy.mock.calls.find(
+			(args) => typeof args[0] === 'string' && args[0].includes('onError callback threw'),
+		)
+
+		expect(onErrorCall).toBeDefined()
+
+		spy.mockRestore()
+		x.destroy()
+	})
 })

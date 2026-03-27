@@ -200,5 +200,11 @@ export function log(level: 'warn' | 'error' | 'debug', message: string): void {
  * Internal error reporter that calls the global onError handler if configured.
  */
 export function reportError(key: string, scope: Scope, error: unknown): void {
-	globalConfig.onError?.({ key, scope, error })
+	if (globalConfig.onError === undefined) return
+
+	try {
+		globalConfig.onError({ key, scope, error })
+	} catch (err) {
+		console.error('[gjendje] onError callback threw:', err)
+	}
 }

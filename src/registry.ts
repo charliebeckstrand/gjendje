@@ -1,4 +1,5 @@
 import { type GjendjeConfig, log } from './config.js'
+import { safeCallConfig } from './listeners.js'
 import type { BaseInstance, Scope } from './types.js'
 
 export function scopedKey(key: string, scope: Scope): string {
@@ -44,7 +45,7 @@ export function registerByKey<T>(
 
 	registry.set(rKey, instance)
 
-	config.onRegister?.({ key, scope })
+	safeCallConfig(config.onRegister, { key, scope })
 }
 
 /**
@@ -75,7 +76,7 @@ export function registerNew<T>(
 
 	registry.set(rKey, instance)
 
-	config.onRegister?.({ key, scope })
+	safeCallConfig(config.onRegister, { key, scope })
 }
 
 /**
