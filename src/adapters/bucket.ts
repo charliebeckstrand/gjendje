@@ -228,6 +228,8 @@ export function createBucketAdapter<T>(
 			}
 		}
 
+		if (isDestroyed) return
+
 		// Forward future storage events from the delegate to our listeners
 		delegateUnsub = delegate.subscribe((value) => {
 			lastNotifiedValue = value

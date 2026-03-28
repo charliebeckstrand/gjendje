@@ -88,7 +88,7 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 	// Map + subscription overhead for collections that never use watch().
 	let watchers: WatcherMap<T> | undefined
 
-	let prevItems: T[]
+	let prevItems: T[] | undefined
 
 	let unsubscribe: Unsubscribe | undefined
 
@@ -110,7 +110,9 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 			// Single pass: iterate items once, checking all watched keys per item.
 			// This is O(items + keys) instead of the previous O(items × keys).
-			const lengthChanged = next.length !== prevItems.length
+			const prev = prevItems ?? []
+
+			const lengthChanged = next.length !== prev.length
 
 			if (lengthChanged) {
 				// Length change implies all watched keys changed — notify all directly
@@ -130,13 +132,13 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 			let changedKeys: Set<PropertyKey> | undefined
 
 			for (let i = 0; i < len; i++) {
-				const prev = prevItems[i]
+				const prevItem = prev[i]
 
 				const curr = next[i]
 
-				if (prev === curr) continue
+				if (prevItem === curr) continue
 
-				const p = isRecord(prev) ? prev : undefined
+				const p = isRecord(prevItem) ? prevItem : undefined
 
 				const n = isRecord(curr) ? curr : undefined
 
@@ -294,8 +296,12 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 	col.destroy = () => {
 		try {
 			watchers?.clear()
+			watchers = undefined
 
 			unsubscribe?.()
+			unsubscribe = undefined
+
+			prevItems = undefined
 		} finally {
 			baseDestroy.call(col)
 		}

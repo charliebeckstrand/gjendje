@@ -116,6 +116,8 @@ export function effect<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 				for (let i = 0; i < depLen; i++) {
 					unsubscribers[i]()
 				}
+
+				unsubscribers.length = 0
 			} finally {
 				if (cleanup) {
 					try {

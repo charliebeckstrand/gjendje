@@ -33,7 +33,7 @@ if (isDestroyed) return
 delegateUnsub = delegate.subscribe((value) => {
 ```
 
-- [ ] Add `isDestroyed` guard before `delegateUnsub` assignment in bucket adapter
+- [x] Add `isDestroyed` guard before `delegateUnsub` assignment in bucket adapter
 
 ---
 
@@ -71,7 +71,7 @@ function ensureSubscription() {
 
 The `initialized` flag is unnecessary — checking `unsubscribe` alone is sufficient.
 
-- [ ] Fix `ensureSubscription` in `withWatch` to not block retry on subscription failure
+- [x] Fix `ensureSubscription` in `withWatch` to not block retry on subscription failure
 
 ---
 
@@ -95,7 +95,7 @@ try {
 } finally {
 ```
 
-- [ ] Clear `unsubscribers` array in `effect.stop()`
+- [x] Clear `unsubscribers` array in `effect.stop()`
 
 ---
 
@@ -123,7 +123,7 @@ col.destroy = () => {
 }
 ```
 
-- [ ] Null out `watchers`, `unsubscribe`, and `prevItems` in collection `destroy()`
+- [x] Null out `watchers`, `unsubscribe`, and `prevItems` in collection `destroy()`
 
 ---
 
@@ -137,7 +137,7 @@ If `source.subscribe()` throws on line 68, the `listeners` object and other loca
 allocated but never cleaned up. This is unlikely in practice (subscribe on a valid
 instance shouldn't throw), but every other primitive guards this path.
 
-- [ ] Wrap `previous()` subscription in try/catch with cleanup
+- [x] Wrap `previous()` subscription in try/catch with cleanup
 
 ---
 
