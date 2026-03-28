@@ -26,3 +26,4 @@ Comprehensive hardening of error handling across the library:
 - **keyPattern validation**: `configure({ keyPattern })` now throws immediately if the value is not a RegExp
 - **onChange/onReset allocation guard**: `safeCallConfig` object literal allocations in `MemoryStateImpl.set()`, `reset()`, and `StateImpl._notifyChange()` are now guarded behind `!== undefined` checks to avoid allocation on every set/reset when no callback is configured
 - **Scope `'render'` deprecated**: The `'render'` scope type now has a `@deprecated` JSDoc annotation directing users to `'memory'`
+- **Test coverage gaps closed**: Added 36 tests across 9 new focused test files covering onHydrate callback, onExpire callback, DepValues runtime verification, collection+computed integration, session scope parity, withHistory+computed interaction, destroyAll with live computed/effects, snapshot with collections, and interceptor chain edge cases
