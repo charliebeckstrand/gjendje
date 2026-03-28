@@ -1,4 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
+import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { batch, collection, computed, readonly, select, state } from '../src/index.js'
 import { useGjendje } from '../src/react/index.js'
@@ -237,6 +238,280 @@ describe('useGjendje', () => {
 			})
 
 			expect(renderCount).toHaveBeenCalledTimes(2)
+		})
+	})
+
+	describe('Strict Mode double-render', () => {
+		it('returns correct state value under StrictMode', () => {
+			const count = tracked(state('react-strict-mode', { default: 7 }))
+
+			const { result } = renderHook(() => useGjendje(count), {
+				wrapper: ({ children }) => React.createElement(React.StrictMode, null, children),
+			})
+
+			expect(result.current[0]).toBe(7)
+		})
+
+		it('updates correctly under StrictMode', () => {
+			const count = tracked(state('react-strict-mode-update', { default: 0 }))
+
+			const { result } = renderHook(() => useGjendje(count), {
+				wrapper: ({ children }) => React.createElement(React.StrictMode, null, children),
+			})
+
+			act(() => result.current[1](42))
+
+			expect(result.current[0]).toBe(42)
+		})
+
+		it('selector works under StrictMode', () => {
+			const user = tracked(state('react-strict-mode-sel', { default: { name: 'Alice', age: 30 } }))
+
+			const { result } = renderHook(() => useGjendje(user, (u) => u.name), {
+				wrapper: ({ children }) => React.createElement(React.StrictMode, null, children),
+			})
+
+			expect(result.current).toBe('Alice')
+
+			act(() => user.patch({ name: 'Bob' }))
+
+			expect(result.current).toBe('Bob')
+		})
+	})
+
+	describe('multiple hooks in one component', () => {
+		it('both state instances update independently', () => {
+			const countA = tracked(state('react-multi-hook-a', { default: 0 }))
+			const countB = tracked(state('react-multi-hook-b', { default: 100 }))
+
+			const { result } = renderHook(() => {
+				const a = useGjendje(countA)
+				const b = useGjendje(countB)
+				return { a, b }
+			})
+
+			expect(result.current.a[0]).toBe(0)
+			expect(result.current.b[0]).toBe(100)
+
+			act(() => countA.set(5))
+
+			expect(result.current.a[0]).toBe(5)
+			expect(result.current.b[0]).toBe(100)
+
+			act(() => countB.set(200))
+
+			expect(result.current.a[0]).toBe(5)
+			expect(result.current.b[0]).toBe(200)
+		})
+
+		it('re-renders only when one of the subscribed values changes', () => {
+			const countA = tracked(state('react-multi-hook-render-a', { default: 0 }))
+			const countB = tracked(state('react-multi-hook-render-b', { default: 0 }))
+
+			const renderCount = vi.fn()
+
+			renderHook(() => {
+				const a = useGjendje(countA)
+				const b = useGjendje(countB)
+				renderCount()
+				return { a, b }
+			})
+
+			expect(renderCount).toHaveBeenCalledTimes(1)
+
+			act(() => countA.set(1))
+
+			expect(renderCount).toHaveBeenCalledTimes(2)
+
+			act(() => countB.set(1))
+
+			expect(renderCount).toHaveBeenCalledTimes(3)
+		})
+	})
+
+	describe('instance swap', () => {
+		it('subscribes to the new instance after swap', () => {
+			const instanceA = tracked(state('react-swap-a', { default: 'A' }))
+			const instanceB = tracked(state('react-swap-b', { default: 'B' }))
+
+			const { result, rerender } = renderHook(({ inst }) => useGjendje(inst), {
+				initialProps: { inst: instanceA as ReturnType<typeof state<string>> },
+			})
+
+			expect(result.current[0]).toBe('A')
+
+			rerender({ inst: instanceB })
+
+			expect(result.current[0]).toBe('B')
+		})
+
+		it('unsubscribes from the old instance after swap', () => {
+			const instanceA = tracked(state('react-swap-unsub-a', { default: 'A' }))
+			const instanceB = tracked(state('react-swap-unsub-b', { default: 'B' }))
+
+			const renderCount = vi.fn()
+
+			const { rerender } = renderHook(
+				({ inst }) => {
+					const tuple = useGjendje(inst)
+					renderCount()
+					return tuple
+				},
+				{ initialProps: { inst: instanceA as ReturnType<typeof state<string>> } },
+			)
+
+			expect(renderCount).toHaveBeenCalledTimes(1)
+
+			rerender({ inst: instanceB })
+
+			const countAfterSwap = renderCount.mock.calls.length
+
+			// Updating the old instance should NOT cause a re-render
+			act(() => instanceA.set('A2'))
+
+			expect(renderCount).toHaveBeenCalledTimes(countAfterSwap)
+		})
+
+		it('responds to updates on the new instance after swap', () => {
+			const instanceA = tracked(state('react-swap-new-a', { default: 0 }))
+			const instanceB = tracked(state('react-swap-new-b', { default: 10 }))
+
+			const { result, rerender } = renderHook(({ inst }) => useGjendje(inst), {
+				initialProps: { inst: instanceA as ReturnType<typeof state<number>> },
+			})
+
+			rerender({ inst: instanceB })
+
+			act(() => instanceB.set(20))
+
+			expect(result.current[0]).toBe(20)
+		})
+	})
+
+	describe('destroyed instance', () => {
+		it('does not throw when rendering a destroyed instance', () => {
+			const count = tracked(state('react-destroyed', { default: 42 }))
+
+			count.destroy()
+
+			const { result } = renderHook(() => useGjendje(count))
+
+			// Should still return the last known value without throwing
+			expect(result.current[0]).toBe(42)
+		})
+
+		it('set() is a no-op on a destroyed instance', () => {
+			const count = tracked(state('react-destroyed-set', { default: 0 }))
+
+			const { result } = renderHook(() => useGjendje(count))
+
+			expect(result.current[0]).toBe(0)
+
+			act(() => count.destroy())
+
+			// Calling set after destroy should not throw
+			act(() => result.current[1](99))
+
+			expect(result.current[0]).toBe(0)
+		})
+	})
+
+	describe('selector with derived computation', () => {
+		it('computes a count of even numbers and updates when source changes', () => {
+			const items = tracked(
+				state('react-selector-derived', {
+					default: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+				}),
+			)
+
+			const { result } = renderHook(() =>
+				useGjendje(items, (arr) => arr.filter((n) => n % 2 === 0).length),
+			)
+
+			expect(result.current).toBe(5)
+
+			act(() => items.set([1, 2, 3]))
+
+			expect(result.current).toBe(1)
+		})
+
+		it('computes a sum and updates correctly', () => {
+			const nums = tracked(state('react-selector-sum', { default: [10, 20, 30] }))
+
+			const { result } = renderHook(() =>
+				useGjendje(nums, (arr) => arr.reduce((sum, n) => sum + n, 0)),
+			)
+
+			expect(result.current).toBe(60)
+
+			act(() => nums.set([1, 2, 3, 4]))
+
+			expect(result.current).toBe(10)
+		})
+
+		it('derives a string from multiple object fields', () => {
+			const user = tracked(
+				state('react-selector-obj', {
+					default: { firstName: 'Jane', lastName: 'Doe', age: 25 },
+				}),
+			)
+
+			const { result } = renderHook(() =>
+				useGjendje(
+					user,
+					(u) => `${u.firstName} ${u.lastName} (${u.age >= 18 ? 'adult' : 'minor'})`,
+				),
+			)
+
+			expect(result.current).toBe('Jane Doe (adult)')
+
+			act(() => user.set({ firstName: 'Baby', lastName: 'Doe', age: 2 }))
+
+			expect(result.current).toBe('Baby Doe (minor)')
+		})
+	})
+
+	describe('rapid updates', () => {
+		it('shows the last value after many rapid set() calls', () => {
+			const count = tracked(state('react-rapid', { default: 0 }))
+
+			const { result } = renderHook(() => useGjendje(count))
+
+			act(() => {
+				for (let i = 1; i <= 100; i++) {
+					count.set(i)
+				}
+			})
+
+			expect(result.current[0]).toBe(100)
+		})
+
+		it('updater functions compose correctly during rapid updates', () => {
+			const count = tracked(state('react-rapid-updater', { default: 0 }))
+
+			const { result } = renderHook(() => useGjendje(count))
+
+			act(() => {
+				for (let i = 0; i < 50; i++) {
+					result.current[1]((prev) => prev + 1)
+				}
+			})
+
+			expect(result.current[0]).toBe(50)
+		})
+
+		it('selector reflects the final rapid update', () => {
+			const data = tracked(state('react-rapid-selector', { default: { count: 0 } }))
+
+			const { result } = renderHook(() => useGjendje(data, (d) => d.count * 2))
+
+			act(() => {
+				for (let i = 1; i <= 20; i++) {
+					data.set({ count: i })
+				}
+			})
+
+			expect(result.current).toBe(40)
 		})
 	})
 })

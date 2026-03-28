@@ -3,8 +3,8 @@
 **Scope:** Memory leaks, subscription cleanup, destroy completeness, closure retention,
 event listener balance, adapter/enhancer resource management, test coverage for cleanup paths.
 
-**Prior audit status:** All items from previous audits resolved except one low-priority
-medium item (`select()` overhead from 2025-03-27 #8).
+**Prior audit status:** All items from previous audits resolved (including `select()`
+overhead from 2025-03-27 #8, patched with standalone implementation).
 
 ---
 
