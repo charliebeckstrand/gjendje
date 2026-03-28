@@ -699,3 +699,138 @@ describe('resolveAdapter error paths', () => {
 		)
 	})
 })
+
+// ---------------------------------------------------------------------------
+// destroyed instance no-ops
+// ---------------------------------------------------------------------------
+
+describe('destroyed instance no-ops', () => {
+	it('set() on destroyed memory state is a silent no-op', () => {
+		const s = state('mem-set-destroyed', { default: 1 })
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+		listener.mockClear()
+
+		s.destroy()
+		s.set(99)
+
+		expect(listener).not.toHaveBeenCalled()
+		expect(s.get()).toBe(1)
+
+		s.destroy()
+	})
+
+	it('reset() on destroyed memory state is a silent no-op', () => {
+		const s = state('mem-reset-destroyed', { default: 0 })
+
+		s.set(42)
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+		listener.mockClear()
+
+		s.destroy()
+		s.reset()
+
+		expect(listener).not.toHaveBeenCalled()
+		expect(s.get()).toBe(42)
+
+		s.destroy()
+	})
+
+	it('set() on destroyed persistent state is a silent no-op', () => {
+		const s = state('persist-set-destroyed', { default: 0, scope: 'local' })
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+		listener.mockClear()
+
+		s.destroy()
+		s.set(99)
+
+		expect(listener).not.toHaveBeenCalled()
+
+		s.destroy()
+	})
+
+	it('reset() on destroyed persistent state is a silent no-op', () => {
+		const s = state('persist-reset-destroyed', { default: 10, scope: 'local' })
+
+		s.set(50)
+		s.destroy()
+		s.reset()
+
+		expect(s.get()).toBe(50)
+
+		s.destroy()
+	})
+
+	it('get() returns lastValue on destroyed persistent state', () => {
+		const s = state('persist-get-destroyed', { default: 0, scope: 'local' })
+
+		s.set(42)
+		s.destroy()
+
+		expect(s.get()).toBe(42)
+		expect(s.peek()).toBe(42)
+
+		s.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// destroyed promise resolution
+// ---------------------------------------------------------------------------
+
+describe('destroyed promise resolution', () => {
+	it('memory state destroyed promise resolves on destroy', async () => {
+		const s = state('mem-destroyed-promise', { default: 0 })
+
+		const promise = s.destroyed
+
+		s.destroy()
+
+		await expect(promise).resolves.toBeUndefined()
+	})
+
+	it('memory state destroyed promise returns resolved after destroy', async () => {
+		const s = state('mem-destroyed-already', { default: 0 })
+
+		s.destroy()
+
+		const promise = s.destroyed
+
+		await expect(promise).resolves.toBeUndefined()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// StorageWriteError handling in set
+// ---------------------------------------------------------------------------
+
+describe('StorageWriteError handling in set', () => {
+	it('StorageWriteError is caught and swallowed — no state update, no notification', () => {
+		const s = state('storage-write-err', { default: 'old', scope: 'local' })
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+		listener.mockClear()
+
+		const spy = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+			throw new DOMException('quota exceeded', 'QuotaExceededError')
+		})
+
+		s.set('new')
+
+		expect(listener).not.toHaveBeenCalled()
+		expect(s.get()).toBe('old')
+
+		spy.mockRestore()
+		s.destroy()
+	})
+})

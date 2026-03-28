@@ -355,3 +355,118 @@ describe('sync error handling', () => {
 		expect(x.isDestroyed).toBe(true)
 	})
 })
+
+// ---------------------------------------------------------------------------
+// Sync edge cases
+// ---------------------------------------------------------------------------
+
+describe('sync edge cases', () => {
+	beforeEach(() => {
+		configure({ onError: undefined, onSync: undefined, logLevel: undefined })
+	})
+
+	it('silently drops messages received after destroy', () => {
+		const a = state('sync-drop-after-destroy', { default: 0, scope: 'local', sync: true })
+
+		const listener = vi.fn()
+
+		a.subscribe(listener)
+
+		const channels = MockBroadcastChannel.channels.get('state:sync-drop-after-destroy')
+		const channel = channels ? [...channels][0] : undefined
+
+		expect(channel).not.toBeUndefined()
+
+		a.destroy()
+
+		// Simulate a message arriving after destroy
+		channel?.onmessage?.({ data: { value: 99 } })
+
+		expect(listener).not.toHaveBeenCalled()
+	})
+
+	it('rejects messages with extra keys beyond value', () => {
+		const a = state('sync-extra-keys', { default: 0, scope: 'local', sync: true })
+
+		const listener = vi.fn()
+
+		a.subscribe(listener)
+
+		const channels = MockBroadcastChannel.channels.get('state:sync-extra-keys')
+		const channel = channels ? [...channels][0] : undefined
+
+		expect(channel).not.toBeUndefined()
+
+		// Message has { value, extra } — Object.keys length is 2, not 1
+		channel?.onmessage?.({ data: { value: 42, extra: 'bad' } })
+
+		expect(listener).not.toHaveBeenCalled()
+
+		a.destroy()
+	})
+
+	it('double destroy does not throw', () => {
+		const x = state('sync-double-destroy', { default: 0, scope: 'local', sync: true })
+
+		x.destroy()
+
+		expect(() => x.destroy()).not.toThrow()
+	})
+
+	it('reports SyncError when adapter.set throws on remote message', () => {
+		const onError = vi.fn()
+
+		configure({ onError, logLevel: 'silent' })
+
+		const x = state('sync-set-throw', { default: 0, scope: 'local', sync: true })
+
+		const channels = MockBroadcastChannel.channels.get('state:sync-set-throw')
+		const channel = channels ? [...channels][0] : undefined
+
+		expect(channel).not.toBeUndefined()
+
+		// Make localStorage.setItem throw after the state has been created
+		vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+			throw new Error('storage full')
+		})
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		// Simulate incoming broadcast — adapter.set will throw because setItem throws
+		channel?.onmessage?.({ data: { value: 77 } })
+
+		expect(onError).toHaveBeenCalledWith({
+			key: 'sync-set-throw',
+			scope: 'local',
+			error: expect.objectContaining({ name: 'SyncError' }),
+		})
+
+		spy.mockRestore()
+
+		x.destroy()
+	})
+
+	it('fires onSync callback with source remote on incoming message', () => {
+		const onSync = vi.fn()
+
+		configure({ onSync })
+
+		const a = state('sync-onsync-remote', { default: 0, scope: 'local', sync: true })
+
+		const channels = MockBroadcastChannel.channels.get('state:sync-onsync-remote')
+		const channel = channels ? [...channels][0] : undefined
+
+		expect(channel).not.toBeUndefined()
+
+		channel?.onmessage?.({ data: { value: 55 } })
+
+		expect(onSync).toHaveBeenCalledWith({
+			key: 'sync-onsync-remote',
+			scope: 'local',
+			value: 55,
+			source: 'remote',
+		})
+
+		a.destroy()
+	})
+})
