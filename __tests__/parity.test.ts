@@ -802,3 +802,277 @@ describeForBothScopes('patch() parity', (scope) => {
 		expect(s.peek()).toEqual({ a: 10, b: 20 })
 	})
 })
+
+// ---------------------------------------------------------------------------
+// 15. watch() parity
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('watch() parity', (scope) => {
+	it('watch() fires when the watched key changes on an object state', () => {
+		const s = state(`par-watch-fires-${scope}`, {
+			default: { x: 1, y: 2 },
+			scope,
+		})
+
+		const listener = vi.fn()
+
+		s.watch('x', listener)
+		s.set({ x: 10, y: 2 })
+
+		expect(listener).toHaveBeenCalledTimes(1)
+		expect(listener).toHaveBeenCalledWith(10)
+
+		s.destroy()
+	})
+
+	it('watch() does NOT fire when a different key changes', () => {
+		const s = state(`par-watch-nofire-${scope}`, {
+			default: { x: 1, y: 2 },
+			scope,
+		})
+
+		const listener = vi.fn()
+
+		s.watch('x', listener)
+		s.set({ x: 1, y: 99 })
+
+		expect(listener).not.toHaveBeenCalled()
+
+		s.destroy()
+	})
+
+	it('unsubscribing a watch stops notifications', () => {
+		const s = state(`par-watch-unsub-${scope}`, {
+			default: { a: 0, b: 0 },
+			scope,
+		})
+
+		const listener = vi.fn()
+
+		const unsub = s.watch('a', listener)
+
+		s.set({ a: 1, b: 0 })
+		unsub()
+		s.set({ a: 2, b: 0 })
+
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		s.destroy()
+	})
+
+	it('watch() on a non-object state (number) does not throw', () => {
+		const s = state(`par-watch-nonobj-${scope}`, { default: 42, scope })
+
+		const listener = vi.fn()
+
+		// At the type level watch() on a number state has K = never, so we cast
+		expect(() => (s as ReturnType<typeof state>).watch('anything' as never, listener)).not.toThrow()
+
+		s.set(100)
+
+		expect(listener).not.toHaveBeenCalled()
+
+		s.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// 16. peek() parity
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('peek() parity', (scope) => {
+	it('peek() returns the same value as get() before any mutation', () => {
+		const s = state(`par-peek-initial-${scope}`, { default: 'hello', scope })
+
+		expect(s.peek()).toBe(s.get())
+
+		s.destroy()
+	})
+
+	it('peek() returns updated value after set()', () => {
+		const s = state(`par-peek-after-set-${scope}`, { default: 0, scope })
+
+		s.set(55)
+
+		expect(s.peek()).toBe(55)
+
+		s.destroy()
+	})
+
+	it('peek() returns default value after reset()', () => {
+		const s = state(`par-peek-after-reset-${scope}`, { default: 'original', scope })
+
+		s.set('changed')
+		s.reset()
+
+		expect(s.peek()).toBe('original')
+
+		s.destroy()
+	})
+
+	it('peek() returns last value after destroy()', () => {
+		const s = state(`par-peek-after-destroy-${scope}`, { default: 10, scope })
+
+		s.set(42)
+		s.destroy()
+
+		expect(s.peek()).toBe(42)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// 17. Promise lifecycle parity
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('Promise lifecycle parity', (scope) => {
+	it('ready resolves for a freshly created instance', async () => {
+		const s = state(`par-promise-ready-${scope}`, { default: 0, scope })
+
+		await expect(s.ready).resolves.toBeUndefined()
+
+		s.destroy()
+	})
+
+	it('settled resolves for a freshly created instance', async () => {
+		const s = state(`par-promise-settled-${scope}`, { default: 0, scope })
+
+		await expect(s.settled).resolves.toBeUndefined()
+
+		s.destroy()
+	})
+
+	it('destroyed resolves after destroy()', async () => {
+		const s = state(`par-promise-destroyed-${scope}`, { default: 0, scope })
+
+		const p = s.destroyed
+
+		s.destroy()
+
+		await expect(p).resolves.toBeUndefined()
+	})
+
+	it('hydrated resolves for memory-scoped instances', async () => {
+		const s = state(`par-promise-hydrated-${scope}`, { default: 0, scope })
+
+		await expect(s.hydrated).resolves.toBeUndefined()
+
+		s.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// 18. Multiple subscribers parity
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('Multiple subscribers parity', (scope) => {
+	it('adding 3 subscribers — all fire on set()', () => {
+		const s = state(`par-multisub-all-${scope}`, { default: 0, scope })
+
+		const listenerA = vi.fn()
+		const listenerB = vi.fn()
+		const listenerC = vi.fn()
+
+		s.subscribe(listenerA)
+		s.subscribe(listenerB)
+		s.subscribe(listenerC)
+
+		s.set(7)
+
+		expect(listenerA).toHaveBeenCalledTimes(1)
+		expect(listenerB).toHaveBeenCalledTimes(1)
+		expect(listenerC).toHaveBeenCalledTimes(1)
+
+		s.destroy()
+	})
+
+	it('removing the middle subscriber — remaining 2 still fire', () => {
+		const s = state(`par-multisub-remove-mid-${scope}`, { default: 0, scope })
+
+		const listenerA = vi.fn()
+		const listenerB = vi.fn()
+		const listenerC = vi.fn()
+
+		s.subscribe(listenerA)
+		const unsubB = s.subscribe(listenerB)
+		s.subscribe(listenerC)
+
+		unsubB()
+		s.set(5)
+
+		expect(listenerA).toHaveBeenCalledTimes(1)
+		expect(listenerB).not.toHaveBeenCalled()
+		expect(listenerC).toHaveBeenCalledTimes(1)
+
+		s.destroy()
+	})
+
+	it('removing all subscribers — none fire', () => {
+		const s = state(`par-multisub-remove-all-${scope}`, { default: 0, scope })
+
+		const listenerA = vi.fn()
+		const listenerB = vi.fn()
+		const listenerC = vi.fn()
+
+		const unsubA = s.subscribe(listenerA)
+		const unsubB = s.subscribe(listenerB)
+		const unsubC = s.subscribe(listenerC)
+
+		unsubA()
+		unsubB()
+		unsubC()
+
+		s.set(99)
+
+		expect(listenerA).not.toHaveBeenCalled()
+		expect(listenerB).not.toHaveBeenCalled()
+		expect(listenerC).not.toHaveBeenCalled()
+
+		s.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// 19. set() with updater edge cases
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('set() with updater edge cases', (scope) => {
+	it('updater receives the current value', () => {
+		const s = state(`par-updater-receives-${scope}`, { default: 10, scope })
+
+		const spy = vi.fn((prev: number) => prev + 1)
+
+		s.set(spy)
+
+		expect(spy).toHaveBeenCalledWith(10)
+		expect(s.get()).toBe(11)
+
+		s.destroy()
+	})
+
+	it('updater returning the same reference still notifies (no isEqual by default)', () => {
+		const obj = { a: 1 }
+		const s = state(`par-updater-same-ref-${scope}`, { default: obj, scope })
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+		s.set(() => obj)
+
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		s.destroy()
+	})
+
+	it('chained updaters in sequence each see the previous result', () => {
+		const s = state(`par-updater-chain-${scope}`, { default: 0, scope })
+
+		s.set((prev) => prev + 10)
+		s.set((prev) => prev * 2)
+		s.set((prev) => prev - 5)
+
+		// (0 + 10) = 10, then 10 * 2 = 20, then 20 - 5 = 15
+		expect(s.get()).toBe(15)
+
+		s.destroy()
+	})
+})

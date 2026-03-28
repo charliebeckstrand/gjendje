@@ -49,6 +49,7 @@ Never commit without ensuring new code matches these quality guidelines:
 - Follow the formatting and linting rules listed above
 - Add blank lines between **logically unrelated** variable declaration groups — related declarations can stay together, but a new "kind" of variable starts a new group. For example, state instances are one group, listeners/mocks are another, derived instances (computed, select, readonly) are another. See examples below.
 - New features must include tests
+- **When adding or changing any feature or behavior**, automatically check whether existing tests cover the change. If not, create or update tests before committing. This applies to bug fixes, new functions, changed signatures, new options, and behavioral changes — not just "new features."
 
 ### Variable grouping examples
 
