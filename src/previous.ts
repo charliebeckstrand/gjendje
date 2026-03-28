@@ -65,16 +65,24 @@ export function previous<T>(
 		listeners.notify(prev)
 	}
 
-	const unsubscribe = source.subscribe((next) => {
-		const old = prev
+	let unsubscribe: (() => void) | undefined
 
-		prev = current
-		current = next
+	try {
+		unsubscribe = source.subscribe((next) => {
+			const old = prev
 
-		if (old !== prev) {
-			notify(notifyListeners)
-		}
-	})
+			prev = current
+			current = next
+
+			if (old !== prev) {
+				notify(notifyListeners)
+			}
+		})
+	} catch {
+		listeners.clear()
+
+		throw new Error(`[gjendje] previous(): source.subscribe() threw for "${instanceKey}".`)
+	}
 
 	const lazyDestroyed = createLazyDestroyed()
 
@@ -117,7 +125,7 @@ export function previous<T>(
 
 			isDestroyed = true
 
-			unsubscribe()
+			unsubscribe?.()
 
 			listeners.clear()
 

@@ -635,3 +635,444 @@ describe('InterceptorError integration', () => {
 		s.destroy()
 	})
 })
+
+// ---------------------------------------------------------------------------
+// 14. patch() parity tests
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('patch() parity', (scope) => {
+	it('basic patch merges partial into existing object', () => {
+		const s = state(`par-patch-basic-${scope}`, {
+			default: { a: 1, b: 2, c: 3 },
+			scope,
+		})
+
+		s.patch({ b: 20 })
+
+		expect(s.get()).toEqual({ a: 1, b: 20, c: 3 })
+
+		s.destroy()
+	})
+
+	it('patch() with empty object spreads into a new reference but keeps same values', () => {
+		const s = state(`par-patch-empty-${scope}`, {
+			default: { x: 1, y: 2 },
+			scope,
+		})
+
+		const before = s.get()
+
+		s.patch({})
+
+		const after = s.get()
+
+		// Values are equal
+		expect(after).toEqual({ x: 1, y: 2 })
+		// But it is a new object reference (spread creates a new object)
+		expect(after).not.toBe(before)
+
+		s.destroy()
+	})
+
+	it('patch() notifies subscribers with the merged result', () => {
+		const s = state(`par-patch-notify-${scope}`, {
+			default: { name: 'alice', age: 30 },
+			scope,
+		})
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+		s.patch({ age: 31 })
+
+		expect(listener).toHaveBeenCalledTimes(1)
+		expect(listener).toHaveBeenCalledWith({ name: 'alice', age: 31 })
+
+		s.destroy()
+	})
+
+	it('patch() with strict mode ignores unknown keys', () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		const s = state(`par-patch-strict-${scope}`, {
+			default: { a: 1, b: 2 },
+			scope,
+		})
+
+		s.patch({ a: 10, z: 99 } as Partial<{ a: number; b: number }>, { strict: true })
+
+		expect(s.get()).toEqual({ a: 10, b: 2 })
+
+		warnSpy.mockRestore()
+		s.destroy()
+	})
+
+	it('patch() after reset restores default then patches', () => {
+		const s = state(`par-patch-reset-${scope}`, {
+			default: { x: 0, y: 0 },
+			scope,
+		})
+
+		s.set({ x: 100, y: 200 })
+		s.reset()
+
+		expect(s.get()).toEqual({ x: 0, y: 0 })
+
+		s.patch({ x: 5 })
+
+		expect(s.get()).toEqual({ x: 5, y: 0 })
+
+		s.destroy()
+	})
+
+	it('patch() with nested objects does shallow merge only', () => {
+		const s = state(`par-patch-nested-${scope}`, {
+			default: { meta: { deep: true, count: 1 }, label: 'hi' },
+			scope,
+		})
+
+		s.patch({ meta: { deep: false, count: 99 } })
+
+		expect(s.get()).toEqual({ meta: { deep: false, count: 99 }, label: 'hi' })
+
+		// Verify nested object is replaced, not merged
+		s.patch({ meta: { deep: true } } as Partial<{
+			meta: { deep: boolean; count: number }
+			label: string
+		}>)
+
+		expect(s.get()).toEqual({ meta: { deep: true }, label: 'hi' })
+
+		s.destroy()
+	})
+
+	it('patch() works correctly with interceptors', () => {
+		const s = state(`par-patch-intercept-${scope}`, {
+			default: { a: 1, b: 2 },
+			scope,
+		})
+
+		const interceptSpy = vi.fn((next: { a: number; b: number }) => ({ ...next, a: next.a * 10 }))
+
+		s.intercept(interceptSpy)
+		s.patch({ a: 5 })
+
+		expect(interceptSpy).toHaveBeenCalledTimes(1)
+		// The interceptor receives the fully merged value
+		expect(interceptSpy).toHaveBeenCalledWith({ a: 5, b: 2 }, { a: 1, b: 2 })
+		// The final value reflects the interceptor's transformation
+		expect(s.get()).toEqual({ a: 50, b: 2 })
+
+		s.destroy()
+	})
+
+	it('patch() inside batch() only notifies once', () => {
+		const s = state(`par-patch-batch-${scope}`, {
+			default: { a: 0, b: 0, c: 0 },
+			scope,
+		})
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+
+		batch(() => {
+			s.patch({ a: 1 })
+			s.patch({ b: 2 })
+			s.patch({ c: 3 })
+		})
+
+		expect(listener).toHaveBeenCalledTimes(1)
+		expect(s.get()).toEqual({ a: 1, b: 2, c: 3 })
+
+		s.destroy()
+	})
+
+	it('patch() on a destroyed instance is a no-op', () => {
+		const s = state(`par-patch-destroyed-${scope}`, {
+			default: { a: 1, b: 2 },
+			scope,
+		})
+
+		s.set({ a: 10, b: 20 })
+		s.destroy()
+
+		s.patch({ a: 999 })
+
+		expect(s.peek()).toEqual({ a: 10, b: 20 })
+	})
+})
+
+// ---------------------------------------------------------------------------
+// 15. watch() parity
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('watch() parity', (scope) => {
+	it('watch() fires when the watched key changes on an object state', () => {
+		const s = state(`par-watch-fires-${scope}`, {
+			default: { x: 1, y: 2 },
+			scope,
+		})
+
+		const listener = vi.fn()
+
+		s.watch('x', listener)
+		s.set({ x: 10, y: 2 })
+
+		expect(listener).toHaveBeenCalledTimes(1)
+		expect(listener).toHaveBeenCalledWith(10)
+
+		s.destroy()
+	})
+
+	it('watch() does NOT fire when a different key changes', () => {
+		const s = state(`par-watch-nofire-${scope}`, {
+			default: { x: 1, y: 2 },
+			scope,
+		})
+
+		const listener = vi.fn()
+
+		s.watch('x', listener)
+		s.set({ x: 1, y: 99 })
+
+		expect(listener).not.toHaveBeenCalled()
+
+		s.destroy()
+	})
+
+	it('unsubscribing a watch stops notifications', () => {
+		const s = state(`par-watch-unsub-${scope}`, {
+			default: { a: 0, b: 0 },
+			scope,
+		})
+
+		const listener = vi.fn()
+
+		const unsub = s.watch('a', listener)
+
+		s.set({ a: 1, b: 0 })
+		unsub()
+		s.set({ a: 2, b: 0 })
+
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		s.destroy()
+	})
+
+	it('watch() on a non-object state (number) does not throw', () => {
+		const s = state(`par-watch-nonobj-${scope}`, { default: 42, scope })
+
+		const listener = vi.fn()
+
+		// At the type level watch() on a number state has K = never, so we cast
+		expect(() => (s as ReturnType<typeof state>).watch('anything' as never, listener)).not.toThrow()
+
+		s.set(100)
+
+		expect(listener).not.toHaveBeenCalled()
+
+		s.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// 16. peek() parity
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('peek() parity', (scope) => {
+	it('peek() returns the same value as get() before any mutation', () => {
+		const s = state(`par-peek-initial-${scope}`, { default: 'hello', scope })
+
+		expect(s.peek()).toBe(s.get())
+
+		s.destroy()
+	})
+
+	it('peek() returns updated value after set()', () => {
+		const s = state(`par-peek-after-set-${scope}`, { default: 0, scope })
+
+		s.set(55)
+
+		expect(s.peek()).toBe(55)
+
+		s.destroy()
+	})
+
+	it('peek() returns default value after reset()', () => {
+		const s = state(`par-peek-after-reset-${scope}`, { default: 'original', scope })
+
+		s.set('changed')
+		s.reset()
+
+		expect(s.peek()).toBe('original')
+
+		s.destroy()
+	})
+
+	it('peek() returns last value after destroy()', () => {
+		const s = state(`par-peek-after-destroy-${scope}`, { default: 10, scope })
+
+		s.set(42)
+		s.destroy()
+
+		expect(s.peek()).toBe(42)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// 17. Promise lifecycle parity
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('Promise lifecycle parity', (scope) => {
+	it('ready resolves for a freshly created instance', async () => {
+		const s = state(`par-promise-ready-${scope}`, { default: 0, scope })
+
+		await expect(s.ready).resolves.toBeUndefined()
+
+		s.destroy()
+	})
+
+	it('settled resolves for a freshly created instance', async () => {
+		const s = state(`par-promise-settled-${scope}`, { default: 0, scope })
+
+		await expect(s.settled).resolves.toBeUndefined()
+
+		s.destroy()
+	})
+
+	it('destroyed resolves after destroy()', async () => {
+		const s = state(`par-promise-destroyed-${scope}`, { default: 0, scope })
+
+		const p = s.destroyed
+
+		s.destroy()
+
+		await expect(p).resolves.toBeUndefined()
+	})
+
+	it('hydrated resolves for memory-scoped instances', async () => {
+		const s = state(`par-promise-hydrated-${scope}`, { default: 0, scope })
+
+		await expect(s.hydrated).resolves.toBeUndefined()
+
+		s.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// 18. Multiple subscribers parity
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('Multiple subscribers parity', (scope) => {
+	it('adding 3 subscribers — all fire on set()', () => {
+		const s = state(`par-multisub-all-${scope}`, { default: 0, scope })
+
+		const listenerA = vi.fn()
+		const listenerB = vi.fn()
+		const listenerC = vi.fn()
+
+		s.subscribe(listenerA)
+		s.subscribe(listenerB)
+		s.subscribe(listenerC)
+
+		s.set(7)
+
+		expect(listenerA).toHaveBeenCalledTimes(1)
+		expect(listenerB).toHaveBeenCalledTimes(1)
+		expect(listenerC).toHaveBeenCalledTimes(1)
+
+		s.destroy()
+	})
+
+	it('removing the middle subscriber — remaining 2 still fire', () => {
+		const s = state(`par-multisub-remove-mid-${scope}`, { default: 0, scope })
+
+		const listenerA = vi.fn()
+		const listenerB = vi.fn()
+		const listenerC = vi.fn()
+
+		s.subscribe(listenerA)
+		const unsubB = s.subscribe(listenerB)
+		s.subscribe(listenerC)
+
+		unsubB()
+		s.set(5)
+
+		expect(listenerA).toHaveBeenCalledTimes(1)
+		expect(listenerB).not.toHaveBeenCalled()
+		expect(listenerC).toHaveBeenCalledTimes(1)
+
+		s.destroy()
+	})
+
+	it('removing all subscribers — none fire', () => {
+		const s = state(`par-multisub-remove-all-${scope}`, { default: 0, scope })
+
+		const listenerA = vi.fn()
+		const listenerB = vi.fn()
+		const listenerC = vi.fn()
+
+		const unsubA = s.subscribe(listenerA)
+		const unsubB = s.subscribe(listenerB)
+		const unsubC = s.subscribe(listenerC)
+
+		unsubA()
+		unsubB()
+		unsubC()
+
+		s.set(99)
+
+		expect(listenerA).not.toHaveBeenCalled()
+		expect(listenerB).not.toHaveBeenCalled()
+		expect(listenerC).not.toHaveBeenCalled()
+
+		s.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// 19. set() with updater edge cases
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('set() with updater edge cases', (scope) => {
+	it('updater receives the current value', () => {
+		const s = state(`par-updater-receives-${scope}`, { default: 10, scope })
+
+		const spy = vi.fn((prev: number) => prev + 1)
+
+		s.set(spy)
+
+		expect(spy).toHaveBeenCalledWith(10)
+		expect(s.get()).toBe(11)
+
+		s.destroy()
+	})
+
+	it('updater returning the same reference still notifies (no isEqual by default)', () => {
+		const obj = { a: 1 }
+		const s = state(`par-updater-same-ref-${scope}`, { default: obj, scope })
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+		s.set(() => obj)
+
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		s.destroy()
+	})
+
+	it('chained updaters in sequence each see the previous result', () => {
+		const s = state(`par-updater-chain-${scope}`, { default: 0, scope })
+
+		s.set((prev) => prev + 10)
+		s.set((prev) => prev * 2)
+		s.set((prev) => prev - 5)
+
+		// (0 + 10) = 10, then 10 * 2 = 20, then 20 - 5 = 15
+		expect(s.get()).toBe(15)
+
+		s.destroy()
+	})
+})

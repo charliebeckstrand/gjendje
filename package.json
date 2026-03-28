@@ -100,7 +100,6 @@
 		"prepare": "lefthook install",
 		"prepublishOnly": "pnpm typecheck && pnpm lint:check && pnpm test && pnpm build && pnpm publint",
 		"release": "pnpm build && pnpm changeset publish",
-		"size": "size-limit",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"test:watch": "vitest",
@@ -143,7 +142,6 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.6",
 		"@changesets/cli": "^2.27.0",
-		"@size-limit/preset-small-lib": "^11.0.0",
 		"@testing-library/react": "^16.3.2",
 		"@types/node": "^20.0.0",
 		"@types/react": "^19.2.14",
@@ -155,7 +153,6 @@
 		"publint": "^0.3.0",
 		"react": "^19.2.4",
 		"react-dom": "^19.2.4",
-		"size-limit": "^11.0.0",
 		"tinybench": "^6.0.0",
 		"tsup": "^8.0.0",
 		"tsx": "^4.21.0",

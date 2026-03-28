@@ -40,13 +40,9 @@ export function withWatch<TIn extends BaseInstance<any>>(
 
 	let prev: unknown
 
-	let initialized = false
-
 	// Lazily subscribe to the base instance only when the first watcher is added
 	function ensureSubscription() {
-		if (unsubscribe || initialized) return
-
-		initialized = true
+		if (unsubscribe) return
 
 		prev = instance.get()
 
@@ -82,8 +78,6 @@ export function withWatch<TIn extends BaseInstance<any>>(
 		unsubscribe?.()
 
 		unsubscribe = undefined
-
-		initialized = false
 
 		prev = undefined
 
