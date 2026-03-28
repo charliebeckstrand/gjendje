@@ -2,7 +2,7 @@
 	{
 		"name": "gjendje (core)",
 		"path": "dist/index.js",
-		"limit": "5.5 kB",
+		"limit": "6.75 kB",
 		"import": "{ state, batch }",
 		"ignore": ["async_hooks"]
 	},

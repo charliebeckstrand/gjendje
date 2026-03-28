@@ -635,3 +635,170 @@ describe('InterceptorError integration', () => {
 		s.destroy()
 	})
 })
+
+// ---------------------------------------------------------------------------
+// 14. patch() parity tests
+// ---------------------------------------------------------------------------
+
+describeForBothScopes('patch() parity', (scope) => {
+	it('basic patch merges partial into existing object', () => {
+		const s = state(`par-patch-basic-${scope}`, {
+			default: { a: 1, b: 2, c: 3 },
+			scope,
+		})
+
+		s.patch({ b: 20 })
+
+		expect(s.get()).toEqual({ a: 1, b: 20, c: 3 })
+
+		s.destroy()
+	})
+
+	it('patch() with empty object spreads into a new reference but keeps same values', () => {
+		const s = state(`par-patch-empty-${scope}`, {
+			default: { x: 1, y: 2 },
+			scope,
+		})
+
+		const before = s.get()
+
+		s.patch({})
+
+		const after = s.get()
+
+		// Values are equal
+		expect(after).toEqual({ x: 1, y: 2 })
+		// But it is a new object reference (spread creates a new object)
+		expect(after).not.toBe(before)
+
+		s.destroy()
+	})
+
+	it('patch() notifies subscribers with the merged result', () => {
+		const s = state(`par-patch-notify-${scope}`, {
+			default: { name: 'alice', age: 30 },
+			scope,
+		})
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+		s.patch({ age: 31 })
+
+		expect(listener).toHaveBeenCalledTimes(1)
+		expect(listener).toHaveBeenCalledWith({ name: 'alice', age: 31 })
+
+		s.destroy()
+	})
+
+	it('patch() with strict mode ignores unknown keys', () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		const s = state(`par-patch-strict-${scope}`, {
+			default: { a: 1, b: 2 },
+			scope,
+		})
+
+		s.patch({ a: 10, z: 99 } as Partial<{ a: number; b: number }>, { strict: true })
+
+		expect(s.get()).toEqual({ a: 10, b: 2 })
+
+		warnSpy.mockRestore()
+		s.destroy()
+	})
+
+	it('patch() after reset restores default then patches', () => {
+		const s = state(`par-patch-reset-${scope}`, {
+			default: { x: 0, y: 0 },
+			scope,
+		})
+
+		s.set({ x: 100, y: 200 })
+		s.reset()
+
+		expect(s.get()).toEqual({ x: 0, y: 0 })
+
+		s.patch({ x: 5 })
+
+		expect(s.get()).toEqual({ x: 5, y: 0 })
+
+		s.destroy()
+	})
+
+	it('patch() with nested objects does shallow merge only', () => {
+		const s = state(`par-patch-nested-${scope}`, {
+			default: { meta: { deep: true, count: 1 }, label: 'hi' },
+			scope,
+		})
+
+		s.patch({ meta: { deep: false, count: 99 } })
+
+		expect(s.get()).toEqual({ meta: { deep: false, count: 99 }, label: 'hi' })
+
+		// Verify nested object is replaced, not merged
+		s.patch({ meta: { deep: true } } as Partial<{
+			meta: { deep: boolean; count: number }
+			label: string
+		}>)
+
+		expect(s.get()).toEqual({ meta: { deep: true }, label: 'hi' })
+
+		s.destroy()
+	})
+
+	it('patch() works correctly with interceptors', () => {
+		const s = state(`par-patch-intercept-${scope}`, {
+			default: { a: 1, b: 2 },
+			scope,
+		})
+
+		const interceptSpy = vi.fn((next: { a: number; b: number }) => ({ ...next, a: next.a * 10 }))
+
+		s.intercept(interceptSpy)
+		s.patch({ a: 5 })
+
+		expect(interceptSpy).toHaveBeenCalledTimes(1)
+		// The interceptor receives the fully merged value
+		expect(interceptSpy).toHaveBeenCalledWith({ a: 5, b: 2 }, { a: 1, b: 2 })
+		// The final value reflects the interceptor's transformation
+		expect(s.get()).toEqual({ a: 50, b: 2 })
+
+		s.destroy()
+	})
+
+	it('patch() inside batch() only notifies once', () => {
+		const s = state(`par-patch-batch-${scope}`, {
+			default: { a: 0, b: 0, c: 0 },
+			scope,
+		})
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+
+		batch(() => {
+			s.patch({ a: 1 })
+			s.patch({ b: 2 })
+			s.patch({ c: 3 })
+		})
+
+		expect(listener).toHaveBeenCalledTimes(1)
+		expect(s.get()).toEqual({ a: 1, b: 2, c: 3 })
+
+		s.destroy()
+	})
+
+	it('patch() on a destroyed instance is a no-op', () => {
+		const s = state(`par-patch-destroyed-${scope}`, {
+			default: { a: 1, b: 2 },
+			scope,
+		})
+
+		s.set({ a: 10, b: 20 })
+		s.destroy()
+
+		s.patch({ a: 999 })
+
+		expect(s.peek()).toEqual({ a: 10, b: 20 })
+	})
+})
