@@ -112,19 +112,21 @@ export function effect<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 
 			isStopped = true
 
-			for (let i = 0; i < depLen; i++) {
-				unsubscribers[i]()
-			}
-
-			if (cleanup) {
-				try {
-					cleanup()
-				} catch (err) {
-					console.error('[gjendje] Effect cleanup threw:', err)
-					reportError(effectKey, 'memory', err)
+			try {
+				for (let i = 0; i < depLen; i++) {
+					unsubscribers[i]()
 				}
+			} finally {
+				if (cleanup) {
+					try {
+						cleanup()
+					} catch (err) {
+						console.error('[gjendje] Effect cleanup threw:', err)
+						reportError(effectKey, 'memory', err)
+					}
 
-				cleanup = undefined
+					cleanup = undefined
+				}
 			}
 		},
 	}

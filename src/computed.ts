@@ -93,6 +93,8 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 	}
 
 	const notifyListeners = () => {
+		if (isDestroyed) return
+
 		const prev = cached
 
 		const value = recompute()
@@ -114,6 +116,8 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 	}
 
 	const markDirty = () => {
+		if (isDestroyed) return
+
 		isDirty = true
 
 		notify(notifyListeners)
@@ -232,17 +236,21 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 
 			isDestroyed = true
 
-			for (const unsub of unsubscribers) {
-				unsub()
+			try {
+				for (const unsub of unsubscribers) {
+					unsub()
+				}
+
+				unsubscribers.length = 0
+
+				listenerSet.clear()
+
+				listenerCount = 0
+
+				singleListener = undefined
+			} finally {
+				lazyDestroyed.resolve()
 			}
-
-			listenerSet.clear()
-
-			listenerCount = 0
-
-			singleListener = undefined
-
-			lazyDestroyed.resolve()
 		},
 	}
 }

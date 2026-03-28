@@ -290,11 +290,13 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 	})
 
 	col.destroy = () => {
-		watchers?.clear()
+		try {
+			watchers?.clear()
 
-		unsubscribe?.()
-
-		baseDestroy.call(col)
+			unsubscribe?.()
+		} finally {
+			baseDestroy.call(col)
+		}
 	}
 
 	return col

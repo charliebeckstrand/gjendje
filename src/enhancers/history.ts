@@ -113,12 +113,14 @@ export function withHistory<T>(
 	}
 
 	result.destroy = (): void => {
-		unsubChange()
+		try {
+			unsubChange()
 
-		past.length = 0
-		future.length = 0
-
-		instance.destroy()
+			past.length = 0
+			future.length = 0
+		} finally {
+			instance.destroy()
+		}
 	}
 
 	return result

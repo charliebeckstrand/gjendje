@@ -138,9 +138,11 @@ export function createUrlAdapter<T>(
 		subscribe: listeners.subscribe,
 
 		destroy() {
-			listeners.clear()
-
-			window.removeEventListener('popstate', onPopState)
+			try {
+				listeners.clear()
+			} finally {
+				window.removeEventListener('popstate', onPopState)
+			}
 		},
 	}
 }

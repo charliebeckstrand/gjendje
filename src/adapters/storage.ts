@@ -124,7 +124,24 @@ export function createStorageAdapter<T>(
 		try {
 			const toStore = pickKeys(value, persist)
 
-			const raw = serialize ? serialize.stringify(toStore) : wrapForStorage(toStore, version)
+			let raw: string
+
+			try {
+				raw = serialize ? serialize.stringify(toStore) : wrapForStorage(toStore, version)
+			} catch (serializeErr) {
+				// Detect common serialization traps (circular refs, BigInt, etc.)
+				// and wrap in a descriptive error before entering the write-error path.
+				const scope = options.scope ?? 'local'
+				const writeErr = new StorageWriteError(key, scope, serializeErr)
+
+				log(
+					'error',
+					`Serialization failed for key "${key}" — value may contain circular references, BigInt, or other non-serializable types.`,
+				)
+				reportError(key, scope, writeErr)
+
+				throw writeErr
+			}
 
 			storage.setItem(key, raw)
 
@@ -204,10 +221,12 @@ export function createStorageAdapter<T>(
 			cachedValue = undefined
 			cacheValid = false
 
-			listeners.clear()
-
-			if (typeof window !== 'undefined') {
-				window.removeEventListener('storage', onStorageEvent)
+			try {
+				listeners.clear()
+			} finally {
+				if (typeof window !== 'undefined') {
+					window.removeEventListener('storage', onStorageEvent)
+				}
 			}
 		},
 	}
