@@ -81,7 +81,7 @@ const listener = vi.fn()
 
 `MemoryStateImpl` is a specialized subclass that bypasses the adapter pipeline for memory-scoped state (the default and most common scope). It stores values directly on the instance instead of going through adapter `get()`/`set()` indirection. Removing it causes a **~60% regression** in instance lifecycle throughput and **~30% regression** in batch/effect performance.
 
-Run `npx tsx benchmarks/internal.bench.ts lifecycle batch-scaling effect` to verify performance before and after any changes to this class.
+Run `pnpm bench:internal:lifecycle && pnpm bench:internal:batch && pnpm bench:internal:effect` to verify performance before and after any changes to this class.
 
 ## Audits
 
