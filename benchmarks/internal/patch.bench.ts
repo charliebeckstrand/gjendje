@@ -54,7 +54,7 @@ const patchVsSetSuite = defineSuite('patch-vs-set', {
 
 const patchScalingSuite = defineSuite('patch-scaling', {
 	'patch() Scaling with Object Size': (bench) => {
-		for (const size of [5, 50, 200]) {
+		for (const size of [5, 50, 500]) {
 			const obj: Record<string, number> = {}
 
 			for (let i = 0; i < size; i++) obj[`k${i}`] = i
@@ -69,7 +69,8 @@ const patchScalingSuite = defineSuite('patch-scaling', {
 				s.patch({ k0: ++iter })
 			})
 		}
-
+	},
+	'patch() Scaling with Patch Size (100-key object)': (bench) => {
 		for (const patchSize of [1, 10, 50]) {
 			const obj: Record<string, number> = {}
 
