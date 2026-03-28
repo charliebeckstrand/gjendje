@@ -41,7 +41,10 @@ const updaterStyleSuite = defineSuite('updater-style', {
 // ---------------------------------------------------------------------------
 
 const largeObjectSuite = defineSuite('large-object', {
-	'Large Object State': (bench) => {
+	'Large Object State (spread from prev)': (bench) => {
+		// Spread from the previous state value — this is the realistic pattern.
+		// Users typically do: set(prev => ({ ...prev, key: newVal }))
+		// V8 optimises this well because the source shape is consistent.
 		for (const size of [5, 50, 500]) {
 			const obj: Record<string, number> = {}
 
@@ -51,11 +54,48 @@ const largeObjectSuite = defineSuite('large-object', {
 
 			s.subscribe(() => {})
 
+			bench.add(`set(prev => spread) (${size} keys)`, () => {
+				s.set((prev) => ({ ...prev, k0: (prev as Record<string, number>).k0 + 1 }))
+			})
+		}
+	},
+	'Large Object State (spread from constant)': (bench) => {
+		// Spread from a constant object — a V8 deopt worst case.
+		// Included so regressions in this path are visible, but the numbers
+		// are dominated by JS spread cost, not library overhead.
+		for (const size of [5, 50, 500]) {
+			const obj: Record<string, number> = {}
+
+			for (let i = 0; i < size; i++) obj[`k${i}`] = i
+
+			const s = state(uniqueKey(`obj-const-${size}`), { default: obj })
+
+			s.subscribe(() => {})
+
 			let iter = 0
 
-			bench.add(`write object (${size} keys)`, () => {
-				const next = { ...obj, k0: ++iter }
-				s.set(next)
+			bench.add(`set({ ...constant }) (${size} keys)`, () => {
+				s.set({ ...obj, k0: ++iter })
+			})
+		}
+	},
+	'Large Object State (set only, pre-built)': (bench) => {
+		// Isolates pure library set() cost — no spread involved.
+		for (const size of [5, 50, 500]) {
+			const obj: Record<string, number> = {}
+
+			for (let i = 0; i < size; i++) obj[`k${i}`] = i
+
+			const prebuilt = Array.from({ length: 10000 }, (_, i) => ({ ...obj, k0: i }))
+
+			const s = state(uniqueKey(`obj-pre-${size}`), { default: obj })
+
+			s.subscribe(() => {})
+
+			let idx = 0
+
+			bench.add(`set(prebuilt) (${size} keys)`, () => {
+				s.set(prebuilt[idx++ % 10000])
 			})
 		}
 	},
