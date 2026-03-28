@@ -19,6 +19,8 @@ import type { Scope } from './types.js'
  *       // handle write failure (quota, permissions)
  *     } else if (error instanceof MigrationError) {
  *       // handle failed schema migration
+ *     } else if (error instanceof InterceptorError) {
+ *       // handle interceptor throw
  *     }
  *   },
  * })
@@ -111,6 +113,25 @@ export class ValidationError extends GjendjeError {
 		super(`Validation failed for key "${key}" in ${scope} storage.`, key, scope)
 		this.name = 'ValidationError'
 		this.rejectedValue = rejectedValue
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Interceptor errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when an interceptor function throws during state access.
+ */
+export class InterceptorError extends GjendjeError {
+	constructor(key: string, scope: Scope, cause?: unknown) {
+		super(
+			`Interceptor threw for key "${key}".`,
+			key,
+			scope,
+			cause !== undefined ? { cause } : undefined,
+		)
+		this.name = 'InterceptorError'
 	}
 }
 

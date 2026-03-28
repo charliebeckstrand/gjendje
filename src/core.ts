@@ -6,7 +6,7 @@ import { createUrlAdapter } from './adapters/url.js'
 import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
 import { getConfig, log, PERSISTENT_SCOPES, reportError } from './config.js'
-import { HydrationError, StorageWriteError } from './errors.js'
+import { HydrationError, InterceptorError, StorageWriteError } from './errors.js'
 import { safeCall, safeCallChange, safeCallConfig } from './listeners.js'
 import { getRegistered, registerNew, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
@@ -209,9 +209,11 @@ class StateImpl<T> implements StateInstance<T> {
 				next = interceptor(next, prev)
 			}
 		} catch (err) {
-			reportError(this.key, this.scope, err)
+			const wrapped = new InterceptorError(this.key, this.scope, err)
 
-			throw err
+			reportError(this.key, this.scope, wrapped)
+
+			throw wrapped
 		}
 
 		if (next === undefined) {
@@ -244,7 +246,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
 			for (const hook of s.changeHandlers) {
-				safeCallChange(hook, next, prev)
+				safeCallChange(hook, next, prev, this.key, this.scope)
 			}
 		}
 
@@ -600,8 +602,11 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 					next = interceptor(next, prev)
 				}
 			} catch (err) {
-				reportError(this.key, this.scope, err)
-				throw err
+				const wrapped = new InterceptorError(this.key, this.scope, err)
+
+				reportError(this.key, this.scope, wrapped)
+
+				throw wrapped
 			}
 
 			if (next === undefined) {
@@ -637,7 +642,7 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
 			for (const hook of ext.changeHandlers) {
-				safeCallChange(hook, next, prev)
+				safeCallChange(hook, next, prev, this.key, this.scope)
 			}
 		}
 
@@ -654,12 +659,14 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 		if (!c.listeners) {
 			const listeners = new Set<Listener<T>>()
+			const key = this.key
+			const scope = this.scope
 
 			c.listeners = listeners
 
 			c.notifyFn = () => {
 				for (const l of listeners) {
-					safeCall(l, c.current)
+					safeCall(l, c.current, key, scope)
 				}
 			}
 		}
@@ -692,8 +699,11 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 					next = interceptor(next, prev)
 				}
 			} catch (err) {
-				reportError(this.key, this.scope, err)
-				throw err
+				const wrapped = new InterceptorError(this.key, this.scope, err)
+
+				reportError(this.key, this.scope, wrapped)
+
+				throw wrapped
 			}
 
 			if (next === undefined) {
@@ -729,7 +739,7 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
 			for (const hook of ext.changeHandlers) {
-				safeCallChange(hook, next, prev)
+				safeCallChange(hook, next, prev, this.key, this.scope)
 			}
 		}
 

@@ -17,7 +17,7 @@ export function createUrlAdapter<T>(
 		throw new Error('[gjendje] URL scope is not available in this environment.')
 	}
 
-	const listeners = createListeners<T>()
+	const listeners = createListeners<T>(key, 'url')
 
 	// Cache serialized default once — avoids re-serializing on every write()
 	const defaultSerialized = serializer.stringify(defaultValue)

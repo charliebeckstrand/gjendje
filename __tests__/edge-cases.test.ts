@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { InterceptorError } from '../src/errors.js'
 import { batch, collection, computed, configure, effect, state, withHistory } from '../src/index.js'
 import { makeStorage } from './helpers.js'
 
@@ -64,7 +65,7 @@ describe('interceptor error handling', () => {
 			throw new Error('interceptor boom')
 		})
 
-		expect(() => s.set(1)).toThrow('interceptor boom')
+		expect(() => s.set(1)).toThrow('Interceptor threw')
 		expect(s.get()).toBe(0)
 	})
 })
@@ -308,7 +309,7 @@ describe('withHistory edge cases', () => {
 		})
 
 		// undo should throw but isNavigating should reset
-		expect(() => h.undo()).toThrow('nope')
+		expect(() => h.undo()).toThrow('Interceptor threw')
 
 		// Remove the bad interceptor
 		unsub()
@@ -524,12 +525,12 @@ describe('interceptor error reporting', () => {
 			throw new Error('interceptor fail')
 		})
 
-		expect(() => s.set(1)).toThrow('interceptor fail')
+		expect(() => s.set(1)).toThrow('Interceptor threw')
 		expect(s.get()).toBe(0)
 		expect(onError).toHaveBeenCalledWith({
 			key: 'intercept-report',
 			scope: 'memory',
-			error: expect.any(Error),
+			error: expect.any(InterceptorError),
 		})
 	})
 
@@ -546,12 +547,12 @@ describe('interceptor error reporting', () => {
 			throw new Error('interceptor reset fail')
 		})
 
-		expect(() => s.reset()).toThrow('interceptor reset fail')
+		expect(() => s.reset()).toThrow('Interceptor threw')
 		expect(s.get()).toBe(5)
 		expect(onError).toHaveBeenCalledWith({
 			key: 'intercept-report-reset',
 			scope: 'memory',
-			error: expect.any(Error),
+			error: expect.any(InterceptorError),
 		})
 	})
 })

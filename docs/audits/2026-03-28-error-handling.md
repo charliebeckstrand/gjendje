@@ -109,12 +109,84 @@ After calling all unsubscriber functions, the array still held references to the
 
 ---
 
+### 9. HIGH — Listener/change-handler errors not routed through `onError` pipeline
+
+- [x] PATCHED
+
+**Files:** `src/listeners.ts` (safeCall, safeCallChange), `src/core.ts` (call sites)
+
+`safeCall` and `safeCallChange` only logged to `console.error` — errors from subscribers and onChange handlers were invisible to the global `onError` callback. Users relying on centralized error monitoring missed all listener failures.
+
+**Fix:** Added optional `key` and `scope` parameters to `safeCall` and `safeCallChange`. When provided, the catch block calls `reportError()` in addition to `console.error`. Updated all call sites in `StateImpl._notifyChange`, `MemoryStateImpl.set`, `MemoryStateImpl.reset`, and `MemoryStateImpl.subscribe` to pass key/scope context. Also updated `createListeners` to accept optional key/scope and forward to `safeCall`.
+
+---
+
+### 10. MEDIUM — `InterceptorError` class missing from error hierarchy
+
+- [x] PATCHED
+
+**Files:** `src/errors.ts`, `src/core.ts`, `src/index.ts`
+
+Interceptor errors were rethrown as raw errors — consumers couldn't distinguish interceptor failures from other error types using `instanceof`. The `onError` pipeline received the raw error instead of a typed `InterceptorError`.
+
+**Fix:** Added `InterceptorError` class extending `GjendjeError`. All 3 interceptor catch blocks (StateImpl, MemoryStateImpl set, MemoryStateImpl reset) now wrap errors in `InterceptorError` before reporting and rethrowing. Exported from package entry point.
+
+---
+
+### 11. MEDIUM — Bucket adapter destroy missing `try/finally`
+
+- [x] PATCHED
+
+**File:** `src/adapters/bucket.ts`
+
+The bucket adapter's `destroy()` method was the only adapter without `try/finally`. If `delegateUnsub()` or `listeners.clear()` threw, `delegate.destroy?.()` would be skipped.
+
+**Fix:** Wrapped in `try/finally` with `delegate.destroy?.()` in the `finally` block.
+
+---
+
+### 12. MEDIUM — No validation for `maxKeys` config option
+
+- [x] PATCHED
+
+**File:** `src/config.ts`
+
+`configure({ maxKeys: 0 })` or negative/NaN/float values were silently accepted, causing confusing behavior in the registry.
+
+**Fix:** Added validation in `configure()` that throws for non-positive-integer values.
+
+---
+
+### 13. MEDIUM — No validation for `withHistory` `maxSize` option
+
+- [x] PATCHED
+
+**File:** `src/enhancers/history.ts`
+
+`withHistory(instance, { maxSize: 0 })` or negative/NaN/float values were silently accepted.
+
+**Fix:** Added validation that throws for non-positive-integer values.
+
+---
+
+### 14. LOW — No validation for `bucketOptions.name`
+
+- [x] PATCHED
+
+**File:** `src/adapters/bucket.ts`
+
+An empty string or non-string `bucket.name` would cause a confusing error from the Storage Buckets API.
+
+**Fix:** Added early validation that `bucket.name` must be a non-empty string.
+
+---
+
 ## Open Items from Prior Audits
 
 ### From 2025-03-27.md
 
 - [ ] **#8 — `select()` overhead for single dependency** — Not addressed (low priority, performance acceptable)
-- [ ] **#10 — StateImpl/MemoryStateImpl behavioral parity tests** — Not addressed this session
+- [x] **#10 — StateImpl/MemoryStateImpl behavioral parity tests** — Addressed: `__tests__/parity.test.ts`
 
 ### Investigated but not actionable
 
@@ -124,7 +196,7 @@ After calling all unsubscriber functions, the array still held references to the
 
 ## Test Coverage
 
-Added `__tests__/error-handling-audit.test.ts` with 32 tests covering:
+Added `__tests__/error-handling-audit.test.ts` with 32 tests and `__tests__/parity.test.ts` with 65 tests covering:
 - Interceptor undefined/Promise rejection (memory + persistent scope, set + reset)
 - Serialization guardrails (circular refs, onError pipeline)
 - Destroy robustness (all instance types, double-destroy safety)
@@ -133,5 +205,9 @@ Added `__tests__/error-handling-audit.test.ts` with 32 tests covering:
 - Version option validation (0, negative, float, NaN, Infinity)
 - Storage adapter destroy cleanup
 - Computed dependency cleanup on destroy
+- **StateImpl vs MemoryStateImpl behavioral parity** (get/set/reset, subscribe, onChange, intercept, destroy lifecycle, double-destroy)
+- **Integration tests** (interceptor abort + batch + computed, post-destroy onChange, computed with destroyed dependency)
+- **Validation edge cases** (withHistory maxSize, configure maxKeys, bucket name)
+- **InterceptorError propagation and onError reporting** (both scopes)
 
-All 696 tests pass (664 existing + 32 new). Zero regressions.
+All 761 tests pass (664 existing + 97 new). Zero regressions.

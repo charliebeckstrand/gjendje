@@ -105,7 +105,11 @@ export function createBucketAdapter<T>(
 	const { default: defaultValue } = options
 	const fallbackScope = bucketOptions.fallback ?? 'local'
 
-	const listeners = createListeners<T>()
+	if (!bucketOptions.name || typeof bucketOptions.name !== 'string') {
+		throw new Error('[gjendje] bucket.name must be a non-empty string.')
+	}
+
+	const listeners = createListeners<T>(key, 'bucket')
 
 	let lastNotifiedValue: T = defaultValue
 
@@ -251,12 +255,12 @@ export function createBucketAdapter<T>(
 
 		destroy() {
 			isDestroyed = true
-
-			delegateUnsub?.()
-
-			listeners.clear()
-
-			delegate.destroy?.()
+			try {
+				delegateUnsub?.()
+				listeners.clear()
+			} finally {
+				delegate.destroy?.()
+			}
 		},
 	}
 }

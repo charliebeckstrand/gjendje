@@ -26,7 +26,7 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 		}
 	}
 
-	const listeners = createListeners<T>()
+	const listeners = createListeners<T>(key, scope)
 
 	let isDestroyed = false
 

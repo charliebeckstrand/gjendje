@@ -45,6 +45,10 @@ export function withHistory<T>(
 ): WithHistoryInstance<T> {
 	const maxSize = options?.maxSize ?? 50
 
+	if (!Number.isSafeInteger(maxSize) || maxSize < 1) {
+		throw new Error(`[gjendje] withHistory maxSize must be a positive integer, got ${maxSize}.`)
+	}
+
 	const past: T[] = []
 	const future: T[] = []
 

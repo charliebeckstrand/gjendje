@@ -176,6 +176,13 @@ export function configure(config: GjendjeConfig): void {
 	}
 
 	if (
+		globalConfig.maxKeys !== undefined &&
+		(!Number.isSafeInteger(globalConfig.maxKeys) || globalConfig.maxKeys < 1)
+	) {
+		throw new Error(`[gjendje] maxKeys must be a positive integer, got ${globalConfig.maxKeys}.`)
+	}
+
+	if (
 		globalConfig.registry === false &&
 		globalConfig.scope &&
 		PERSISTENT_SCOPES.has(globalConfig.scope)

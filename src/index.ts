@@ -32,6 +32,7 @@ export { withWatch } from './enhancers/watch.js'
 export {
 	GjendjeError,
 	HydrationError,
+	InterceptorError,
 	MigrationError,
 	StorageReadError,
 	StorageWriteError,

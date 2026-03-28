@@ -13,7 +13,9 @@ export function createStorageAdapter<T>(
 ): Adapter<T> {
 	const { default: defaultValue, version, serialize, persist } = options
 
-	const listeners = createListeners<T>()
+	const scope = options.scope ?? 'local'
+
+	const listeners = createListeners<T>(key, scope)
 
 	// Read cache — avoids re-parsing when the raw string in storage hasn't changed.
 	// `cacheValid` is a fast-path flag: when true, we skip `storage.getItem()`
