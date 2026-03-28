@@ -30,6 +30,7 @@ export { withHistory } from './enhancers/history.js'
 export type { WithWatch } from './enhancers/watch.js'
 export { withWatch } from './enhancers/watch.js'
 export {
+	ComputedError,
 	GjendjeError,
 	HydrationError,
 	InterceptorError,
@@ -51,6 +52,7 @@ export type {
 	Adapter,
 	BaseInstance,
 	BucketOptions,
+	DepValues,
 	Enhancer,
 	Listener,
 	ReadonlyInstance,

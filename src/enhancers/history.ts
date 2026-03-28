@@ -38,6 +38,8 @@ export interface HistoryOptions {
  * h.undo()   // counter is now 1
  * h.redo()   // counter is now 2
  * ```
+ *
+ * @throws {Error} If `maxSize` is not a positive integer.
  */
 export function withHistory<T>(
 	instance: BaseInstance<T>,

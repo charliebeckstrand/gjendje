@@ -549,8 +549,8 @@ describe('edge cases', () => {
 		// Listener errors are caught so one faulty subscriber doesn't break others.
 		count.set(1)
 
-		// The computed throws when accessed directly
-		expect(() => risky.get()).toThrow('boom')
+		// The computed throws when accessed directly (wrapped in ComputedError)
+		expect(() => risky.get()).toThrow('Computed derivation threw')
 
 		count.destroy()
 		risky.destroy()

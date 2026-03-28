@@ -1,4 +1,6 @@
 import { notify } from './batch.js'
+import { reportError } from './config.js'
+import { ComputedError } from './errors.js'
 import { safeCall } from './listeners.js'
 import type { DepValues, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
 import { createLazyDestroyed, RESOLVED } from './utils.js'
@@ -47,6 +49,8 @@ let computedCounter = 0
  * fullName.get()       // 'Jane Doe'
  * fullName.subscribe(name => console.log(name))
  * ```
+ *
+ * @throws {ComputedError} If the derivation function throws during recomputation.
  */
 export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>, TResult>(
 	deps: TDeps,
@@ -85,7 +89,13 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 			;(depValues as unknown[])[i] = dep.get()
 		}
 
-		cached = fn(depValues)
+		try {
+			cached = fn(depValues)
+		} catch (err) {
+			const wrapped = new ComputedError(instanceKey, 'memory', err)
+			reportError(instanceKey, 'memory', wrapped)
+			throw wrapped
+		}
 
 		isDirty = false
 
@@ -105,13 +115,13 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 		if (value === prev) return
 
 		if (singleListener !== undefined) {
-			safeCall(singleListener, value)
+			safeCall(singleListener, value, instanceKey, 'memory')
 
 			return
 		}
 
 		for (const l of listenerSet) {
-			safeCall(l, value)
+			safeCall(l, value, instanceKey, 'memory')
 		}
 	}
 

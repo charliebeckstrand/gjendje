@@ -162,6 +162,25 @@ let globalConfig: GjendjeConfig = {}
 
 export const PERSISTENT_SCOPES = new Set<Scope>(['local', 'session', 'bucket'])
 
+const VALID_LOG_LEVELS = new Set<string>(['silent', 'warn', 'error', 'debug'])
+const VALID_SCOPES = new Set<string>([
+	'memory',
+	'render',
+	'session',
+	'local',
+	'url',
+	'server',
+	'bucket',
+])
+
+/**
+ * Apply global configuration. Merged with existing config — pass `undefined`
+ * to clear a previously set key.
+ *
+ * @throws {Error} If `maxKeys` is not a positive integer.
+ * @throws {Error} If `logLevel` is not a valid log level.
+ * @throws {Error} If `scope` is not a valid scope.
+ */
 export function configure(config: GjendjeConfig): void {
 	// Iterate entries so that explicitly passing `undefined` clears a key,
 	// which plain spread does not accomplish.
@@ -180,6 +199,18 @@ export function configure(config: GjendjeConfig): void {
 		(!Number.isSafeInteger(globalConfig.maxKeys) || globalConfig.maxKeys < 1)
 	) {
 		throw new Error(`[gjendje] maxKeys must be a positive integer, got ${globalConfig.maxKeys}.`)
+	}
+
+	if (globalConfig.logLevel !== undefined && !VALID_LOG_LEVELS.has(globalConfig.logLevel)) {
+		throw new Error(
+			`[gjendje] logLevel must be one of 'silent', 'warn', 'error', 'debug', got '${globalConfig.logLevel}'.`,
+		)
+	}
+
+	if (globalConfig.scope !== undefined && !VALID_SCOPES.has(globalConfig.scope)) {
+		throw new Error(
+			`[gjendje] scope must be a valid scope ('memory', 'local', 'session', 'url', 'server', 'bucket'), got '${globalConfig.scope}'.`,
+		)
 	}
 
 	if (

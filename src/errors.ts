@@ -21,6 +21,8 @@ import type { Scope } from './types.js'
  *       // handle failed schema migration
  *     } else if (error instanceof InterceptorError) {
  *       // handle interceptor throw
+ *     } else if (error instanceof ComputedError) {
+ *       // handle computed derivation throw
  *     }
  *   },
  * })
@@ -132,6 +134,25 @@ export class InterceptorError extends GjendjeError {
 			cause !== undefined ? { cause } : undefined,
 		)
 		this.name = 'InterceptorError'
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Computed errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when a computed derivation function throws during recomputation.
+ */
+export class ComputedError extends GjendjeError {
+	constructor(key: string, scope: Scope, cause?: unknown) {
+		super(
+			`Computed derivation threw for "${key}".`,
+			key,
+			scope,
+			cause !== undefined ? { cause } : undefined,
+		)
+		this.name = 'ComputedError'
 	}
 }
 

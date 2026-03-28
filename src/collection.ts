@@ -78,6 +78,8 @@ export interface CollectionInstance<T> extends BaseInstance<T[]> {
  * todos.remove((t) => t.done)
  * todos.get()  // Todo[]
  * ```
+ *
+ * @throws {Error} If `version` is not a positive integer.
  */
 export function collection<T>(key: string, options: StateOptions<T[]>): CollectionInstance<T> {
 	const base: BaseInstance<T[]> = createBase(key, options)
