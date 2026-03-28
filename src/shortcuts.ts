@@ -103,6 +103,8 @@ export interface StateFunction {
  * const synced = state('theme', 'light', { scope: 'local', sync: true })
  * const counter = state('counter', 0)
  * ```
+ *
+ * @throws {Error} If `version` is not a positive integer.
  */
 function _state<T>(
 	keyOrEntry: string | Record<string, T>,

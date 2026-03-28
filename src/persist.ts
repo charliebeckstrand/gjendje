@@ -54,6 +54,14 @@ export function readAndMigrate<T>(
 			data = parsed
 		}
 
+		// Guard against future versions (tampered storage, newer app wrote data)
+		if (storedVersion > currentVersion) {
+			log(
+				'warn',
+				`Stored version (v${storedVersion}) is higher than current version (v${currentVersion}) for key "${key ?? 'unknown'}" — data may be from a newer app version. Returning as-is.`,
+			)
+		}
+
 		// Run migration chain if behind current version
 		if (storedVersion < currentVersion && options.migrate) {
 			data = runMigrations(data, storedVersion, currentVersion, options.migrate, key, scope)
@@ -167,8 +175,19 @@ function runMigrations(
 	key?: string,
 	scope?: Scope,
 ): unknown {
-	if (fromVersion < 0 || toVersion - fromVersion > MAX_MIGRATION_STEPS) {
+	if (fromVersion < 0 || toVersion < 0 || toVersion - fromVersion > MAX_MIGRATION_STEPS) {
 		log('warn', `Migration range v${fromVersion}→v${toVersion} is out of bounds — skipping.`)
+
+		return data
+	}
+
+	// Guard against absurdly high stored versions that would bypass migration
+	// entirely (e.g. manually tampered localStorage with v: 999999999).
+	if (fromVersion > toVersion) {
+		log(
+			'warn',
+			`Stored version (v${fromVersion}) is higher than current version (v${toVersion}) for key "${key ?? 'unknown'}" — data may be from a newer app version. Returning as-is.`,
+		)
 
 		return data
 	}

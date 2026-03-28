@@ -4,6 +4,9 @@
 
 export type Scope =
 	| 'memory' // in-memory, ephemeral
+	/**
+	 * @deprecated Use `'memory'` instead. The `'render'` alias will be removed in the next major version.
+	 */
 	| 'render' // alias for 'memory' (deprecated)
 	| 'session' // sessionStorage — survives page reloads, gone when tab closes
 	| 'local' // localStorage — survives across tabs and restarts

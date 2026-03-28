@@ -19,6 +19,10 @@ import type { Scope } from './types.js'
  *       // handle write failure (quota, permissions)
  *     } else if (error instanceof MigrationError) {
  *       // handle failed schema migration
+ *     } else if (error instanceof InterceptorError) {
+ *       // handle interceptor throw
+ *     } else if (error instanceof ComputedError) {
+ *       // handle computed derivation throw
  *     }
  *   },
  * })
@@ -111,6 +115,44 @@ export class ValidationError extends GjendjeError {
 		super(`Validation failed for key "${key}" in ${scope} storage.`, key, scope)
 		this.name = 'ValidationError'
 		this.rejectedValue = rejectedValue
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Interceptor errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when an interceptor function throws during state access.
+ */
+export class InterceptorError extends GjendjeError {
+	constructor(key: string, scope: Scope, cause?: unknown) {
+		super(
+			`Interceptor threw for key "${key}".`,
+			key,
+			scope,
+			cause !== undefined ? { cause } : undefined,
+		)
+		this.name = 'InterceptorError'
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Computed errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when a computed derivation function throws during recomputation.
+ */
+export class ComputedError extends GjendjeError {
+	constructor(key: string, scope: Scope, cause?: unknown) {
+		super(
+			`Computed derivation threw for "${key}".`,
+			key,
+			scope,
+			cause !== undefined ? { cause } : undefined,
+		)
+		this.name = 'ComputedError'
 	}
 }
 

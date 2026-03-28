@@ -38,12 +38,18 @@ export interface HistoryOptions {
  * h.undo()   // counter is now 1
  * h.redo()   // counter is now 2
  * ```
+ *
+ * @throws {Error} If `maxSize` is not a positive integer.
  */
 export function withHistory<T>(
 	instance: BaseInstance<T>,
 	options?: HistoryOptions,
 ): WithHistoryInstance<T> {
 	const maxSize = options?.maxSize ?? 50
+
+	if (!Number.isSafeInteger(maxSize) || maxSize < 1) {
+		throw new Error(`[gjendje] withHistory maxSize must be a positive integer, got ${maxSize}.`)
+	}
 
 	const past: T[] = []
 	const future: T[] = []
@@ -113,12 +119,14 @@ export function withHistory<T>(
 	}
 
 	result.destroy = (): void => {
-		unsubChange()
+		try {
+			unsubChange()
 
-		past.length = 0
-		future.length = 0
-
-		instance.destroy()
+			past.length = 0
+			future.length = 0
+		} finally {
+			instance.destroy()
+		}
 	}
 
 	return result

@@ -13,7 +13,7 @@ export async function withServerSession<T>(fn: () => T): Promise<T> {
 }
 
 export function createServerAdapter<T>(key: string, defaultValue: T): Adapter<T> {
-	const listeners = createListeners<T>()
+	const listeners = createListeners<T>(key, 'server')
 
 	function getStore(): Map<string, unknown> | undefined {
 		return als.getStore()

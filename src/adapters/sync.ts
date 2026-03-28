@@ -26,7 +26,7 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 		}
 	}
 
-	const listeners = createListeners<T>()
+	const listeners = createListeners<T>(key, scope)
 
 	let isDestroyed = false
 
@@ -108,19 +108,20 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 		destroy() {
 			isDestroyed = true
 
-			unsubscribeAdapter()
-
-			listeners.clear()
-
 			try {
-				channel?.close()
-			} catch {
-				// BroadcastChannel.close() failure is non-critical — the channel
-				// will be garbage-collected regardless. Swallow to ensure the
-				// remaining cleanup (adapter.destroy) always runs.
-			}
+				unsubscribeAdapter()
+				listeners.clear()
 
-			adapter.destroy?.()
+				try {
+					channel?.close()
+				} catch {
+					// BroadcastChannel.close() failure is non-critical — the channel
+					// will be garbage-collected regardless. Swallow to ensure the
+					// remaining cleanup (adapter.destroy) always runs.
+				}
+			} finally {
+				adapter.destroy?.()
+			}
 		},
 	}
 }

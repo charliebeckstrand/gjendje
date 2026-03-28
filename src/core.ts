@@ -6,7 +6,7 @@ import { createUrlAdapter } from './adapters/url.js'
 import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
 import { getConfig, log, PERSISTENT_SCOPES, reportError } from './config.js'
-import { HydrationError, StorageWriteError } from './errors.js'
+import { HydrationError, InterceptorError, StorageWriteError } from './errors.js'
 import { safeCall, safeCallChange, safeCallConfig } from './listeners.js'
 import { getRegistered, registerNew, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
@@ -209,9 +209,24 @@ class StateImpl<T> implements StateInstance<T> {
 				next = interceptor(next, prev)
 			}
 		} catch (err) {
-			reportError(this.key, this.scope, err)
+			const wrapped = new InterceptorError(this.key, this.scope, err)
 
-			throw err
+			reportError(this.key, this.scope, wrapped)
+
+			throw wrapped
+		}
+
+		if (next === undefined) {
+			log('warn', `Interceptor for state("${this.key}") returned undefined — ignoring.`)
+			return prev
+		}
+
+		if (next instanceof Promise) {
+			log(
+				'warn',
+				`Interceptor for state("${this.key}") returned a Promise — interceptors must be synchronous. Ignoring.`,
+			)
+			return prev
 		}
 
 		if (!Object.is(original, next)) {
@@ -231,16 +246,18 @@ class StateImpl<T> implements StateInstance<T> {
 
 		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
 			for (const hook of s.changeHandlers) {
-				safeCallChange(hook, next, prev)
+				safeCallChange(hook, next, prev, this.key, this.scope)
 			}
 		}
 
-		safeCallConfig(this._config.onChange, {
-			key: this.key,
-			scope: this.scope,
-			value: next,
-			previousValue: prev,
-		})
+		if (this._config.onChange !== undefined) {
+			safeCallConfig(this._config.onChange, {
+				key: this.key,
+				scope: this.scope,
+				value: next,
+				previousValue: prev,
+			})
+		}
 	}
 
 	set(valueOrUpdater: T | ((prev: T) => T)): void {
@@ -408,22 +425,24 @@ class StateImpl<T> implements StateInstance<T> {
 
 		s.isDestroyed = true
 
-		s.interceptors?.clear()
-		s.changeHandlers?.clear()
-		s.watchers?.clear()
+		try {
+			s.interceptors?.clear()
+			s.changeHandlers?.clear()
+			s.watchers?.clear()
 
-		s.watchUnsub?.()
+			s.watchUnsub?.()
 
-		this._adapter.destroy?.()
+			this._adapter.destroy?.()
 
-		unregisterByKey(this._rKey)
+			unregisterByKey(this._rKey)
 
-		safeCallConfig(this._config.onDestroy, { key: this.key, scope: this.scope })
-
-		if (s.resolveDestroyed) {
-			s.resolveDestroyed()
-		} else {
-			s.destroyed = RESOLVED
+			safeCallConfig(this._config.onDestroy, { key: this.key, scope: this.scope })
+		} finally {
+			if (s.resolveDestroyed) {
+				s.resolveDestroyed()
+			} else {
+				s.destroyed = RESOLVED
+			}
 		}
 	}
 
@@ -585,8 +604,24 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 					next = interceptor(next, prev)
 				}
 			} catch (err) {
-				reportError(this.key, this.scope, err)
-				throw err
+				const wrapped = new InterceptorError(this.key, this.scope, err)
+
+				reportError(this.key, this.scope, wrapped)
+
+				throw wrapped
+			}
+
+			if (next === undefined) {
+				log('warn', `Interceptor for state("${this.key}") returned undefined — ignoring.`)
+				return
+			}
+
+			if (next instanceof Promise) {
+				log(
+					'warn',
+					`Interceptor for state("${this.key}") returned a Promise — interceptors must be synchronous. Ignoring.`,
+				)
+				return
 			}
 
 			if (!Object.is(original, next)) {
@@ -609,16 +644,18 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
 			for (const hook of ext.changeHandlers) {
-				safeCallChange(hook, next, prev)
+				safeCallChange(hook, next, prev, this.key, this.scope)
 			}
 		}
 
-		safeCallConfig(this._config.onChange, {
-			key: this.key,
-			scope: this.scope,
-			value: next,
-			previousValue: prev,
-		})
+		if (this._config.onChange !== undefined) {
+			safeCallConfig(this._config.onChange, {
+				key: this.key,
+				scope: this.scope,
+				value: next,
+				previousValue: prev,
+			})
+		}
 	}
 
 	subscribe(listener: Listener<T>): Unsubscribe {
@@ -626,12 +663,14 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 		if (!c.listeners) {
 			const listeners = new Set<Listener<T>>()
+			const key = this.key
+			const scope = this.scope
 
 			c.listeners = listeners
 
 			c.notifyFn = () => {
 				for (const l of listeners) {
-					safeCall(l, c.current)
+					safeCall(l, c.current, key, scope)
 				}
 			}
 		}
@@ -664,8 +703,24 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 					next = interceptor(next, prev)
 				}
 			} catch (err) {
-				reportError(this.key, this.scope, err)
-				throw err
+				const wrapped = new InterceptorError(this.key, this.scope, err)
+
+				reportError(this.key, this.scope, wrapped)
+
+				throw wrapped
+			}
+
+			if (next === undefined) {
+				log('warn', `Interceptor for state("${this.key}") returned undefined — ignoring.`)
+				return
+			}
+
+			if (next instanceof Promise) {
+				log(
+					'warn',
+					`Interceptor for state("${this.key}") returned a Promise — interceptors must be synchronous. Ignoring.`,
+				)
+				return
 			}
 
 			if (!Object.is(original, next)) {
@@ -688,18 +743,26 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
 			for (const hook of ext.changeHandlers) {
-				safeCallChange(hook, next, prev)
+				safeCallChange(hook, next, prev, this.key, this.scope)
 			}
 		}
 
-		safeCallConfig(this._config.onReset, { key: this.key, scope: this.scope, previousValue: prev })
+		if (this._config.onReset !== undefined) {
+			safeCallConfig(this._config.onReset, {
+				key: this.key,
+				scope: this.scope,
+				previousValue: prev,
+			})
+		}
 
-		safeCallConfig(this._config.onChange, {
-			key: this.key,
-			scope: this.scope,
-			value: next,
-			previousValue: prev,
-		})
+		if (this._config.onChange !== undefined) {
+			safeCallConfig(this._config.onChange, {
+				key: this.key,
+				scope: this.scope,
+				value: next,
+				previousValue: prev,
+			})
+		}
 	}
 
 	get ready(): Promise<void> {
@@ -820,24 +883,26 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 		const ext = c.ext
 
-		if (ext !== undefined) {
-			ext.interceptors?.clear()
-			ext.changeHandlers?.clear()
-			ext.watchers?.clear()
-			ext.watchUnsub?.()
-		}
+		try {
+			if (ext !== undefined) {
+				ext.interceptors?.clear()
+				ext.changeHandlers?.clear()
+				ext.watchers?.clear()
+				ext.watchUnsub?.()
+			}
 
-		c.listeners?.clear()
-		c.notifyFn = undefined
+			c.listeners?.clear()
+			c.notifyFn = undefined
 
-		if (this._rKey) unregisterByKey(this._rKey)
+			if (this._rKey) unregisterByKey(this._rKey)
 
-		safeCallConfig(this._config.onDestroy, { key: this.key, scope: this.scope })
-
-		if (ext?.resolveDestroyed) {
-			ext.resolveDestroyed()
-		} else if (ext !== undefined) {
-			ext.destroyed = RESOLVED
+			safeCallConfig(this._config.onDestroy, { key: this.key, scope: this.scope })
+		} finally {
+			if (ext?.resolveDestroyed) {
+				ext.resolveDestroyed()
+			} else if (ext !== undefined) {
+				ext.destroyed = RESOLVED
+			}
 		}
 	}
 }
@@ -860,6 +925,15 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 	if (config.keyPattern && !config.keyPattern.test(key)) {
 		throw new Error(
 			`[gjendje] Key "${key}" does not match the configured keyPattern ${config.keyPattern}.`,
+		)
+	}
+
+	if (
+		options.version !== undefined &&
+		(!Number.isSafeInteger(options.version) || options.version < 1)
+	) {
+		throw new Error(
+			`[gjendje] version must be a positive integer, got ${options.version} for state("${key}").`,
 		)
 	}
 

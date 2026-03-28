@@ -46,7 +46,7 @@ describe('interceptor chain', () => {
 			return next
 		})
 
-		expect(() => s.set(1)).toThrow('first throws')
+		expect(() => s.set(1)).toThrow('Interceptor threw')
 		expect(secondCalled).not.toHaveBeenCalled()
 		expect(s.get()).toBe(0)
 	})

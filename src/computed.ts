@@ -1,7 +1,28 @@
 import { notify } from './batch.js'
+import { reportError } from './config.js'
+import { ComputedError } from './errors.js'
 import { safeCall } from './listeners.js'
 import type { DepValues, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
 import { createLazyDestroyed, RESOLVED } from './utils.js'
+
+// ---------------------------------------------------------------------------
+// Derivation helper — extracted so recompute() stays try/catch-free and
+// V8 can optimise its hot loop independently.
+// ---------------------------------------------------------------------------
+
+function callDerivation<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>, TResult>(
+	fn: (values: DepValues<TDeps>) => TResult,
+	depValues: DepValues<TDeps>,
+	key: string,
+): TResult {
+	try {
+		return fn(depValues)
+	} catch (err) {
+		const wrapped = new ComputedError(key, 'memory', err)
+		reportError(key, 'memory', wrapped)
+		throw wrapped
+	}
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,6 +68,8 @@ let computedCounter = 0
  * fullName.get()       // 'Jane Doe'
  * fullName.subscribe(name => console.log(name))
  * ```
+ *
+ * @throws {ComputedError} If the derivation function throws during recomputation.
  */
 export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>, TResult>(
 	deps: TDeps,
@@ -85,7 +108,7 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 			;(depValues as unknown[])[i] = dep.get()
 		}
 
-		cached = fn(depValues)
+		cached = callDerivation(fn, depValues, instanceKey)
 
 		isDirty = false
 
@@ -93,6 +116,8 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 	}
 
 	const notifyListeners = () => {
+		if (isDestroyed) return
+
 		const prev = cached
 
 		const value = recompute()
@@ -103,17 +128,19 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 		if (value === prev) return
 
 		if (singleListener !== undefined) {
-			safeCall(singleListener, value)
+			safeCall(singleListener, value, instanceKey, 'memory')
 
 			return
 		}
 
 		for (const l of listenerSet) {
-			safeCall(l, value)
+			safeCall(l, value, instanceKey, 'memory')
 		}
 	}
 
 	const markDirty = () => {
+		if (isDestroyed) return
+
 		isDirty = true
 
 		notify(notifyListeners)
@@ -232,17 +259,21 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 
 			isDestroyed = true
 
-			for (const unsub of unsubscribers) {
-				unsub()
+			try {
+				for (const unsub of unsubscribers) {
+					unsub()
+				}
+
+				unsubscribers.length = 0
+
+				listenerSet.clear()
+
+				listenerCount = 0
+
+				singleListener = undefined
+			} finally {
+				lazyDestroyed.resolve()
 			}
-
-			listenerSet.clear()
-
-			listenerCount = 0
-
-			singleListener = undefined
-
-			lazyDestroyed.resolve()
 		},
 	}
 }

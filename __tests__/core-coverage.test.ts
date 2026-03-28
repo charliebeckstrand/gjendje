@@ -662,7 +662,7 @@ describe('interceptor error propagation', () => {
 			throw new Error('interceptor boom')
 		})
 
-		expect(() => s.set(1)).toThrow('interceptor boom')
+		expect(() => s.set(1)).toThrow('Interceptor threw')
 		expect(onError).toHaveBeenCalled()
 
 		s.destroy()
