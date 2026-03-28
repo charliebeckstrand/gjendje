@@ -322,3 +322,117 @@ describe('validate + migrate', () => {
 		prefs.destroy()
 	})
 })
+
+// ---------------------------------------------------------------------------
+// Persist edge cases
+// ---------------------------------------------------------------------------
+
+describe('persist edge cases', () => {
+	it('rejects versioned envelope with non-integer v', () => {
+		localStorage.setItem('p-nonint-v', JSON.stringify({ v: 1.5, data: 'hello' }))
+
+		const s = state('p-nonint-v', {
+			default: 'fallback',
+			scope: 'local',
+		})
+
+		expect(s.get()).toEqual({ v: 1.5, data: 'hello' })
+
+		s.destroy()
+	})
+
+	it('rejects versioned envelope with extra keys', () => {
+		localStorage.setItem('p-extra-keys', JSON.stringify({ v: 1, data: 'hello', extra: true }))
+
+		const s = state('p-extra-keys', {
+			default: 'fallback',
+			scope: 'local',
+		})
+
+		expect(s.get()).toEqual({ v: 1, data: 'hello', extra: true })
+
+		s.destroy()
+	})
+
+	it('writes version envelope for version > 1', () => {
+		const s = state('p-env-v3', {
+			default: 'initial',
+			scope: 'local',
+			version: 3,
+		})
+
+		s.set('test')
+
+		const raw = localStorage.getItem('p-env-v3')
+		const parsed = JSON.parse(raw ?? '')
+
+		expect(parsed).toEqual({ v: 3, data: 'test' })
+
+		s.destroy()
+	})
+
+	it('writes raw JSON without envelope for version 1', () => {
+		const s = state('p-raw-v1', {
+			default: 'initial',
+			scope: 'local',
+			version: 1,
+		})
+
+		s.set('test')
+
+		const raw = localStorage.getItem('p-raw-v1')
+
+		expect(raw).toBe('"test"')
+
+		s.destroy()
+	})
+
+	it('migration error falls back to default and does not poison data', () => {
+		localStorage.setItem('p-mig-poison', JSON.stringify({ count: 5 }))
+
+		const s = state('p-mig-poison', {
+			default: { count: 0 },
+			scope: 'local',
+			version: 2,
+			migrate: {
+				1: () => {
+					throw new Error('boom')
+				},
+			},
+		})
+
+		expect(s.get()).toEqual({ count: 0 })
+
+		s.set({ count: 42 })
+
+		const raw = localStorage.getItem('p-mig-poison')
+		const parsed = JSON.parse(raw ?? '')
+
+		expect(parsed).toEqual({ v: 2, data: { count: 42 } })
+
+		s.destroy()
+	})
+
+	it('fires onValidationFail when validate returns false', async () => {
+		const { configure, resetConfig } = await import('../src/index.js')
+		const { vi, expect } = await import('vitest')
+
+		const spy = vi.fn()
+
+		configure({ onValidationFail: spy })
+
+		localStorage.setItem('p-valfail-cb', '"bad-data"')
+
+		const s = state('p-valfail-cb', {
+			default: 0,
+			scope: 'local',
+			validate: (v): v is number => typeof v === 'number',
+		})
+
+		expect(s.get()).toBe(0)
+		expect(spy).toHaveBeenCalledWith({ key: 'p-valfail-cb', scope: 'local', value: 'bad-data' })
+
+		s.destroy()
+		resetConfig()
+	})
+})

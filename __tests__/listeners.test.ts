@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createListeners, safeCall, safeCallChange } from '../src/listeners.js'
+import { createListeners, safeCall, safeCallChange, safeCallConfig } from '../src/listeners.js'
 
 describe('safeCall', () => {
 	it('invokes listener with value', () => {
@@ -117,6 +117,117 @@ describe('createListeners', () => {
 
 		expect(good).toHaveBeenCalledWith(99)
 		expect(spy).toHaveBeenCalled()
+
+		spy.mockRestore()
+	})
+})
+
+describe('listener edge cases', () => {
+	it('safeCall reports error via reportError when key and scope are provided', async () => {
+		const { configure } = await import('../src/index.js')
+
+		const onError = vi.fn()
+
+		configure({ onError })
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		safeCall(
+			() => {
+				throw new Error('boom')
+			},
+			42,
+			'test-key',
+			'memory',
+		)
+
+		expect(onError).toHaveBeenCalledWith(
+			expect.objectContaining({ key: 'test-key', scope: 'memory' }),
+		)
+
+		spy.mockRestore()
+		configure({ onError: undefined })
+	})
+
+	it('safeCall does not call reportError when key or scope is missing', async () => {
+		const { configure } = await import('../src/index.js')
+
+		const onError = vi.fn()
+
+		configure({ onError })
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		safeCall(() => {
+			throw new Error('boom')
+		}, 42)
+
+		expect(onError).not.toHaveBeenCalled()
+		expect(spy).toHaveBeenCalledWith('[gjendje] Listener threw:', expect.any(Error))
+
+		spy.mockRestore()
+		configure({ onError: undefined })
+	})
+
+	it('safeCallChange reports error when key and scope are provided', async () => {
+		const { configure } = await import('../src/index.js')
+
+		const onError = vi.fn()
+
+		configure({ onError })
+
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		safeCallChange(
+			() => {
+				throw new Error('handler boom')
+			},
+			'next',
+			'prev',
+			'test-key',
+			'memory',
+		)
+
+		expect(onError).toHaveBeenCalledWith(
+			expect.objectContaining({ key: 'test-key', scope: 'memory' }),
+		)
+
+		spy.mockRestore()
+		configure({ onError: undefined })
+	})
+
+	it('safeCallConfig is a no-op when fn is undefined', () => {
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		expect(() => safeCallConfig(undefined, 'anything')).not.toThrow()
+		expect(spy).not.toHaveBeenCalled()
+
+		spy.mockRestore()
+	})
+
+	it('listener can unsubscribe itself during notification without breaking iteration', () => {
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const listeners = createListeners<number>()
+
+		const listenerA = vi.fn()
+		const listenerC = vi.fn()
+
+		let unsubB: (() => void) | undefined
+
+		const listenerB = vi.fn(() => {
+			unsubB?.()
+		})
+
+		listeners.subscribe(listenerA)
+		unsubB = listeners.subscribe(listenerB)
+		listeners.subscribe(listenerC)
+
+		listeners.notify(1)
+
+		expect(listenerA).toHaveBeenCalledTimes(1)
+		expect(listenerB).toHaveBeenCalledTimes(1)
+		expect(listenerC).toHaveBeenCalledTimes(1)
 
 		spy.mockRestore()
 	})
