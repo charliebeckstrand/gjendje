@@ -133,8 +133,12 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 			return
 		}
 
-		for (const l of listenerSet) {
-			safeCall(l, value, instanceKey, 'memory')
+		// Snapshot the listener set before iterating so that subscribe/unsubscribe
+		// calls from within a listener don't affect this notification cycle.
+		const snapshot = Array.from(listenerSet)
+
+		for (let i = 0; i < snapshot.length; i++) {
+			safeCall(snapshot[i] as Listener<TResult>, value, instanceKey, 'memory')
 		}
 	}
 

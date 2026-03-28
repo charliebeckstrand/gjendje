@@ -25,6 +25,8 @@ export interface SelectOptions {
 // Auto-incrementing key counter
 // ---------------------------------------------------------------------------
 
+const NOOP: () => void = () => {}
+
 let selectCounter = 0
 
 // ---------------------------------------------------------------------------
@@ -114,8 +116,12 @@ export function select<TSource, TResult>(
 			return
 		}
 
-		for (const l of listenerSet) {
-			safeCall(l, value, instanceKey, 'memory')
+		// Snapshot the listener set before iterating so that subscribe/unsubscribe
+		// calls from within a listener don't affect this notification cycle.
+		const snapshot = Array.from(listenerSet)
+
+		for (let i = 0; i < snapshot.length; i++) {
+			safeCall(snapshot[i] as Listener<TResult>, value, instanceKey, 'memory')
 		}
 	}
 
@@ -167,7 +173,7 @@ export function select<TSource, TResult>(
 		},
 
 		subscribe(listener: Listener<TResult>): Unsubscribe {
-			if (isDestroyed) return () => {}
+			if (isDestroyed) return NOOP
 
 			listenerSet.add(listener)
 

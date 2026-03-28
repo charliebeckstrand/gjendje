@@ -45,7 +45,7 @@ read. Data written with an older version is served as-is, potentially with an ou
 is defined and `options.version` is set. This requires the custom serializer to preserve or
 handle the version envelope, or the migration to be run on the unwrapped data.
 
-- [ ] Route custom serializer path through migration chain when `migrate` is configured
+- [x] Route custom serializer path through migration chain when `migrate` is configured
 
 ---
 
@@ -106,7 +106,7 @@ listener in the same cycle.
 callback with exactly the right listener count transitions. Low probability but violates
 at-most-once notification guarantee.
 
-- [ ] Add `isNotifying` guard or snapshot listener list before iterating in computed/select
+- [x] Snapshot listener list before iterating in computed/select
 
 ---
 
@@ -141,7 +141,7 @@ cause the new listener to fire in the same `for (const listener of listeners)` l
 **Impact:** Unexpected double-firing of newly registered watchers. Affects both `withWatch`
 enhancer and `StateImpl.watch()` / `collection.watch()`.
 
-- [ ] Snapshot watcher entries before iterating in `notifyWatchers`
+- [x] Snapshot watcher entries before iterating in `notifyWatchers`
 
 ---
 
@@ -168,7 +168,7 @@ The same issue exists in the best-effort delivery path at line 81.
 
 **Impact:** Users relying on centralized `onError` monitoring miss batch notification failures.
 
-- [ ] Route batch flush notification errors through `reportError`
+- [x] Route batch flush notification errors through `reportError`
 
 ---
 
@@ -179,7 +179,7 @@ The same issue exists in the best-effort delivery path at line 81.
 The error-handling audit lists `select()` overhead (#8) as unchecked `[ ]`, but the original
 audit (`2025-03-27.md:71`) has it marked `[x]` as patched with the standalone implementation.
 
-- [ ] Update stale cross-reference to `[x]`
+- [x] Update stale cross-reference to `[x]`
 
 ---
 
@@ -201,7 +201,7 @@ if (isDestroyed) return NOOP
 if (isDestroyed) return () => {}
 ```
 
-- [ ] Use shared `NOOP` in `select.subscribe()` for consistency
+- [x] Use shared `NOOP` in `select.subscribe()` for consistency
 
 ---
 
@@ -216,7 +216,7 @@ the parameter ordering differs from the browser's internal representation, the c
 unnecessarily. Currently safe because the library only appends/modifies one parameter, but
 fragile if the URL has other parameters added by external code between read and write.
 
-- [ ] Consider reading `window.location.search` after `pushState/replaceState` for cache
+- [x] Read `window.location.search` after `pushState/replaceState` for cache
 
 ---
 
