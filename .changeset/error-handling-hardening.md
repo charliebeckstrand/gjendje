@@ -21,3 +21,8 @@ Comprehensive hardening of error handling across the library:
 - **DepValues export**: The `DepValues` utility type is now exported from the package for typing `computed`/`effect` callbacks
 - **JSDoc `@throws` annotations**: Added to `state()`, `configure()`, `withHistory()`, `computed()`, and `collection()`
 - **Computed cleanup**: Unsubscriber array is cleared on destroy to allow GC of dependency closures
+- **Computed V8 optimization**: Extracted `callDerivation()` helper from `recompute()` so the try/catch doesn't prevent V8 from optimizing the hot recomputation loop
+- **Config validate-before-mutate**: `configure()` now validates all inputs before merging into global config — a failing validation no longer leaves config in a partially-mutated state
+- **keyPattern validation**: `configure({ keyPattern })` now throws immediately if the value is not a RegExp
+- **onChange/onReset allocation guard**: `safeCallConfig` object literal allocations in `MemoryStateImpl.set()`, `reset()`, and `StateImpl._notifyChange()` are now guarded behind `!== undefined` checks to avoid allocation on every set/reset when no callback is configured
+- **Scope `'render'` deprecated**: The `'render'` scope type now has a `@deprecated` JSDoc annotation directing users to `'memory'`

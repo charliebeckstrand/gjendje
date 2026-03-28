@@ -180,8 +180,36 @@ const VALID_SCOPES = new Set<string>([
  * @throws {Error} If `maxKeys` is not a positive integer.
  * @throws {Error} If `logLevel` is not a valid log level.
  * @throws {Error} If `scope` is not a valid scope.
+ * @throws {Error} If `keyPattern` is not a RegExp.
  */
 export function configure(config: GjendjeConfig): void {
+	// --- Validate BEFORE mutating globalConfig ---
+	// This prevents leaving config in a partially-mutated state when validation throws.
+
+	if (
+		config.maxKeys !== undefined &&
+		(!Number.isSafeInteger(config.maxKeys) || config.maxKeys < 1)
+	) {
+		throw new Error(`[gjendje] maxKeys must be a positive integer, got ${config.maxKeys}.`)
+	}
+
+	if (config.logLevel !== undefined && !VALID_LOG_LEVELS.has(config.logLevel)) {
+		throw new Error(
+			`[gjendje] logLevel must be one of 'silent', 'warn', 'error', 'debug', got '${config.logLevel}'.`,
+		)
+	}
+
+	if (config.scope !== undefined && !VALID_SCOPES.has(config.scope)) {
+		throw new Error(
+			`[gjendje] scope must be a valid scope ('memory', 'local', 'session', 'url', 'server', 'bucket'), got '${config.scope}'.`,
+		)
+	}
+
+	if (config.keyPattern !== undefined && !(config.keyPattern instanceof RegExp)) {
+		throw new Error(`[gjendje] keyPattern must be a RegExp, got ${typeof config.keyPattern}.`)
+	}
+
+	// --- Merge into globalConfig (only after all validation passes) ---
 	// Iterate entries so that explicitly passing `undefined` clears a key,
 	// which plain spread does not accomplish.
 	for (const key of Object.keys(config)) {
@@ -194,33 +222,12 @@ export function configure(config: GjendjeConfig): void {
 		}
 	}
 
-	if (
-		globalConfig.maxKeys !== undefined &&
-		(!Number.isSafeInteger(globalConfig.maxKeys) || globalConfig.maxKeys < 1)
-	) {
-		throw new Error(`[gjendje] maxKeys must be a positive integer, got ${globalConfig.maxKeys}.`)
-	}
+	const effectiveScope = globalConfig.scope ?? config.scope
 
-	if (globalConfig.logLevel !== undefined && !VALID_LOG_LEVELS.has(globalConfig.logLevel)) {
-		throw new Error(
-			`[gjendje] logLevel must be one of 'silent', 'warn', 'error', 'debug', got '${globalConfig.logLevel}'.`,
-		)
-	}
-
-	if (globalConfig.scope !== undefined && !VALID_SCOPES.has(globalConfig.scope)) {
-		throw new Error(
-			`[gjendje] scope must be a valid scope ('memory', 'local', 'session', 'url', 'server', 'bucket'), got '${globalConfig.scope}'.`,
-		)
-	}
-
-	if (
-		globalConfig.registry === false &&
-		globalConfig.scope &&
-		PERSISTENT_SCOPES.has(globalConfig.scope)
-	) {
+	if (globalConfig.registry === false && effectiveScope && PERSISTENT_SCOPES.has(effectiveScope)) {
 		log(
 			'warn',
-			`registry: false has no effect on scope "${globalConfig.scope}" — persistent scopes always use the registry.`,
+			`registry: false has no effect on scope "${effectiveScope}" — persistent scopes always use the registry.`,
 		)
 	}
 }

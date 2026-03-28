@@ -91,14 +91,54 @@ No public API had `@throws` JSDoc annotations. Users had no way to know from doc
 
 ---
 
+### 8. HIGH — `configure()` validate-after-mutate corrupts config on failure
+
+- [x] PATCHED
+
+**File:** `src/config.ts`
+
+The `configure()` function merged all input fields into `globalConfig` **before** running validation. If validation threw (e.g., invalid `logLevel`), the config was left in a partially-mutated state — other fields from the same call were already applied, and the invalid field was stored in `globalConfig`.
+
+**Fix:** Moved all validation (`maxKeys`, `logLevel`, `scope`, `keyPattern`) **before** the merge loop. If any validation fails, `globalConfig` is untouched.
+
+---
+
+### 9. MEDIUM — No runtime validation for `keyPattern` config option
+
+- [x] PATCHED
+
+**File:** `src/config.ts`
+
+Passing a non-RegExp value (e.g., a string) for `keyPattern` was silently accepted at configure-time. The first `state()` call would then crash with `TypeError: config.keyPattern.test is not a function`.
+
+**Fix:** Added validation in `configure()` that throws if `keyPattern` is not `instanceof RegExp`.
+
+---
+
+### 10. LOW — `scope: 'render'` not marked `@deprecated`
+
+- [x] PATCHED
+
+**File:** `src/types.ts`
+
+The `'render'` scope has been an alias for `'memory'` since its introduction but had no deprecation annotation. Users had no signal to migrate away from it.
+
+**Fix:** Added `@deprecated` JSDoc annotation to the `'render'` union member in the `Scope` type.
+
+---
+
 ## Test Coverage
 
-Added `__tests__/api-design-audit.test.ts` with 32 tests covering:
+Added `__tests__/api-design-audit.test.ts` with 40 tests covering:
 - `configure()` logLevel validation (6 tests: 4 valid + 2 invalid)
 - `configure()` scope validation (8 tests: 6 valid + 2 invalid)
 - `ComputedError` on creation-time throw, post-dependency-change throw, cause wrapping, key propagation, `onError` reporting
 - Computed subscriber error routing through `onError`
 - `ComputedError` export and instanceof verification
 - `DepValues` export verification
+- `batch()` with computed dependencies (2 tests)
+- `withHistory()` maxSize validation (3 tests)
+- `configure()` validate-before-mutate (4 tests: maxKeys, logLevel, scope, partial-invalid)
+- `configure()` keyPattern validation (4 tests: valid RegExp, invalid string, invalid number, no config corruption)
 
-All 793 tests pass (761 existing + 32 new). Zero regressions.
+All 801 tests pass (761 existing + 40 new). Zero regressions.

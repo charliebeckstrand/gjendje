@@ -250,12 +250,14 @@ class StateImpl<T> implements StateInstance<T> {
 			}
 		}
 
-		safeCallConfig(this._config.onChange, {
-			key: this.key,
-			scope: this.scope,
-			value: next,
-			previousValue: prev,
-		})
+		if (this._config.onChange !== undefined) {
+			safeCallConfig(this._config.onChange, {
+				key: this.key,
+				scope: this.scope,
+				value: next,
+				previousValue: prev,
+			})
+		}
 	}
 
 	set(valueOrUpdater: T | ((prev: T) => T)): void {
@@ -646,12 +648,14 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 			}
 		}
 
-		safeCallConfig(this._config.onChange, {
-			key: this.key,
-			scope: this.scope,
-			value: next,
-			previousValue: prev,
-		})
+		if (this._config.onChange !== undefined) {
+			safeCallConfig(this._config.onChange, {
+				key: this.key,
+				scope: this.scope,
+				value: next,
+				previousValue: prev,
+			})
+		}
 	}
 
 	subscribe(listener: Listener<T>): Unsubscribe {
@@ -743,14 +747,22 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 			}
 		}
 
-		safeCallConfig(this._config.onReset, { key: this.key, scope: this.scope, previousValue: prev })
+		if (this._config.onReset !== undefined) {
+			safeCallConfig(this._config.onReset, {
+				key: this.key,
+				scope: this.scope,
+				previousValue: prev,
+			})
+		}
 
-		safeCallConfig(this._config.onChange, {
-			key: this.key,
-			scope: this.scope,
-			value: next,
-			previousValue: prev,
-		})
+		if (this._config.onChange !== undefined) {
+			safeCallConfig(this._config.onChange, {
+				key: this.key,
+				scope: this.scope,
+				value: next,
+				previousValue: prev,
+			})
+		}
 	}
 
 	get ready(): Promise<void> {

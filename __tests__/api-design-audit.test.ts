@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { batch } from '../src/batch.js'
 import { computed } from '../src/computed.js'
-import { configure, resetConfig } from '../src/config.js'
+import { configure, getConfig, resetConfig } from '../src/config.js'
 import { withHistory } from '../src/enhancers/history.js'
 import { ComputedError } from '../src/errors.js'
 import { state } from '../src/shortcuts.js'
@@ -398,5 +398,92 @@ describe('withHistory() validation', () => {
 		expect(h).toBeDefined()
 
 		s.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// configure() — validate-before-mutate
+// ---------------------------------------------------------------------------
+
+describe('configure() validate-before-mutate', () => {
+	afterEach(() => {
+		resetConfig()
+	})
+
+	it('does not corrupt config when maxKeys validation fails', () => {
+		configure({ logLevel: 'debug' })
+
+		expect(() => configure({ maxKeys: -1 })).toThrow(/maxKeys/)
+
+		const config = getConfig()
+
+		expect(config.logLevel).toBe('debug')
+		expect(config.maxKeys).toBeUndefined()
+	})
+
+	it('does not corrupt config when logLevel validation fails', () => {
+		configure({ maxKeys: 50 })
+
+		expect(() => configure({ logLevel: 'verbose' as never })).toThrow(/logLevel/)
+
+		const config = getConfig()
+
+		expect(config.maxKeys).toBe(50)
+		expect(config.logLevel).toBeUndefined()
+	})
+
+	it('does not corrupt config when scope validation fails', () => {
+		configure({ logLevel: 'error' })
+
+		expect(() => configure({ scope: 'redis' as never })).toThrow(/scope/)
+
+		const config = getConfig()
+
+		expect(config.logLevel).toBe('error')
+		expect(config.scope).toBeUndefined()
+	})
+
+	it('does not merge any fields from a partially-invalid call', () => {
+		configure({ logLevel: 'debug' })
+
+		expect(() => configure({ maxKeys: 10, logLevel: 'bad' as never })).toThrow(/logLevel/)
+
+		const config = getConfig()
+
+		expect(config.logLevel).toBe('debug')
+		expect(config.maxKeys).toBeUndefined()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// configure() — keyPattern validation
+// ---------------------------------------------------------------------------
+
+describe('configure() keyPattern validation', () => {
+	afterEach(() => {
+		resetConfig()
+	})
+
+	it('accepts a valid RegExp for keyPattern', () => {
+		expect(() => configure({ keyPattern: /^[a-z-]+$/ })).not.toThrow()
+	})
+
+	it('throws when keyPattern is a string', () => {
+		expect(() => configure({ keyPattern: '^[a-z]+$' as never })).toThrow(/keyPattern/)
+	})
+
+	it('throws when keyPattern is a number', () => {
+		expect(() => configure({ keyPattern: 42 as never })).toThrow(/keyPattern/)
+	})
+
+	it('does not corrupt config when keyPattern validation fails', () => {
+		configure({ logLevel: 'debug' })
+
+		expect(() => configure({ keyPattern: 'bad' as never })).toThrow(/keyPattern/)
+
+		const config = getConfig()
+
+		expect(config.logLevel).toBe('debug')
+		expect(config.keyPattern).toBeUndefined()
 	})
 })

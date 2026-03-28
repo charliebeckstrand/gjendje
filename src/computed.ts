@@ -6,6 +6,25 @@ import type { DepValues, Listener, ReadonlyInstance, Unsubscribe } from './types
 import { createLazyDestroyed, RESOLVED } from './utils.js'
 
 // ---------------------------------------------------------------------------
+// Derivation helper — extracted so recompute() stays try/catch-free and
+// V8 can optimise its hot loop independently.
+// ---------------------------------------------------------------------------
+
+function callDerivation<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>, TResult>(
+	fn: (values: DepValues<TDeps>) => TResult,
+	depValues: DepValues<TDeps>,
+	key: string,
+): TResult {
+	try {
+		return fn(depValues)
+	} catch (err) {
+		const wrapped = new ComputedError(key, 'memory', err)
+		reportError(key, 'memory', wrapped)
+		throw wrapped
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -89,13 +108,7 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 			;(depValues as unknown[])[i] = dep.get()
 		}
 
-		try {
-			cached = fn(depValues)
-		} catch (err) {
-			const wrapped = new ComputedError(instanceKey, 'memory', err)
-			reportError(instanceKey, 'memory', wrapped)
-			throw wrapped
-		}
+		cached = callDerivation(fn, depValues, instanceKey)
 
 		isDirty = false
 
