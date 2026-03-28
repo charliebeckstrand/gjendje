@@ -110,7 +110,20 @@
 		"bench:internal": "tsx benchmarks/internal.bench.ts",
 		"bench:extended": "tsx benchmarks/internals-extended.bench.ts",
 		"bench:save": "tsx benchmarks/internal.bench.ts --save",
-		"bench:compare": "tsx benchmarks/internal.bench.ts --compare"
+		"bench:compare": "tsx benchmarks/internal.bench.ts --compare",
+		"bench:internal:all": "tsx benchmarks/internal/index.ts",
+		"bench:internal:lifecycle": "tsx benchmarks/internal/lifecycle.bench.ts",
+		"bench:internal:state-write": "tsx benchmarks/internal/state-write.bench.ts",
+		"bench:internal:computed": "tsx benchmarks/internal/computed.bench.ts",
+		"bench:internal:select": "tsx benchmarks/internal/select.bench.ts",
+		"bench:internal:effect": "tsx benchmarks/internal/effect.bench.ts",
+		"bench:internal:batch": "tsx benchmarks/internal/batch.bench.ts",
+		"bench:internal:collection": "tsx benchmarks/internal/collection.bench.ts",
+		"bench:internal:middleware": "tsx benchmarks/internal/middleware.bench.ts",
+		"bench:internal:subscription": "tsx benchmarks/internal/subscription.bench.ts",
+		"bench:internal:history": "tsx benchmarks/internal/history.bench.ts",
+		"bench:internal:readonly": "tsx benchmarks/internal/readonly.bench.ts",
+		"bench:internal:patch": "tsx benchmarks/internal/patch.bench.ts"
 	},
 	"peerDependencies": {
 		"react": ">=18.0.0",
