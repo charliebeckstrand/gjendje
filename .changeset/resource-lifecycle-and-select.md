@@ -15,7 +15,3 @@ Fixed 5 issues from the resource lifecycle audit:
 ### `select()` optimization
 
 Rewrote `select()` as a standalone lightweight implementation instead of wrapping `computed()`. Eliminates array allocation for dependencies, the dependency loop, and `Promise.all` overhead for async checks. Benchmarks show **~13% faster** operations for single-dependency projections. The API and behavior are unchanged.
-
-### Size-limit budget update
-
-Updated the core bundle size limit from 5.5 kB to 6.75 kB to reflect pre-existing growth (not caused by these changes).
