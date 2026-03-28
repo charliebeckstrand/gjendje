@@ -107,11 +107,10 @@
 		"typecheck": "tsc --project tsconfig.test.json --skipLibCheck",
 		"bench:setup": "pnpm add -D tsx zustand valtio",
 		"bench": "tsx benchmarks/state-management.bench.ts",
-		"bench:internal": "tsx benchmarks/internal.bench.ts",
-		"bench:extended": "tsx benchmarks/internals-extended.bench.ts",
-		"bench:save": "tsx benchmarks/internal.bench.ts --save",
-		"bench:compare": "tsx benchmarks/internal.bench.ts --compare",
-		"bench:internal:all": "tsx benchmarks/internal/index.ts",
+		"bench:compare": "tsx benchmarks/edge-cases-comparison.bench.ts",
+		"bench:storage": "tsx benchmarks/storage-read.bench.ts",
+		"bench:url": "tsx benchmarks/url-read.bench.ts",
+		"bench:internal": "tsx benchmarks/internal/index.ts",
 		"bench:internal:lifecycle": "tsx benchmarks/internal/lifecycle.bench.ts",
 		"bench:internal:state-write": "tsx benchmarks/internal/state-write.bench.ts",
 		"bench:internal:computed": "tsx benchmarks/internal/computed.bench.ts",
@@ -123,7 +122,11 @@
 		"bench:internal:subscription": "tsx benchmarks/internal/subscription.bench.ts",
 		"bench:internal:history": "tsx benchmarks/internal/history.bench.ts",
 		"bench:internal:readonly": "tsx benchmarks/internal/readonly.bench.ts",
-		"bench:internal:patch": "tsx benchmarks/internal/patch.bench.ts"
+		"bench:internal:patch": "tsx benchmarks/internal/patch.bench.ts",
+		"bench:internal:registry": "tsx benchmarks/internal/registry.bench.ts",
+		"bench:internal:persist": "tsx benchmarks/internal/persist.bench.ts",
+		"bench:internal:read-cost": "tsx benchmarks/internal/read-cost.bench.ts",
+		"bench:internal:utilities": "tsx benchmarks/internal/utilities.bench.ts"
 	},
 	"peerDependencies": {
 		"react": ">=18.0.0",

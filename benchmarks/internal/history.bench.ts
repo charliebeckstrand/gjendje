@@ -94,11 +94,70 @@ const undoRedoSuite = defineSuite('history-undo-redo', {
 })
 
 // ---------------------------------------------------------------------------
+// 3. History with large values
+// ---------------------------------------------------------------------------
+
+const historyLargeSuite = defineSuite('history-large', {
+	'History with Large Values': (bench) => {
+		const hSmall = withHistory(state(uniqueKey('hist-sm'), { default: 0 }), { maxSize: 100 })
+
+		let ism = 0
+
+		bench.add('history write (primitive)', () => {
+			hSmall.set(++ism)
+		})
+
+		type MedObj = Record<string, number>
+
+		const medDefault: MedObj = {}
+
+		for (let i = 0; i < 20; i++) medDefault[`k${i}`] = i
+
+		const hMed = withHistory(state(uniqueKey('hist-med'), { default: medDefault }), {
+			maxSize: 100,
+		})
+
+		let imd = 0
+
+		bench.add('history write (20-key object)', () => {
+			hMed.set({ ...medDefault, k0: ++imd })
+		})
+
+		const lgDefault: Record<string, number> = {}
+
+		for (let i = 0; i < 200; i++) lgDefault[`k${i}`] = i
+
+		const hLg = withHistory(state(uniqueKey('hist-lg'), { default: lgDefault }), {
+			maxSize: 100,
+		})
+
+		let ilg = 0
+
+		bench.add('history write (200-key object)', () => {
+			hLg.set({ ...lgDefault, k0: ++ilg })
+		})
+
+		const hUndoLg = withHistory(state(uniqueKey('hist-undo-lg'), { default: lgDefault }), {
+			maxSize: 100,
+		})
+
+		for (let i = 0; i < 50; i++) {
+			hUndoLg.set({ ...lgDefault, k0: i })
+		}
+
+		bench.add('undo + redo (200-key object)', () => {
+			hUndoLg.undo()
+			hUndoLg.redo()
+		})
+	},
+})
+
+// ---------------------------------------------------------------------------
 // Run
 // ---------------------------------------------------------------------------
 
 runSuites(
 	'Internal Benchmark: History',
-	[writeOverheadSuite, undoRedoSuite],
+	[writeOverheadSuite, undoRedoSuite, historyLargeSuite],
 	'internal/history',
 ).catch(console.error)

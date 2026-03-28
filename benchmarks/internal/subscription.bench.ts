@@ -124,11 +124,61 @@ const watchSuite = defineSuite('watch', {
 })
 
 // ---------------------------------------------------------------------------
+// 4. withWatch enhancer vs native state.watch
+// ---------------------------------------------------------------------------
+
+import { withWatch } from '../../src/index.js'
+
+const watchEnhancerSuite = defineSuite('watch-enhancer', {
+	'withWatch Enhancer vs Native watch': (bench) => {
+		type Obj = { a: number; b: number; c: number }
+
+		const sNative = state(uniqueKey('wn'), {
+			default: { a: 0, b: 0, c: 0 } as Obj,
+		})
+
+		sNative.watch('a', () => {})
+
+		let in1 = 0
+
+		bench.add('state.watch() native', () => {
+			sNative.set({ a: ++in1, b: 0, c: 0 })
+		})
+
+		const sEnhanced = withWatch(
+			state(uniqueKey('we'), {
+				default: { a: 0, b: 0, c: 0 } as Obj,
+			}),
+		)
+
+		sEnhanced.watch('a', () => {})
+
+		let ie1 = 0
+
+		bench.add('withWatch() enhancer', () => {
+			sEnhanced.set({ a: ++ie1, b: 0, c: 0 })
+		})
+
+		const sPlain = state(uniqueKey('wp'), {
+			default: { a: 0, b: 0, c: 0 } as Obj,
+		})
+
+		sPlain.subscribe(() => {})
+
+		let ip1 = 0
+
+		bench.add('subscribe() baseline', () => {
+			sPlain.set({ a: ++ip1, b: 0, c: 0 })
+		})
+	},
+})
+
+// ---------------------------------------------------------------------------
 // Run
 // ---------------------------------------------------------------------------
 
 runSuites(
 	'Internal Benchmark: Subscription',
-	[churnSuite, fanOutSuite, watchSuite],
+	[churnSuite, fanOutSuite, watchSuite, watchEnhancerSuite],
 	'internal/subscription',
 ).catch(console.error)

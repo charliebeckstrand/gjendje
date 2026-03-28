@@ -142,11 +142,50 @@ const creationThroughputSuite = defineSuite('lifecycle-throughput', {
 })
 
 // ---------------------------------------------------------------------------
+// 4. GC pressure — rapid create/destroy churn
+// ---------------------------------------------------------------------------
+
+const gcPressureSuite = defineSuite('gc-pressure', {
+	'GC Pressure (Create/Destroy Churn)': (bench) => {
+		bench.add('create + destroy (x1)', () => {
+			const s = state(uniqueKey('gc1'), { default: 0 })
+			s.destroy()
+		})
+
+		bench.add('create + destroy burst (x10)', () => {
+			const instances = []
+
+			for (let i = 0; i < 10; i++) {
+				instances.push(state(uniqueKey('gc10'), { default: i }))
+			}
+
+			for (const s of instances) {
+				s.destroy()
+			}
+		})
+
+		bench.add('create + subscribe + destroy burst (x50)', () => {
+			const instances = []
+
+			for (let i = 0; i < 50; i++) {
+				const s = state(uniqueKey('gc50'), { default: i })
+				s.subscribe(() => {})
+				instances.push(s)
+			}
+
+			for (const s of instances) {
+				s.destroy()
+			}
+		})
+	},
+})
+
+// ---------------------------------------------------------------------------
 // Run
 // ---------------------------------------------------------------------------
 
 runSuites(
 	'Internal Benchmark: Lifecycle',
-	[basicLifecycleSuite, fullLifecycleSuite, creationThroughputSuite],
+	[basicLifecycleSuite, fullLifecycleSuite, creationThroughputSuite, gcPressureSuite],
 	'internal/lifecycle',
 ).catch(console.error)

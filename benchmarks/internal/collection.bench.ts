@@ -142,11 +142,125 @@ const utilSuite = defineSuite('collection-util', {
 })
 
 // ---------------------------------------------------------------------------
+// 4. Collection watch at scale
+// ---------------------------------------------------------------------------
+
+const watchSuite = defineSuite('collection-watch', {
+	'Collection Watch at Scale': (bench) => {
+		const items100 = Array.from({ length: 100 }, (_, i) => ({
+			id: i,
+			name: `item-${i}`,
+			score: i,
+		}))
+
+		const col100 = collection(uniqueKey('cw-100'), { default: [...items100] })
+
+		col100.watch('score', () => {})
+
+		let ic100 = 0
+
+		bench.add('collection.watch (100 items, 1 key)', () => {
+			col100.update((item) => item.id === 0, { score: ++ic100 })
+		})
+
+		const items1000 = Array.from({ length: 1000 }, (_, i) => ({
+			id: i,
+			name: `item-${i}`,
+			score: i,
+		}))
+
+		const col1000 = collection(uniqueKey('cw-1000'), { default: [...items1000] })
+
+		col1000.watch('score', () => {})
+
+		let ic1000 = 0
+
+		bench.add('collection.watch (1000 items, 1 key)', () => {
+			col1000.update((item) => item.id === 0, { score: ++ic1000 })
+		})
+
+		const col1000m = collection(uniqueKey('cw-1000m'), { default: [...items1000] })
+
+		col1000m.watch('id', () => {})
+		col1000m.watch('name', () => {})
+		col1000m.watch('score', () => {})
+
+		let ic1000m = 0
+
+		bench.add('collection.watch (1000 items, 3 keys)', () => {
+			col1000m.update((item) => item.id === 0, { score: ++ic1000m })
+		})
+
+		const colBase = collection(uniqueKey('cw-base'), { default: [...items1000] })
+
+		colBase.subscribe(() => {})
+
+		let icb = 0
+
+		bench.add('collection.update (1000 items, no watch)', () => {
+			colBase.update((item) => item.id === 0, { score: ++icb })
+		})
+	},
+})
+
+// ---------------------------------------------------------------------------
+// 5. Collection operation chaining (batched vs unbatched)
+// ---------------------------------------------------------------------------
+
+import { batch } from '../../src/index.js'
+
+const chainingSuite = defineSuite('collection-chaining', {
+	'Collection Operation Chaining': (bench) => {
+		const items = Array.from({ length: 100 }, (_, i) => ({ id: i, value: i }))
+
+		const colSingle = collection(uniqueKey('chain-1'), { default: [...items] })
+
+		colSingle.subscribe(() => {})
+
+		let is = 0
+
+		bench.add('1 mutation (add)', () => {
+			colSingle.add({ id: 1000 + is, value: ++is })
+			colSingle.set([...items])
+		})
+
+		const col3 = collection(uniqueKey('chain-3'), { default: [...items] })
+
+		col3.subscribe(() => {})
+
+		let i3 = 0
+
+		bench.add('3 mutations unbatched', () => {
+			i3++
+			col3.add({ id: 1000 + i3, value: i3 })
+			col3.update((item) => item.id === 0, { value: i3 })
+			col3.remove((item) => item.id === 1000 + i3)
+		})
+
+		const col3b = collection(uniqueKey('chain-3b'), { default: [...items] })
+
+		col3b.subscribe(() => {})
+
+		let i3b = 0
+
+		bench.add('3 mutations batched', () => {
+			i3b++
+
+			batch(() => {
+				col3b.add({ id: 1000 + i3b, value: i3b })
+				col3b.update((item) => item.id === 0, { value: i3b })
+				col3b.remove((item) => item.id === 1000 + i3b)
+			})
+		})
+	},
+})
+
+// ---------------------------------------------------------------------------
 // Run
 // ---------------------------------------------------------------------------
 
 runSuites(
 	'Internal Benchmark: Collection',
-	[crudSuite, scalingSuite, utilSuite],
+	[crudSuite, scalingSuite, utilSuite, watchSuite, chainingSuite],
 	'internal/collection',
 ).catch(console.error)
