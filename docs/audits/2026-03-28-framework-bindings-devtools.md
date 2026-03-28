@@ -35,7 +35,7 @@ the purpose of the prototype shadowing is specifically to protect untyped JS cal
 
 **Impact:** Untyped JavaScript code can bypass the readonly contract via `instance.patch()`.
 
-- [ ] Shadow `patch` in `readonly()` wrapper
+- [x] Shadow `patch` in `readonly()` wrapper
 
 ---
 
@@ -60,7 +60,7 @@ for (const instance of registry.values()) {
 **Impact:** Partial state restoration during time-travel debugging. Some instances update,
 others don't, leaving DevTools and application state diverged.
 
-- [ ] Wrap `instance.set()` in try/catch in `handleDevToolsMessage`
+- [x] Wrap `instance.set()` in try/catch in `handleDevToolsMessage`
 
 ---
 
@@ -90,7 +90,7 @@ which depends on the *truthiness* of `selector`, not its identity.
 **Impact:** Unnecessary `useMemo` re-computation on every render when using inline selectors.
 No correctness issue — the returned value is identical — but wastes CPU cycles.
 
-- [ ] Use `!!selector` in deps instead of `selector` identity, or remove from deps
+- [x] Remove `selector` from `useMemo` deps — return shape is fully determined by `writable`
 
 ---
 
@@ -126,7 +126,7 @@ if (devToolsEnabled) {
 **Impact:** Users must call `disableDevTools()` then `enableDevTools(newOptions)` to change
 options. This is the expected pattern, but could be documented more clearly.
 
-- [ ] Add JSDoc note that options are only applied on first enable
+- [x] Add JSDoc `@remarks` note that options are only applied on first enable
 
 ---
 

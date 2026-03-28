@@ -28,6 +28,7 @@ export function readonly<T>(instance: ReadonlyInstance<T>): ReadonlyInstance<T> 
 	return Object.create(instance, {
 		set: { value: undefined },
 		reset: { value: undefined },
+		patch: { value: undefined },
 		intercept: { value: undefined },
 	}) as ReadonlyInstance<T>
 }

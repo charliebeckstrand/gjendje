@@ -52,9 +52,8 @@ export function useGjendje<T>(
 
 	const reset = useCallback(() => (instance as BaseInstance<T>).reset(), [instance])
 
-	return useMemo(() => {
-		if (selector) return value
-		if (writable) return [value, set, reset] as const
-		return value
-	}, [selector, writable, value, set, reset])
+	return useMemo(
+		() => (writable ? ([value, set, reset] as const) : value),
+		[writable, value, set, reset],
+	)
 }
