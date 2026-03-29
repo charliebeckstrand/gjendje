@@ -98,7 +98,8 @@
 		"lint:check": "biome ci src/ __tests__/",
 		"lint:fix": "biome check src/ __tests__/ --fix",
 		"prepare": "lefthook install",
-		"prepublishOnly": "pnpm typecheck && pnpm lint:check && pnpm test && pnpm build && pnpm publint",
+		"prepublishOnly": "pnpm build && pnpm typecheck && pnpm lint:check && pnpm test && pnpm publint && pnpm attw",
+		"attw": "attw --pack --profile node16 .",
 		"release": "pnpm build && pnpm changeset publish",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
@@ -140,6 +141,7 @@
 		}
 	},
 	"devDependencies": {
+		"@arethetypeswrong/cli": "^0.18.2",
 		"@biomejs/biome": "^2.4.6",
 		"@changesets/cli": "^2.27.0",
 		"@testing-library/react": "^16.3.2",
