@@ -11,3 +11,5 @@
 - **`previous()` destroy cleanup guarantee**: The `previous()` instance's `destroy()` method now wraps cleanup in try/finally, ensuring `listeners.clear()` and `lazyDestroyed.resolve()` execute even if the source's unsubscribe function throws.
 
 - **`destroyAll()` ordering fix**: `destroyAll()` now clears the registry before destroying instances (instead of after). This prevents instances created during destroy notifications (e.g., via `onDestroy` callbacks) from being silently removed by the final `registry.clear()`.
+
+- **Bucket adapter cross-tab event forwarding**: The bucket adapter's fallback delegate (used when the Storage Buckets API is unavailable) now subscribes to storage events immediately during synchronous initialization. Previously, the subscription was only set up at the end of the async initialization block, which was never reached on the fallback path — breaking cross-tab reactivity for bucket-scoped state on most browsers.

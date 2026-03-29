@@ -123,6 +123,19 @@ export function createBucketAdapter<T>(
 
 	let delegateUnsub: (() => void) | undefined
 
+	function subscribeToDelegateEvents(): void {
+		delegateUnsub?.()
+
+		delegateUnsub = delegate.subscribe((value) => {
+			lastNotifiedValue = value
+
+			notify(notifyListeners)
+		})
+	}
+
+	// Forward storage events from the initial fallback delegate immediately
+	subscribeToDelegateEvents()
+
 	// ---------------------------------------------------------------------------
 	// Initialization — try to upgrade to a real Storage Bucket
 	// ---------------------------------------------------------------------------
@@ -180,7 +193,7 @@ export function createBucketAdapter<T>(
 			const currentValue = delegate.get()
 			hadUserWrite = !shallowEqual(currentValue, defaultValue)
 
-			// Swap to the bucket delegate
+			// Swap to the bucket delegate — destroy old (also removes old subscription)
 			delegate.destroy?.()
 			delegate = createStorageAdapter(storage, key, options)
 
@@ -230,12 +243,8 @@ export function createBucketAdapter<T>(
 
 		if (isDestroyed) return
 
-		// Forward future storage events from the delegate to our listeners
-		delegateUnsub = delegate.subscribe((value) => {
-			lastNotifiedValue = value
-
-			notify(notifyListeners)
-		})
+		// Re-subscribe to the (potentially swapped) delegate
+		subscribeToDelegateEvents()
 	})()
 
 	return {
