@@ -19,3 +19,7 @@
 - **`configure()` unknown key warning** — `configure()` now warns when an unrecognized key is passed (e.g. typos like `logLvel`), helping catch silent misconfiguration.
 
 - **`readonly()` shadows `onChange`** — The `readonly()` wrapper now also shadows `onChange` in addition to `set`, `reset`, `patch`, and `intercept`, preventing untyped JS callers from registering change handlers on a read-only view.
+
+- **`previous()` NaN equality** — Changed the notification-skip check from `!==` to `!Object.is()` so that `NaN`-valued previous instances no longer fire spurious notifications on every source change.
+
+- **`MemoryStateImpl.reset()` callback order** — Fixed `config.onReset` firing after instance `changeHandlers` instead of before, matching `StateImpl.reset()` ordering for consistent behavior across scopes.

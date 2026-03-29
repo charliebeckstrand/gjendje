@@ -74,7 +74,7 @@ export function previous<T>(
 			prev = current
 			current = next
 
-			if (old !== prev) {
+			if (!Object.is(old, prev)) {
 				notify(notifyListeners)
 			}
 		})

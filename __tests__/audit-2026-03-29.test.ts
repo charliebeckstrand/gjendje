@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { computed, configure, readonly, resetConfig, select, state } from '../src/index.js'
 import { createOptimizedListeners } from '../src/listeners.js'
+import { previous } from '../src/previous.js'
 import { afterHydration } from '../src/ssr.js'
 import { useGjendje } from '../src/vue/index.js'
 
@@ -246,6 +247,90 @@ describe('readonly — onChange is shadowed', () => {
 
 		// TypeScript hides it, but JS callers can try
 		expect((ro as unknown as Record<string, unknown>).onChange).toBeUndefined()
+
+		s.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Finding 9 — previous() NaN equality
+// ---------------------------------------------------------------------------
+
+describe('previous — Object.is equality for NaN', () => {
+	it('does not fire spurious notifications when previous value is NaN', () => {
+		const a = state('prev-nan-src', { default: 'foo' })
+
+		const p = previous(a)
+
+		const listener = vi.fn()
+
+		p.subscribe(listener)
+
+		// First change: prev goes from undefined → 'foo'. Fires.
+		a.set('bar')
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		// Second change: prev goes from 'foo' → 'bar'. Fires.
+		a.set('not-a-number')
+		expect(listener).toHaveBeenCalledTimes(2)
+
+		// Third change: prev goes from 'bar' → 'not-a-number'. Fires.
+		a.set('also-NaN')
+		expect(listener).toHaveBeenCalledTimes(3)
+
+		// At this point prev = 'not-a-number'. Not NaN (it's a string).
+		// Let's test with actual numeric NaN values.
+		p.destroy()
+		a.destroy()
+
+		const num = state('prev-nan-num', { default: NaN })
+
+		const p2 = previous(num)
+
+		const listener2 = vi.fn()
+
+		p2.subscribe(listener2)
+
+		// First change: prev undefined → NaN. Fires.
+		num.set(NaN)
+		expect(listener2).toHaveBeenCalledTimes(1)
+
+		// Second change: prev NaN → NaN. Object.is(NaN, NaN) is true — should NOT fire.
+		num.set(NaN)
+		expect(listener2).toHaveBeenCalledTimes(1)
+
+		p2.destroy()
+		num.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Finding 10 — MemoryStateImpl.reset() callback order
+// ---------------------------------------------------------------------------
+
+describe('MemoryStateImpl.reset() — onReset fires before onChange handlers', () => {
+	beforeEach(() => resetConfig())
+
+	afterEach(() => resetConfig())
+
+	it('fires config.onReset before instance onChange handlers during reset', () => {
+		const order: string[] = []
+
+		configure({
+			onReset: () => order.push('config.onReset'),
+			onChange: () => order.push('config.onChange'),
+		})
+
+		const s = state('reset-order', { default: 0 })
+
+		s.onChange(() => order.push('instance.onChange'))
+
+		s.set(42)
+		order.length = 0
+
+		s.reset()
+
+		expect(order).toEqual(['config.onReset', 'instance.onChange', 'config.onChange'])
 
 		s.destroy()
 	})

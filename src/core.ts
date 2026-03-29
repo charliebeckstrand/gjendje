@@ -761,20 +761,22 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 			notify(c.notifyFn)
 		}
 
-		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
-			const snapshot = Array.from(ext.changeHandlers)
-
-			for (let i = 0; i < snapshot.length; i++) {
-				safeCallChange(snapshot[i] as (next: T, prev: T) => void, next, prev, this.key, this.scope)
-			}
-		}
-
+		// Fire onReset before changeHandlers — matches StateImpl.reset() order
+		// where safeCallConfig(onReset) precedes _notifyChange().
 		if (this._config.onReset !== undefined) {
 			safeCallConfig(this._config.onReset, {
 				key: this.key,
 				scope: this.scope,
 				previousValue: prev,
 			})
+		}
+
+		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
+			const snapshot = Array.from(ext.changeHandlers)
+
+			for (let i = 0; i < snapshot.length; i++) {
+				safeCallChange(snapshot[i] as (next: T, prev: T) => void, next, prev, this.key, this.scope)
+			}
 		}
 
 		if (this._config.onChange !== undefined) {
