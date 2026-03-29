@@ -1,9 +1,9 @@
 import { notify } from './batch.js'
 import { reportError } from './config.js'
 import { ComputedError } from './errors.js'
-import { safeCall } from './listeners.js'
+import { createOptimizedListeners } from './listeners.js'
 import type { Listener, ReadonlyInstance, Unsubscribe } from './types.js'
-import { createLazyDestroyed, RESOLVED } from './utils.js'
+import { createLazyDestroyed, NOOP, RESOLVED } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,8 +24,6 @@ export interface SelectOptions {
 // ---------------------------------------------------------------------------
 // Auto-incrementing key counter
 // ---------------------------------------------------------------------------
-
-const NOOP: () => void = () => {}
 
 let selectCounter = 0
 
@@ -77,13 +75,7 @@ export function select<TSource, TResult>(
 ): SelectInstance<TResult> {
 	const instanceKey = options?.key ?? `select:${selectCounter++}`
 
-	const listenerSet = new Set<Listener<TResult>>()
-
-	// Fast path: when there is exactly one listener (common case),
-	// call it directly instead of iterating the Set.
-	let singleListener: Listener<TResult> | undefined
-
-	let listenerCount = 0
+	const listeners = createOptimizedListeners<TResult>(instanceKey, 'memory')
 
 	let cached: TResult
 
@@ -112,19 +104,7 @@ export function select<TSource, TResult>(
 
 		if (value === prev) return
 
-		if (singleListener !== undefined) {
-			safeCall(singleListener, value, instanceKey, 'memory')
-
-			return
-		}
-
-		// Snapshot the listener set before iterating so that subscribe/unsubscribe
-		// calls from within a listener don't affect this notification cycle.
-		const snapshot = Array.from(listenerSet)
-
-		for (let i = 0; i < snapshot.length; i++) {
-			safeCall(snapshot[i] as Listener<TResult>, value, instanceKey, 'memory')
-		}
+		listeners.notify(value)
 	}
 
 	const markDirty = () => {
@@ -177,23 +157,7 @@ export function select<TSource, TResult>(
 		subscribe(listener: Listener<TResult>): Unsubscribe {
 			if (isDestroyed) return NOOP
 
-			listenerSet.add(listener)
-
-			listenerCount++
-
-			singleListener = listenerCount === 1 ? listener : undefined
-
-			return () => {
-				listenerSet.delete(listener)
-
-				listenerCount--
-
-				if (listenerCount === 1) {
-					singleListener = listenerSet.values().next().value
-				} else {
-					singleListener = undefined
-				}
-			}
+			return listeners.subscribe(listener)
 		},
 
 		destroy() {
@@ -204,11 +168,7 @@ export function select<TSource, TResult>(
 			try {
 				unsub()
 
-				listenerSet.clear()
-
-				listenerCount = 0
-
-				singleListener = undefined
+				listeners.clear()
 			} finally {
 				lazyDestroyed.resolve()
 			}

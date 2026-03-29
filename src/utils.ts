@@ -1,7 +1,45 @@
+import type { ReadonlyInstance } from './types.js'
+
 // Shared resolved promise — avoids allocating a new one per instance.
 // Exported so that computed/select can short-circuit Promise.all when
 // all dependencies are memory-scoped (where ready/hydrated/settled === RESOLVED).
 export const RESOLVED: Promise<void> = Promise.resolve()
+
+/** Shared no-op function — avoids allocating a new one per instance. */
+export const NOOP: () => void = () => {}
+
+/**
+ * Subscribe a single callback to every dependency in the array.
+ * Returns an array of unsubscribe functions (same length / order as deps).
+ */
+export function subscribeAll(
+	deps: ReadonlyArray<ReadonlyInstance<unknown>>,
+	callback: () => void,
+): Array<() => void> {
+	const len = deps.length
+
+	const unsubs = new Array(len)
+
+	for (let i = 0; i < len; i++) {
+		unsubs[i] = (deps[i] as ReadonlyInstance<unknown>).subscribe(callback)
+	}
+
+	return unsubs
+}
+
+/**
+ * Call every unsubscribe function and clear the array.
+ * Companion to `subscribeAll` — used in destroy / stop paths.
+ */
+export function unsubscribeAll(unsubs: Array<() => void>): void {
+	for (let i = 0; i < unsubs.length; i++) {
+		const fn = unsubs[i]
+
+		if (fn) fn()
+	}
+
+	unsubs.length = 0
+}
 
 /**
  * Type guard that narrows `unknown` to `Record<PropertyKey, unknown>`.

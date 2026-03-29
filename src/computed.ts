@@ -1,9 +1,9 @@
 import { notify } from './batch.js'
 import { reportError } from './config.js'
 import { ComputedError } from './errors.js'
-import { safeCall } from './listeners.js'
+import { createOptimizedListeners } from './listeners.js'
 import type { DepValues, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
-import { createLazyDestroyed, RESOLVED } from './utils.js'
+import { createLazyDestroyed, NOOP, RESOLVED, subscribeAll, unsubscribeAll } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Derivation helper — extracted so recompute() stays try/catch-free and
@@ -44,8 +44,6 @@ export interface ComputedOptions {
 // Auto-incrementing key counter
 // ---------------------------------------------------------------------------
 
-const NOOP: () => void = () => {}
-
 let computedCounter = 0
 
 // ---------------------------------------------------------------------------
@@ -76,15 +74,9 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 	fn: (values: DepValues<TDeps>) => TResult,
 	options?: ComputedOptions,
 ): ComputedInstance<TResult> {
-	const listenerSet = new Set<Listener<TResult>>()
-
-	// Fast path: when there is exactly one listener (common in chains),
-	// call it directly instead of iterating the Set (avoids iterator allocation).
-	let singleListener: Listener<TResult> | undefined
-
-	let listenerCount = 0
-
 	const instanceKey = options?.key ?? `computed:${computedCounter++}`
+
+	const listeners = createOptimizedListeners<TResult>(instanceKey, 'memory')
 
 	let cached: TResult
 
@@ -127,19 +119,7 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 		// recomputed value is identical to the previous cached value.
 		if (value === prev) return
 
-		if (singleListener !== undefined) {
-			safeCall(singleListener, value, instanceKey, 'memory')
-
-			return
-		}
-
-		// Snapshot the listener set before iterating so that subscribe/unsubscribe
-		// calls from within a listener don't affect this notification cycle.
-		const snapshot = Array.from(listenerSet)
-
-		for (let i = 0; i < snapshot.length; i++) {
-			safeCall(snapshot[i] as Listener<TResult>, value, instanceKey, 'memory')
-		}
+		listeners.notify(value)
 	}
 
 	const markDirty = () => {
@@ -150,13 +130,7 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 		notify(notifyListeners)
 	}
 
-	const unsubscribers = new Array(depLen)
-
-	for (let i = 0; i < depLen; i++) {
-		const dep = deps[i] as ReadonlyInstance<unknown>
-
-		unsubscribers[i] = dep.subscribe(markDirty)
-	}
+	const unsubscribers = subscribeAll(deps, markDirty)
 
 	// Compute initial value eagerly so first get() is synchronous
 	recompute()
@@ -239,23 +213,7 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 		subscribe(listener: Listener<TResult>): Unsubscribe {
 			if (isDestroyed) return NOOP
 
-			listenerSet.add(listener)
-
-			listenerCount++
-
-			singleListener = listenerCount === 1 ? listener : undefined
-
-			return () => {
-				listenerSet.delete(listener)
-
-				listenerCount--
-
-				if (listenerCount === 1) {
-					singleListener = listenerSet.values().next().value
-				} else {
-					singleListener = undefined
-				}
-			}
+			return listeners.subscribe(listener)
 		},
 
 		destroy() {
@@ -264,17 +222,9 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 			isDestroyed = true
 
 			try {
-				for (const unsub of unsubscribers) {
-					unsub()
-				}
+				unsubscribeAll(unsubscribers)
 
-				unsubscribers.length = 0
-
-				listenerSet.clear()
-
-				listenerCount = 0
-
-				singleListener = undefined
+				listeners.clear()
 			} finally {
 				lazyDestroyed.resolve()
 			}

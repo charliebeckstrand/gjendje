@@ -99,3 +99,64 @@ export function createListeners<T>(key?: string, scope?: Scope) {
 		},
 	}
 }
+
+/**
+ * Like `createListeners` but with a single-listener fast path.
+ * When exactly one subscriber is active (the common case in reactive chains),
+ * it is called directly — bypassing Set iteration and snapshot allocation.
+ *
+ * Used by `computed` and `select` where chains of derived values
+ * typically have a single downstream consumer.
+ */
+export function createOptimizedListeners<T>(key: string, scope: Scope) {
+	const listenerSet = new Set<Listener<T>>()
+
+	let singleListener: Listener<T> | undefined
+
+	let listenerCount = 0
+
+	return {
+		notify(value: T): void {
+			if (singleListener !== undefined) {
+				safeCall(singleListener, value, key, scope)
+
+				return
+			}
+
+			// Snapshot to protect against subscribe/unsubscribe during iteration
+			const snapshot = Array.from(listenerSet)
+
+			for (let i = 0; i < snapshot.length; i++) {
+				safeCall(snapshot[i] as Listener<T>, value, key, scope)
+			}
+		},
+
+		subscribe(listener: Listener<T>): Unsubscribe {
+			listenerSet.add(listener)
+
+			listenerCount++
+
+			singleListener = listenerCount === 1 ? listener : undefined
+
+			return () => {
+				listenerSet.delete(listener)
+
+				listenerCount--
+
+				if (listenerCount === 1) {
+					singleListener = listenerSet.values().next().value
+				} else {
+					singleListener = undefined
+				}
+			}
+		},
+
+		clear(): void {
+			listenerSet.clear()
+
+			listenerCount = 0
+
+			singleListener = undefined
+		},
+	}
+}
