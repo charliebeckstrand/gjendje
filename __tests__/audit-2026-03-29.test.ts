@@ -1,0 +1,183 @@
+import { mount } from '@vue/test-utils'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick } from 'vue'
+import { computed, select, state } from '../src/index.js'
+import { createOptimizedListeners } from '../src/listeners.js'
+import { useGjendje } from '../src/vue/index.js'
+
+// ---------------------------------------------------------------------------
+// Finding 2 — createOptimizedListeners counter desync
+// ---------------------------------------------------------------------------
+
+describe('createOptimizedListeners — duplicate subscription handling', () => {
+	it('does not desync when the same listener is subscribed twice', () => {
+		const listeners = createOptimizedListeners<number>('test', 'memory')
+
+		const fn = vi.fn()
+
+		const unsub1 = listeners.subscribe(fn)
+		const unsub2 = listeners.subscribe(fn)
+
+		// Set deduplicates — only one copy in the set
+		listeners.notify(42)
+		expect(fn).toHaveBeenCalledTimes(1)
+
+		// After removing via first unsub, listener should be gone
+		unsub1()
+
+		fn.mockClear()
+		listeners.notify(99)
+		expect(fn).toHaveBeenCalledTimes(0)
+
+		// Second unsub is a no-op (already removed)
+		unsub2()
+
+		// A new listener should work correctly after the desync window
+		const fn2 = vi.fn()
+
+		const unsub3 = listeners.subscribe(fn2)
+
+		listeners.notify(7)
+		expect(fn2).toHaveBeenCalledTimes(1)
+		expect(fn2).toHaveBeenCalledWith(7)
+
+		unsub3()
+	})
+
+	it('singleListener fast path activates correctly after duplicate cleanup', () => {
+		const listeners = createOptimizedListeners<string>('test2', 'memory')
+
+		const fn = vi.fn()
+
+		// Subscribe same reference twice
+		const unsub1 = listeners.subscribe(fn)
+		listeners.subscribe(fn)
+
+		// Remove the listener
+		unsub1()
+
+		// Subscribe a fresh listener — should hit single-listener fast path
+		const fresh = vi.fn()
+
+		listeners.subscribe(fresh)
+
+		listeners.notify('hello')
+		expect(fresh).toHaveBeenCalledTimes(1)
+		expect(fresh).toHaveBeenCalledWith('hello')
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Finding 3 — computed/select use Object.is instead of ===
+// ---------------------------------------------------------------------------
+
+describe('computed — Object.is equality for NaN', () => {
+	it('does not fire spurious notifications when computed returns NaN', () => {
+		const a = state('nan-src', { default: 'not-a-number' })
+
+		const c = computed([a], ([v]) => Number(v))
+
+		const listener = vi.fn()
+
+		c.subscribe(listener)
+
+		// c.get() is NaN. Setting a to a different non-numeric string should
+		// still produce NaN — Object.is(NaN, NaN) is true, so no notification.
+		a.set('also-not-a-number')
+
+		expect(listener).not.toHaveBeenCalled()
+
+		c.destroy()
+		a.destroy()
+	})
+})
+
+describe('select — Object.is equality for NaN', () => {
+	it('does not fire spurious notifications when select returns NaN', () => {
+		const a = state('nan-sel-src', { default: 'abc' })
+
+		const s = select(a, (v) => Number(v))
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+
+		// Both 'abc' and 'xyz' parse to NaN
+		a.set('xyz')
+
+		expect(listener).not.toHaveBeenCalled()
+
+		s.destroy()
+		a.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Finding 4 — Vue useGjendje selector caching
+// ---------------------------------------------------------------------------
+
+function useSetup<T>(fn: () => T) {
+	const box = { result: undefined as T }
+
+	const wrapper = mount(
+		defineComponent({
+			setup() {
+				box.result = fn()
+				return () => null
+			},
+		}),
+	)
+
+	return { result: box.result, wrapper }
+}
+
+describe('Vue useGjendje — selector caching', () => {
+	const instances: Array<{ destroy(): void }> = []
+
+	function tracked<T extends { destroy(): void }>(instance: T): T {
+		instances.push(instance)
+		return instance
+	}
+
+	afterEach(() => {
+		for (const instance of instances) instance.destroy()
+		instances.length = 0
+	})
+
+	it('does not re-run selector on repeated .value access when value has not changed', () => {
+		const user = tracked(state('vue-sel-cache', { default: { name: 'Jane', age: 30 } }))
+
+		const selector = vi.fn((u: { name: string; age: number }) => u.name)
+
+		const { result, wrapper } = useSetup(() => useGjendje(user, selector))
+
+		// First access
+		expect(result.value).toBe('Jane')
+
+		const callsAfterFirst = selector.mock.calls.length
+
+		// Second access — should NOT call selector again
+		expect(result.value).toBe('Jane')
+		expect(selector.mock.calls.length).toBe(callsAfterFirst)
+
+		wrapper.unmount()
+	})
+
+	it('returns updated value after state change', async () => {
+		const user = tracked(state('vue-sel-update', { default: { name: 'Jane', age: 30 } }))
+
+		const { result, wrapper } = useSetup(() =>
+			useGjendje(user, (u: { name: string; age: number }) => u.name),
+		)
+
+		expect(result.value).toBe('Jane')
+
+		user.set({ name: 'John', age: 31 })
+
+		await nextTick()
+
+		expect(result.value).toBe('John')
+
+		wrapper.unmount()
+	})
+})

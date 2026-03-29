@@ -260,9 +260,9 @@ export function createBucketAdapter<T>(
 		set(value) {
 			delegate.set(value)
 
-			lastNotifiedValue = value
-
-			notify(notifyListeners)
+			// Do NOT call notify(notifyListeners) here — the delegate subscription
+			// (subscribeToDelegateEvents) already forwards the notification. Calling
+			// it here too would double-notify listeners outside of batch().
 		},
 
 		subscribe: listeners.subscribe,
