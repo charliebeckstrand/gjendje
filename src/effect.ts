@@ -1,5 +1,6 @@
 import { reportError } from './config.js'
 import type { DepValues, ReadonlyInstance } from './types.js'
+import { subscribeAll, unsubscribeAll } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -96,13 +97,7 @@ export function effect<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 	}
 
 	// Subscribe to all dependencies — single shared callback avoids per-dep closures
-	const unsubscribers = new Array(depLen)
-
-	for (let i = 0; i < depLen; i++) {
-		const dep = deps[i] as ReadonlyInstance<unknown>
-
-		unsubscribers[i] = dep.subscribe(run)
-	}
+	const unsubscribers = subscribeAll(deps, run)
 
 	// Run immediately with current values
 	run()
@@ -114,11 +109,7 @@ export function effect<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 			isStopped = true
 
 			try {
-				for (let i = 0; i < depLen; i++) {
-					unsubscribers[i]()
-				}
-
-				unsubscribers.length = 0
+				unsubscribeAll(unsubscribers)
 			} finally {
 				if (cleanup) {
 					try {
