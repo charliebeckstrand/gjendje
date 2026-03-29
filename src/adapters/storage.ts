@@ -187,9 +187,11 @@ export function createStorageAdapter<T>(
 	const notifyListeners = () => listeners.notify(lastNotifiedValue)
 
 	function onStorageEvent(event: StorageEvent): void {
-		if (event.storageArea !== storage || event.key !== key) return
+		if (event.storageArea !== storage) return
 
-		// Invalidate cache — another tab changed storage
+		if (event.key !== null && event.key !== key) return
+
+		// Invalidate cache — another tab changed this key or cleared storage
 		cachedRaw = undefined
 		cachedValue = undefined
 		cacheValid = false

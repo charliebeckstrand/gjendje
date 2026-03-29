@@ -116,9 +116,13 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 			if (lengthChanged) {
 				// Length change implies all watched keys changed — notify all directly
-				for (const [, listeners] of w) {
-					for (const listener of listeners) {
-						safeCall(listener, next)
+				const entries = Array.from(w)
+
+				for (let i = 0; i < entries.length; i++) {
+					const snapshot = Array.from((entries[i] as [PropertyKey, Set<Listener<T[]>>])[1])
+
+					for (let j = 0; j < snapshot.length; j++) {
+						safeCall(snapshot[j] as Listener<T[]>, next)
 					}
 				}
 
@@ -144,9 +148,13 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 
 				if (!p || !n) {
 					// Non-object items changed — notify all watched keys directly
-					for (const [, listeners] of w) {
-						for (const listener of listeners) {
-							safeCall(listener, next)
+					const entries = Array.from(w)
+
+					for (let i = 0; i < entries.length; i++) {
+						const snapshot = Array.from((entries[i] as [PropertyKey, Set<Listener<T[]>>])[1])
+
+						for (let j = 0; j < snapshot.length; j++) {
+							safeCall(snapshot[j] as Listener<T[]>, next)
 						}
 					}
 
@@ -174,8 +182,10 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 					const listeners = w.get(watchKey)
 
 					if (listeners) {
-						for (const listener of listeners) {
-							safeCall(listener, next)
+						const snapshot = Array.from(listeners)
+
+						for (let i = 0; i < snapshot.length; i++) {
+							safeCall(snapshot[i] as Listener<T[]>, next)
 						}
 					}
 				}

@@ -41,7 +41,7 @@ reads the correct default (storage is empty), but reactive subscribers miss the 
 **Impact:** Loss of reactivity when storage is fully cleared in another tab (e.g., cross-tab
 logout, cache clearing). Subscribers stay stale until the next direct `set()` call.
 
-- [ ] Handle `event.key === null` (storage clear) in storage event handler
+- [x] Handle `event.key === null` (storage clear) in storage event handler
 
 ---
 
@@ -82,7 +82,7 @@ the Map entries and listener Sets with `Array.from()`.
 to be skipped. A listener that adds a new watcher during notification can cause that watcher
 to fire in the same cycle.
 
-- [ ] Snapshot watcher Map and listener Sets in collection watch notification
+- [x] Snapshot watcher Map and listener Sets in collection watch notification
 
 ---
 
@@ -106,7 +106,7 @@ Unlike `StateImpl.destroy()` which wraps cleanup in try/finally, `previous()` le
 `listeners.clear()` and `lazyDestroyed.resolve()` unprotected. If `unsubscribe()` throws,
 the `destroyed` promise never resolves.
 
-- [ ] Wrap `previous()` cleanup in try/finally
+- [x] Wrap `previous()` cleanup in try/finally
 
 ---
 
@@ -132,7 +132,7 @@ If a destroy notification triggers creation of new state instances (e.g., via `o
 callback or a subscriber), those new instances are registered to the Map during the loop
 but then removed by `registry.clear()`, leaving them orphaned (alive but unregistered).
 
-- [ ] Clear registry before destroying instances, or re-check after loop
+- [x] Clear registry before destroying instances
 
 ---
 

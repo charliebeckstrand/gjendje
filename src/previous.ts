@@ -125,11 +125,13 @@ export function previous<T>(
 
 			isDestroyed = true
 
-			unsubscribe?.()
+			try {
+				unsubscribe?.()
+			} finally {
+				listeners.clear()
 
-			listeners.clear()
-
-			lazyDestroyed.resolve()
+				lazyDestroyed.resolve()
+			}
 		},
 	}
 }
