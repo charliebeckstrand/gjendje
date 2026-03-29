@@ -49,6 +49,29 @@ function scopeShortcut<T>(
 	return createBase(key, { ...options, default: defaultValue, scope })
 }
 
+/**
+ * Resolve the overloaded `optionsOrDefault` / `extraOptions` arguments into a
+ * single `StateOptions<T>` object.
+ */
+function resolveOptions<T>(
+	extraOptions: Partial<StateOptions<T>> | undefined,
+	optionsOrDefault: T | StateOptions<T> | null,
+): StateOptions<T> {
+	if (extraOptions) {
+		return { ...extraOptions, default: optionsOrDefault } as StateOptions<T>
+	}
+
+	if (
+		optionsOrDefault !== null &&
+		typeof optionsOrDefault === 'object' &&
+		'default' in optionsOrDefault
+	) {
+		return optionsOrDefault as StateOptions<T>
+	}
+
+	return { default: optionsOrDefault } as StateOptions<T>
+}
+
 // ---------------------------------------------------------------------------
 // state() — the universal entry point
 // ---------------------------------------------------------------------------
@@ -124,13 +147,7 @@ function _state<T>(
 	} else {
 		key = keyOrEntry
 
-		options = extraOptions
-			? ({ ...extraOptions, default: optionsOrDefault } as StateOptions<T>)
-			: optionsOrDefault !== null &&
-					typeof optionsOrDefault === 'object' &&
-					'default' in optionsOrDefault
-				? (optionsOrDefault as StateOptions<T>)
-				: ({ default: optionsOrDefault } as StateOptions<T>)
+		options = resolveOptions(extraOptions, optionsOrDefault as T | StateOptions<T> | null)
 	}
 
 	return createBase(key, options)
