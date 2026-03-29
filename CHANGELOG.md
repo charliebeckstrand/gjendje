@@ -1,5 +1,64 @@
 # gjendje
 
+## 1.3.5
+
+### Patch Changes
+
+- 8f9dfaf: ### Bug fixes
+
+  - **Custom serializer now runs migration chain**: Previously, using a custom `serialize` option caused the migration pipeline (`version` + `migrate`) to be silently skipped. Custom serializers now correctly unwrap versioned envelopes, run migrations, and validate — matching the behavior of the default JSON path.
+
+  - **Notification snapshot safety in `computed` and `select`**: Listener sets are now snapshotted before iteration during notifications. This prevents edge cases where subscribing or unsubscribing inside a notification callback could cause double-firing or skipped listeners in the same cycle.
+
+  - **Watcher notification snapshot safety**: `notifyWatchers` (used by `watch()`, `withWatch()`, and `collection.watch()`) now snapshots the watcher Map and listener Sets before iterating, preventing watchers registered during a notification from firing in the same cycle.
+
+  - **Batch flush errors routed through `onError`**: Errors thrown during batch flush notifications are now reported through the global `onError` pipeline via `reportError()`, consistent with how listener errors are handled elsewhere in the library.
+
+  ### Internal improvements
+
+  - `select.subscribe()` now returns a shared `NOOP` function when the instance is destroyed, matching `computed` behavior and avoiding unnecessary allocations.
+  - URL adapter cache key now reads `window.location.search` directly after `pushState`/`replaceState` instead of manually constructing the search string, eliminating potential format mismatches.
+
+- 6d86105: ### Bug fixes
+
+  - **`readonly()` now shadows `patch()`**: The readonly wrapper previously only shadowed `set`, `reset`, and `intercept`, leaving `patch()` accessible via the prototype chain. Untyped JavaScript callers could bypass the readonly contract by calling `.patch()`. The wrapper now shadows `patch` with `undefined`, matching the existing protection for other write methods.
+
+  - **DevTools time-travel error handling**: When restoring state via Redux DevTools time-travel (`JUMP_TO_STATE` / `JUMP_TO_ACTION`), if one instance's `set()` throws (e.g., interceptor rejection), the error is now caught and logged. Remaining instances continue to be updated, preventing partial state restoration that leaves DevTools and application state diverged.
+
+  - **React hook `useMemo` dependency fix**: The `useGjendje` hook no longer includes the `selector` function reference in the `useMemo` dependency array. Inline selectors (the common pattern) created a new reference every render, causing unnecessary `useMemo` re-computation. The return shape is now determined solely by the `writable` flag, which already accounts for selector presence.
+
+  ### Documentation
+
+  - Added `@remarks` JSDoc to `enableDevTools()` clarifying that options are only applied on the first call.
+
+- ee7968b: ### Bug fixes
+
+  - **Storage adapter now notifies on cross-tab `localStorage.clear()`**: When another tab calls `localStorage.clear()`, the `StorageEvent` fires with `event.key === null`. The storage adapter previously ignored these events, leaving subscribers stale. It now correctly invalidates the cache and notifies listeners, matching the behavior for individual key changes.
+
+  - **Collection watcher notification snapshot safety**: The collection module's internal watcher notification now snapshots both the watcher Map entries and listener Sets before iterating, matching the pattern used in `notifyWatchers()`. This prevents subscribe/unsubscribe during notification from skipping or double-firing listeners.
+
+  - **`previous()` destroy cleanup guarantee**: The `previous()` instance's `destroy()` method now wraps cleanup in try/finally, ensuring `listeners.clear()` and `lazyDestroyed.resolve()` execute even if the source's unsubscribe function throws.
+
+  - **`destroyAll()` ordering fix**: `destroyAll()` now clears the registry before destroying instances (instead of after). This prevents instances created during destroy notifications (e.g., via `onDestroy` callbacks) from being silently removed by the final `registry.clear()`.
+
+  - **Bucket adapter cross-tab event forwarding**: The bucket adapter's fallback delegate (used when the Storage Buckets API is unavailable) now subscribes to storage events immediately during synchronous initialization. Previously, the subscription was only set up at the end of the async initialization block, which was never reached on the fallback path — breaking cross-tab reactivity for bucket-scoped state on most browsers.
+
+  - **Complete notification snapshot safety**: All remaining notification iteration paths now snapshot their listener/handler collections before iterating. This includes `MemoryStateImpl` subscriber notifications (the hot path for memory-scoped state), `createListeners.notify()` (used by all persistent adapter types), and `onChange` handler iteration in both `StateImpl` and `MemoryStateImpl`. Previously, only computed, select, watchers, and collection had snapshot protection — the core state notification paths were unprotected.
+
+- 0c6439c: **Production readiness: CI guardrails and build hardening**
+
+  - **Type declaration validation**: Added `@arethetypeswrong/cli` (`attw`) to verify `.d.ts` and `.d.cts` files resolve correctly for both ESM and CJS consumers. Runs in CI and as part of `prepublishOnly`.
+  - **Coverage thresholds**: Added minimum coverage thresholds to `vitest.config.ts` (lines: 90%, functions: 90%, branches: 80%, statements: 90%) enforced in CI via `pnpm test:coverage`.
+  - **`prepublishOnly` reorder**: Build now runs first so `publint` and `attw` validate actual build output, and build failures fast-fail before the slower test suite.
+
+- e5b21a3: Centralize repeated code patterns across derived instances (computed, select, effect)
+
+  - **`createOptimizedListeners`** — new utility in `listeners.ts` that encapsulates the listener Set with single-listener fast path optimization. Previously duplicated verbatim in `computed.ts` and `select.ts` (~80 lines each).
+  - **`subscribeAll` / `unsubscribeAll`** — new utilities in `utils.ts` for subscribing a callback to an array of dependencies and tearing down those subscriptions. Previously duplicated in `computed.ts` and `effect.ts`.
+  - **`NOOP`** — shared no-op constant in `utils.ts`, replacing identical local definitions in `computed.ts` and `select.ts`.
+
+  No behavioral changes. All 1058 tests pass without modification.
+
 ## 1.3.4
 
 ### Patch Changes
