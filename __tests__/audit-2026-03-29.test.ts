@@ -335,3 +335,30 @@ describe('MemoryStateImpl.reset() — onReset fires before onChange handlers', (
 		s.destroy()
 	})
 })
+
+// ---------------------------------------------------------------------------
+// Finding 11 — Storage/URL adapter persist + notification mismatch
+// ---------------------------------------------------------------------------
+
+describe('storage adapter — persist notifies with merged value', () => {
+	it('subscriber receives the merged value, not the raw set() argument', () => {
+		const s = state('persist-notify', {
+			default: { a: 1, b: 2 },
+			scope: 'local',
+			persist: ['a'],
+		})
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+
+		s.set({ a: 3, b: 4 })
+
+		// The notification value must match get() — non-persisted key 'b'
+		// should be the default (2), not the value from set() (4).
+		expect(listener).toHaveBeenCalledWith({ a: 3, b: 2 })
+		expect(s.get()).toEqual({ a: 3, b: 2 })
+
+		s.destroy()
+	})
+})

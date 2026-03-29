@@ -132,7 +132,10 @@ export function createUrlAdapter<T>(
 		set(value) {
 			write(value)
 
-			lastNotifiedValue = value
+			// After write(), cachedValue reflects what read() would return —
+			// including mergeKeys when `persist` is set. Notify with that value
+			// so subscribers see the same state as get().
+			lastNotifiedValue = cachedValue
 
 			notify(notifyListeners)
 		},

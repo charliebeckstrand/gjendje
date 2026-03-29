@@ -23,3 +23,5 @@
 - **`previous()` NaN equality** — Changed the notification-skip check from `!==` to `!Object.is()` so that `NaN`-valued previous instances no longer fire spurious notifications on every source change.
 
 - **`MemoryStateImpl.reset()` callback order** — Fixed `config.onReset` firing after instance `changeHandlers` instead of before, matching `StateImpl.reset()` ordering for consistent behavior across scopes.
+
+- **Storage/URL adapter `persist` notification mismatch** — Fixed a bug where the storage and URL adapters notified subscribers with the raw `set()` value instead of the merged value when `persist` was set. Subscribers now receive the same value as `get()` returns.
