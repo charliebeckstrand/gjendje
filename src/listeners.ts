@@ -113,8 +113,6 @@ export function createOptimizedListeners<T>(key: string, scope: Scope) {
 
 	let singleListener: Listener<T> | undefined
 
-	let listenerCount = 0
-
 	return {
 		notify(value: T): void {
 			if (singleListener !== undefined) {
@@ -134,16 +132,15 @@ export function createOptimizedListeners<T>(key: string, scope: Scope) {
 		subscribe(listener: Listener<T>): Unsubscribe {
 			listenerSet.add(listener)
 
-			listenerCount++
-
-			singleListener = listenerCount === 1 ? listener : undefined
+			// Derive from Set.size to stay in sync even when the same reference
+			// is subscribed more than once (Set deduplicates, but a separate
+			// counter would not).
+			singleListener = listenerSet.size === 1 ? listener : undefined
 
 			return () => {
 				listenerSet.delete(listener)
 
-				listenerCount--
-
-				if (listenerCount === 1) {
+				if (listenerSet.size === 1) {
 					singleListener = listenerSet.values().next().value
 				} else {
 					singleListener = undefined
@@ -153,8 +150,6 @@ export function createOptimizedListeners<T>(key: string, scope: Scope) {
 
 		clear(): void {
 			listenerSet.clear()
-
-			listenerCount = 0
 
 			singleListener = undefined
 		},

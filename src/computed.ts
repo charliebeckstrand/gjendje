@@ -117,7 +117,8 @@ export function computed<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 		// In diamond dependency graphs (A → [B, C] → D), D gets notified
 		// once per intermediate. Skip redundant notifications when the
 		// recomputed value is identical to the previous cached value.
-		if (value === prev) return
+		// Object.is handles NaN and ±0 correctly, unlike ===.
+		if (Object.is(value, prev)) return
 
 		listeners.notify(value)
 	}

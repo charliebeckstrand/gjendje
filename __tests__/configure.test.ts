@@ -984,3 +984,31 @@ describe('registry', () => {
 		warnSpy.mockRestore()
 	})
 })
+
+// ---------------------------------------------------------------------------
+// onReset / onChange callback ordering
+// ---------------------------------------------------------------------------
+
+describe('onReset callback ordering', () => {
+	it('fires config.onReset before instance onChange handlers during reset', () => {
+		const order: string[] = []
+
+		configure({
+			onReset: () => order.push('config.onReset'),
+			onChange: () => order.push('config.onChange'),
+		})
+
+		const s = state('cfg-reset-order', { default: 0 })
+
+		s.onChange(() => order.push('instance.onChange'))
+
+		s.set(42)
+		order.length = 0
+
+		s.reset()
+
+		expect(order).toEqual(['config.onReset', 'instance.onChange', 'config.onChange'])
+
+		s.destroy()
+	})
+})

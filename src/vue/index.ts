@@ -42,7 +42,10 @@ export function useGjendje<T>(
 			get() {
 				track()
 
-				return selector ? selector(instance.get()) : instance.get()
+				// When a selector is present, return the cached `last` value
+				// instead of re-running the selector on every .value access.
+				// `last` is kept in sync by the subscription callback above.
+				return selector ? last : instance.get()
 			},
 			set(value) {
 				if (writable) {

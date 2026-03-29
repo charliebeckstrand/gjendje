@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { state } from '../src/index.js'
 import { makeStorage } from './helpers.js'
 
@@ -217,5 +217,25 @@ describe('persist option', () => {
 		expect(stored).toEqual({ theme: 'light', locale: 'en' })
 
 		settings.destroy()
+	})
+
+	it('notifies subscribers with the merged value, not the raw set() argument', () => {
+		const s = state('sp-notify-merged', {
+			default: { a: 1, b: 2 },
+			scope: 'local',
+			persist: ['a'],
+		})
+
+		const listener = vi.fn()
+
+		s.subscribe(listener)
+
+		s.set({ a: 3, b: 4 })
+
+		// Non-persisted key 'b' should be the default (2), not the value from set() (4).
+		expect(listener).toHaveBeenCalledWith({ a: 3, b: 2 })
+		expect(s.get()).toEqual({ a: 3, b: 2 })
+
+		s.destroy()
 	})
 })

@@ -29,6 +29,8 @@ export function registerByKey<T>(
 	if (existing !== undefined) {
 		if (existing.isDestroyed) {
 			registry.set(rKey, instance)
+
+			safeCallConfig(config.onRegister, { key, scope })
 		} else if (config.warnOnDuplicate) {
 			log('warn', `Duplicate state("${key}") with scope "${scope}". Returning cached instance.`)
 		}
@@ -63,6 +65,8 @@ export function registerNew<T>(
 	if (existing !== undefined) {
 		// Caller already verified !existing || existing.isDestroyed
 		registry.set(rKey, instance)
+
+		safeCallConfig(config.onRegister, { key, scope })
 
 		return
 	}

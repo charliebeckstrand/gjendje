@@ -102,7 +102,7 @@ export function select<TSource, TResult>(
 
 		const value = recompute()
 
-		if (value === prev) return
+		if (Object.is(value, prev)) return
 
 		listeners.notify(value)
 	}

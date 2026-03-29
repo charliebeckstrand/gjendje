@@ -105,4 +105,25 @@ describe('previous', () => {
 
 		expect(prev.scope).toBe('memory')
 	})
+
+	it('uses Object.is for notification skip — NaN does not cause spurious notifications', () => {
+		const num = state('prev-nan-equality', { default: NaN })
+
+		const p = previous(num)
+
+		const listener = vi.fn()
+
+		p.subscribe(listener)
+
+		// First change: prev undefined → NaN. Fires.
+		num.set(NaN)
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		// Second change: prev NaN → NaN. Object.is(NaN, NaN) is true — should NOT fire.
+		num.set(NaN)
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		p.destroy()
+		num.destroy()
+	})
 })

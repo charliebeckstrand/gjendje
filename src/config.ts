@@ -174,6 +174,31 @@ const VALID_SCOPES = new Set<string>([
 	'bucket',
 ])
 
+const KNOWN_CONFIG_KEYS = new Set<string>([
+	'scope',
+	'keyPattern',
+	'logLevel',
+	'maxKeys',
+	'prefix',
+	'registry',
+	'requireValidation',
+	'ssr',
+	'sync',
+	'warnOnDuplicate',
+	'onDestroy',
+	'onError',
+	'onHydrate',
+	'onMigrate',
+	'onQuotaExceeded',
+	'onRegister',
+	'onSync',
+	'onChange',
+	'onReset',
+	'onIntercept',
+	'onValidationFail',
+	'onExpire',
+])
+
 /**
  * Apply global configuration. Merged with existing config — pass `undefined`
  * to clear a previously set key.
@@ -214,6 +239,10 @@ export function configure(config: GjendjeConfig): void {
 	// Iterate entries so that explicitly passing `undefined` clears a key,
 	// which plain spread does not accomplish.
 	for (const key of Object.keys(config)) {
+		if (!KNOWN_CONFIG_KEYS.has(key)) {
+			log('warn', `configure() received unknown key "${key}" — possible typo.`)
+		}
+
 		const value = (config as Record<string, unknown>)[key]
 
 		if (value === undefined) {
