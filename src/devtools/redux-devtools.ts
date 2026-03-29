@@ -95,7 +95,11 @@ function handleDevToolsMessage(message: DevToolsMessage): void {
 			const key = instance.key
 
 			if (key in parsed) {
-				instance.set(parsed[key])
+				try {
+					instance.set(parsed[key])
+				} catch (err) {
+					console.error(`[gjendje] DevTools: time-travel set failed for "${key}":`, err)
+				}
 			}
 		}
 	}

@@ -1,3 +1,5 @@
+import { reportError } from './config.js'
+
 type Notification = () => void
 
 let depth = 0
@@ -80,6 +82,7 @@ function flush(): void {
 					if (fn) fn()
 				} catch (err) {
 					console.error('[gjendje] Notification threw during best-effort delivery:', err)
+					reportError('batch', 'memory', err)
 				}
 			}
 
@@ -103,6 +106,7 @@ function flush(): void {
 					if (fn) fn()
 				} catch (err) {
 					console.error('[gjendje] Notification threw:', err)
+					reportError('batch', 'memory', err)
 				}
 			}
 		} finally {

@@ -87,8 +87,9 @@ export function createUrlAdapter<T>(
 			}
 
 			// Pre-populate cache so the next read() hits the fast path.
-			// Use the new search string (with '?' prefix) to match location.search.
-			cachedSearch = search ? `?${search}` : ''
+			// Read location.search directly after the history update to ensure
+			// the cached key exactly matches what read() will compare against.
+			cachedSearch = window.location.search
 			cachedValue = persist ? mergeKeys(toStore as T, defaultValue, persist) : value
 		} catch (e) {
 			// Invalidate cache since URL state is uncertain.

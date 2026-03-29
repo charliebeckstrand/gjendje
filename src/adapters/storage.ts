@@ -1,8 +1,14 @@
 import { notify } from '../batch.js'
 import { getConfig, log, reportError } from '../config.js'
-import { StorageWriteError, ValidationError } from '../errors.js'
+import { StorageWriteError } from '../errors.js'
 import { createListeners, safeCallConfig } from '../listeners.js'
-import { mergeKeys, pickKeys, readAndMigrate, wrapForStorage } from '../persist.js'
+import {
+	mergeKeys,
+	pickKeys,
+	processParsedValue,
+	readAndMigrate,
+	wrapForStorage,
+} from '../persist.js'
 import type { Adapter, StateOptions } from '../types.js'
 import { RESOLVED } from '../utils.js'
 
@@ -53,26 +59,13 @@ export function createStorageAdapter<T>(
 
 	function parse(raw: string): T {
 		if (serialize) {
-			const value = serialize.parse(raw)
+			// Custom serializer replaces JSON.parse, but the post-parse pipeline
+			// (versioned envelope unwrapping, migration, validation) still runs.
+			// This ensures users combining serialize + migrate + validate get
+			// consistent behavior with the default JSON path.
+			const parsed = serialize.parse(raw)
 
-			// When a custom serializer is used, validate and migrate are still
-			// honoured so users can combine serialize + validate safely.
-			if (options.validate && !options.validate(value)) {
-				const scope = options.scope ?? 'local'
-				const config = getConfig()
-
-				safeCallConfig(config.onValidationFail, { key, scope, value })
-
-				const validationErr = new ValidationError(key, scope, value)
-
-				safeCallConfig(config.onError, { key, scope, error: validationErr })
-
-				backupRawData(raw)
-
-				return defaultValue
-			}
-
-			return value as T
+			return processParsedValue(parsed, options, key, options.scope, () => backupRawData(raw))
 		}
 
 		return readAndMigrate(raw, options, key, options.scope, () => backupRawData(raw))
@@ -129,7 +122,15 @@ export function createStorageAdapter<T>(
 			let raw: string
 
 			try {
-				raw = serialize ? serialize.stringify(toStore) : wrapForStorage(toStore, version)
+				if (serialize) {
+					// When versioning is active, wrap in a version envelope so the
+					// read path can detect the stored version and run migrations.
+					const payload = version && version > 1 ? { v: version, data: toStore } : toStore
+
+					raw = serialize.stringify(payload as T)
+				} else {
+					raw = wrapForStorage(toStore, version)
+				}
 			} catch (serializeErr) {
 				// Detect common serialization traps (circular refs, BigInt, etc.)
 				// and wrap in a descriptive error before entering the write-error path.
@@ -186,9 +187,11 @@ export function createStorageAdapter<T>(
 	const notifyListeners = () => listeners.notify(lastNotifiedValue)
 
 	function onStorageEvent(event: StorageEvent): void {
-		if (event.storageArea !== storage || event.key !== key) return
+		if (event.storageArea !== storage) return
 
-		// Invalidate cache — another tab changed storage
+		if (event.key !== null && event.key !== key) return
+
+		// Invalidate cache — another tab changed this key or cleared storage
 		cachedRaw = undefined
 		cachedValue = undefined
 		cacheValid = false

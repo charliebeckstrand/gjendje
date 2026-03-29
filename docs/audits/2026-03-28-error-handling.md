@@ -185,7 +185,7 @@ An empty string or non-string `bucket.name` would cause a confusing error from t
 
 ### From 2025-03-27.md
 
-- [ ] **#8 — `select()` overhead for single dependency** — Not addressed (low priority, performance acceptable)
+- [x] **#8 — `select()` overhead for single dependency** — Patched in 2025-03-27 audit (standalone implementation)
 - [x] **#10 — StateImpl/MemoryStateImpl behavioral parity tests** — Addressed: `__tests__/parity.test.ts`
 
 ### Investigated but not actionable

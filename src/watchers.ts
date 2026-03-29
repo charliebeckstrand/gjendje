@@ -34,6 +34,9 @@ export function addWatcher<T>(
 /**
  * Notify watchers whose watched key changed between prev and next.
  * Compares values using Object.is for each watched key.
+ *
+ * Snapshots the watcher entries before iterating so that watch/unwatch
+ * calls from within a listener don't affect this notification cycle.
  */
 export function notifyWatchers(
 	watchers: Map<PropertyKey, Set<Listener<unknown>>>,
@@ -44,14 +47,22 @@ export function notifyWatchers(
 
 	const nextObj = isRecord(next) ? next : undefined
 
-	for (const [watchKey, listeners] of watchers) {
+	// Snapshot entries so that watch()/unwatch() calls from within a listener
+	// don't mutate the Map or Sets during iteration.
+	const entries = Array.from(watchers)
+
+	for (let i = 0; i < entries.length; i++) {
+		const [watchKey, listenerSet] = entries[i] as [PropertyKey, Set<Listener<unknown>>]
+
 		const prevVal = prevObj?.[watchKey]
 
 		const nextVal = nextObj?.[watchKey]
 
 		if (!Object.is(prevVal, nextVal)) {
-			for (const listener of listeners) {
-				safeCall(listener, nextVal)
+			const listeners = Array.from(listenerSet)
+
+			for (let j = 0; j < listeners.length; j++) {
+				safeCall(listeners[j] as Listener<unknown>, nextVal)
 			}
 		}
 	}

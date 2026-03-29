@@ -245,8 +245,10 @@ class StateImpl<T> implements StateInstance<T> {
 		const s = this._s
 
 		if (s.changeHandlers !== undefined && s.changeHandlers.size > 0) {
-			for (const hook of s.changeHandlers) {
-				safeCallChange(hook, next, prev, this.key, this.scope)
+			const snapshot = Array.from(s.changeHandlers)
+
+			for (let i = 0; i < snapshot.length; i++) {
+				safeCallChange(snapshot[i] as (next: T, prev: T) => void, next, prev, this.key, this.scope)
 			}
 		}
 
@@ -643,8 +645,10 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 		}
 
 		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
-			for (const hook of ext.changeHandlers) {
-				safeCallChange(hook, next, prev, this.key, this.scope)
+			const snapshot = Array.from(ext.changeHandlers)
+
+			for (let i = 0; i < snapshot.length; i++) {
+				safeCallChange(snapshot[i] as (next: T, prev: T) => void, next, prev, this.key, this.scope)
 			}
 		}
 
@@ -669,8 +673,10 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 			c.listeners = listeners
 
 			c.notifyFn = () => {
-				for (const l of listeners) {
-					safeCall(l, c.current, key, scope)
+				const snapshot = Array.from(listeners)
+
+				for (let i = 0; i < snapshot.length; i++) {
+					safeCall(snapshot[i] as Listener<T>, c.current, key, scope)
 				}
 			}
 		}
@@ -742,8 +748,10 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 		}
 
 		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
-			for (const hook of ext.changeHandlers) {
-				safeCallChange(hook, next, prev, this.key, this.scope)
+			const snapshot = Array.from(ext.changeHandlers)
+
+			for (let i = 0; i < snapshot.length; i++) {
+				safeCallChange(snapshot[i] as (next: T, prev: T) => void, next, prev, this.key, this.scope)
 			}
 		}
 

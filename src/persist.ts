@@ -20,6 +20,82 @@ function isVersionedValue(value: unknown): value is VersionedValue<unknown> {
 }
 
 /**
+ * Given an already-parsed value from storage, run the post-parse pipeline:
+ * 1. Unwrap versioned envelope (if present)
+ * 2. Run migration chain up to current version
+ * 3. Validate final shape
+ * 4. Return typed value or default
+ *
+ * Shared by both the default JSON path and the custom serializer path.
+ */
+export function processParsedValue<T>(
+	parsed: unknown,
+	options: StateOptions<T>,
+	key?: string,
+	scope?: Scope,
+	onFallback?: () => void,
+): T {
+	const currentVersion = options.version ?? 1
+
+	const defaultValue = options.default
+
+	// Detect versioned envelope — { v: number, data: unknown }
+	let storedVersion = 1
+
+	let data: unknown
+
+	if (isVersionedValue(parsed)) {
+		storedVersion = parsed.v
+
+		data = parsed.data
+	} else {
+		data = parsed
+	}
+
+	// Guard against future versions (tampered storage, newer app wrote data)
+	if (storedVersion > currentVersion) {
+		log(
+			'warn',
+			`Stored version (v${storedVersion}) is higher than current version (v${currentVersion}) for key "${key ?? 'unknown'}" — data may be from a newer app version. Returning as-is.`,
+		)
+	}
+
+	// Run migration chain if behind current version
+	if (storedVersion < currentVersion && options.migrate) {
+		data = runMigrations(data, storedVersion, currentVersion, options.migrate, key, scope)
+
+		if (key && scope) {
+			safeCallConfig(getConfig().onMigrate, {
+				key,
+				scope,
+				fromVersion: storedVersion,
+				toVersion: currentVersion,
+				data,
+			})
+		}
+	}
+
+	// Validate final shape
+	if (options.validate && !options.validate(data)) {
+		if (key && scope) {
+			const config = getConfig()
+
+			safeCallConfig(config.onValidationFail, { key, scope, value: data })
+
+			const validationErr = new ValidationError(key, scope, data)
+
+			safeCallConfig(config.onError, { key, scope, error: validationErr })
+		}
+
+		onFallback?.()
+
+		return defaultValue
+	}
+
+	return data as T
+}
+
+/**
  * Given a raw string from storage, run the full pipeline:
  * 1. JSON parse
  * 2. Unwrap versioned envelope (if present)
@@ -34,67 +110,10 @@ export function readAndMigrate<T>(
 	scope?: Scope,
 	onFallback?: () => void,
 ): T {
-	const currentVersion = options.version ?? 1
-
-	const defaultValue = options.default
-
 	try {
 		const parsed: unknown = JSON.parse(raw)
 
-		// Detect versioned envelope — { v: number, data: unknown }
-		let storedVersion = 1
-
-		let data: unknown
-
-		if (isVersionedValue(parsed)) {
-			storedVersion = parsed.v
-
-			data = parsed.data
-		} else {
-			data = parsed
-		}
-
-		// Guard against future versions (tampered storage, newer app wrote data)
-		if (storedVersion > currentVersion) {
-			log(
-				'warn',
-				`Stored version (v${storedVersion}) is higher than current version (v${currentVersion}) for key "${key ?? 'unknown'}" — data may be from a newer app version. Returning as-is.`,
-			)
-		}
-
-		// Run migration chain if behind current version
-		if (storedVersion < currentVersion && options.migrate) {
-			data = runMigrations(data, storedVersion, currentVersion, options.migrate, key, scope)
-
-			if (key && scope) {
-				safeCallConfig(getConfig().onMigrate, {
-					key,
-					scope,
-					fromVersion: storedVersion,
-					toVersion: currentVersion,
-					data,
-				})
-			}
-		}
-
-		// Validate final shape
-		if (options.validate && !options.validate(data)) {
-			if (key && scope) {
-				const config = getConfig()
-
-				safeCallConfig(config.onValidationFail, { key, scope, value: data })
-
-				const validationErr = new ValidationError(key, scope, data)
-
-				safeCallConfig(config.onError, { key, scope, error: validationErr })
-			}
-
-			onFallback?.()
-
-			return defaultValue
-		}
-
-		return data as T
+		return processParsedValue(parsed, options, key, scope, onFallback)
 	} catch (err) {
 		log('debug', `Failed to read/migrate stored value — falling back to default.`)
 
@@ -106,7 +125,7 @@ export function readAndMigrate<T>(
 
 		onFallback?.()
 
-		return defaultValue
+		return options.default
 	}
 }
 

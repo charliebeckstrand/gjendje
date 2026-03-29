@@ -165,6 +165,11 @@ function onDestroyHandler(ctx: { key: string; scope: Scope }): void {
  *   },
  * })
  * ```
+ *
+ * @remarks
+ * Options are only applied on the first call. If DevTools are already enabled,
+ * subsequent calls return the disable function without updating options.
+ * To change options, call `disableDevTools()` first, then re-enable with new options.
  */
 export function enableDevTools(options?: DevToolsOptions): () => void {
 	if (devToolsEnabled) {

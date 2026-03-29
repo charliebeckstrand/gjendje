@@ -78,8 +78,11 @@ export function createListeners<T>(key?: string, scope?: Scope) {
 
 	return {
 		notify(value: T): void {
-			for (const listener of set) {
-				safeCall(listener, value, key, scope)
+			// Snapshot to protect against subscribe/unsubscribe during iteration
+			const snapshot = Array.from(set)
+
+			for (let i = 0; i < snapshot.length; i++) {
+				safeCall(snapshot[i] as Listener<T>, value, key, scope)
 			}
 		},
 

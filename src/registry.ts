@@ -95,14 +95,15 @@ export function getRegistry(): Map<string, BaseInstance<unknown>> {
  * Useful for test teardown, HMR cleanup, or SPA route transitions.
  */
 export function destroyAll(): void {
-	// Collect values first — destroy() calls unregisterByKey which mutates the map
+	// Collect values and clear first — prevents instances created during destroy
+	// notifications from being silently cleared at the end.
 	const instances = [...registry.values()]
+
+	registry.clear()
 
 	for (const instance of instances) {
 		if (!instance.isDestroyed) {
 			instance.destroy()
 		}
 	}
-
-	registry.clear()
 }
