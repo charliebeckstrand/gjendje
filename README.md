@@ -97,7 +97,7 @@ const count = useGjendje(counter)
 
 ## Utilities
 
-`configure`, `batch`, `snapshot`, `shallowEqual`, `withHistory`, `withWatch`, `withServerSession`
+`batch`, `snapshot`, `shallowEqual`, `withHistory`, `withWatch`, `withServerSession`
 
 [Utilities reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/utilities.md)
 
