@@ -22,6 +22,12 @@ import { addWatcher, notifyWatchers } from './watchers.js'
 type ServerAdapterFactory = <T>(key: string, defaultValue: T) => Adapter<T>
 
 let _serverAdapterFactory: ServerAdapterFactory | undefined
+let _renderScopeWarned = false
+
+/** @internal — used by tests to reset the deprecation warning flag */
+export function resetRenderScopeWarning(): void {
+	_renderScopeWarned = false
+}
 
 /** @internal — called by adapters/server.ts on import */
 export function registerServerAdapter(factory: ServerAdapterFactory): void {
@@ -957,6 +963,13 @@ export function createBase<T>(key: string, options: StateOptions<T>): StateInsta
 	const rawScope = options.scope ?? config.scope ?? 'memory'
 
 	const scope = rawScope === 'render' ? 'memory' : rawScope
+
+	if (rawScope === 'render' && !_renderScopeWarned) {
+		_renderScopeWarned = true
+		console.warn(
+			'[gjendje] The "render" scope is deprecated. Use "memory" instead. "render" will be removed in the next major version.',
+		)
+	}
 
 	// --- Fast path: memory scope — uses MemoryStateImpl ---
 	// Checks scope BEFORE computing SSR/sync flags to avoid unnecessary work
