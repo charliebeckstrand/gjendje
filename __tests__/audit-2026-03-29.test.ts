@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
-import { computed, select, state } from '../src/index.js'
+import { computed, configure, readonly, resetConfig, select, state } from '../src/index.js'
 import { createOptimizedListeners } from '../src/listeners.js'
 import { afterHydration } from '../src/ssr.js'
 import { useGjendje } from '../src/vue/index.js'
@@ -201,5 +201,52 @@ describe('afterHydration — error handling', () => {
 		expect(spy).toHaveBeenCalledWith('[gjendje] Hydration callback threw:', expect.any(Error))
 
 		spy.mockRestore()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Finding 7 — configure() unknown key warning
+// ---------------------------------------------------------------------------
+
+describe('configure — unknown key warning', () => {
+	beforeEach(() => resetConfig())
+
+	afterEach(() => resetConfig())
+
+	it('warns when an unknown key is passed', () => {
+		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		configure({ logLvel: 'warn' } as unknown as Parameters<typeof configure>[0])
+
+		expect(spy).toHaveBeenCalledWith(expect.stringContaining('unknown key "logLvel"'))
+
+		spy.mockRestore()
+	})
+
+	it('does not warn for known keys', () => {
+		const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+		configure({ logLevel: 'silent' })
+
+		expect(spy).not.toHaveBeenCalled()
+
+		spy.mockRestore()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Finding 8 — readonly() shadows onChange
+// ---------------------------------------------------------------------------
+
+describe('readonly — onChange is shadowed', () => {
+	it('onChange is undefined on readonly wrapper', () => {
+		const s = state('ro-onchange', { default: 0 })
+
+		const ro = readonly(s)
+
+		// TypeScript hides it, but JS callers can try
+		expect((ro as unknown as Record<string, unknown>).onChange).toBeUndefined()
+
+		s.destroy()
 	})
 })

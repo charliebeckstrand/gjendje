@@ -13,3 +13,9 @@
 - **Vue `useGjendje` redundant selector calls** — The `customRef` getter now returns the cached selected value instead of re-running the selector on every `.value` access, avoiding unnecessary computation for expensive selectors.
 
 - **`afterHydration()` error handling** — The hydration utility now wraps the callback in try/catch so that `resolve()` always fires. Previously, if the callback threw, the returned promise would hang forever (mitigated in practice by the caller's own try/catch, but fragile as a general utility).
+
+- **Storage adapter scope redundancy** — Removed 3 redundant `const scope = options.scope ?? 'local'` declarations inside closures that already had access to the outer `scope` variable.
+
+- **`configure()` unknown key warning** — `configure()` now warns when an unrecognized key is passed (e.g. typos like `logLvel`), helping catch silent misconfiguration.
+
+- **`readonly()` shadows `onChange`** — The `readonly()` wrapper now also shadows `onChange` in addition to `set`, `reset`, `patch`, and `intercept`, preventing untyped JS callers from registering change handlers on a read-only view.

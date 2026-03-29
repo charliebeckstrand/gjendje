@@ -47,8 +47,6 @@ export function createStorageAdapter<T>(
 		} catch (backupErr) {
 			// Storage may be full — can't backup. Log so the failure is visible
 			// and fire onError so programmatic handlers can react (e.g. send to server).
-			const scope = options.scope ?? 'local'
-
 			log(
 				'error',
 				`Failed to backup data for key "${key}" to "${backupKey}" — original data may be lost.`,
@@ -136,7 +134,6 @@ export function createStorageAdapter<T>(
 			} catch (serializeErr) {
 				// Detect common serialization traps (circular refs, BigInt, etc.)
 				// and wrap in a descriptive error before entering the write-error path.
-				const scope = options.scope ?? 'local'
 				const writeErr = new StorageWriteError(key, scope, serializeErr)
 
 				log(
@@ -165,8 +162,6 @@ export function createStorageAdapter<T>(
 
 			const isQuota =
 				e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22)
-
-			const scope = options.scope ?? 'local'
 
 			const writeErr = new StorageWriteError(key, scope, e, isQuota)
 
