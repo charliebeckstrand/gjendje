@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { computed, select, state } from '../src/index.js'
 import { createOptimizedListeners } from '../src/listeners.js'
+import { afterHydration } from '../src/ssr.js'
 import { useGjendje } from '../src/vue/index.js'
 
 // ---------------------------------------------------------------------------
@@ -179,5 +180,26 @@ describe('Vue useGjendje — selector caching', () => {
 		expect(result.value).toBe('John')
 
 		wrapper.unmount()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Finding 5 — afterHydration error handling
+// ---------------------------------------------------------------------------
+
+describe('afterHydration — error handling', () => {
+	it('resolves the promise even when the callback throws', async () => {
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		const promise = afterHydration(() => {
+			throw new Error('hydration boom')
+		})
+
+		// Must resolve, not hang forever
+		await expect(promise).resolves.toBeUndefined()
+
+		expect(spy).toHaveBeenCalledWith('[gjendje] Hydration callback threw:', expect.any(Error))
+
+		spy.mockRestore()
 	})
 })

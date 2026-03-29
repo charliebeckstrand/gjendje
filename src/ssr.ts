@@ -27,16 +27,20 @@ export function afterHydration(fn: () => void): Promise<void> {
 	// Use a microtask + rAF to ensure we're past React's hydration
 	return new Promise<void>((resolve) => {
 		Promise.resolve().then(() => {
+			const run = () => {
+				try {
+					fn()
+				} catch (err) {
+					console.error('[gjendje] Hydration callback threw:', err)
+				}
+
+				resolve()
+			}
+
 			if (typeof requestAnimationFrame !== 'undefined') {
-				requestAnimationFrame(() => {
-					fn()
-					resolve()
-				})
+				requestAnimationFrame(run)
 			} else {
-				setTimeout(() => {
-					fn()
-					resolve()
-				}, 0)
+				setTimeout(run, 0)
 			}
 		})
 	})
