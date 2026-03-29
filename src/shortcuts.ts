@@ -19,13 +19,6 @@ type BucketShortcutOptions<T> = Omit<StateOptions<T>, 'default' | 'scope' | 'buc
 	Pick<StateOptions<T>, 'bucket'>
 
 /**
- * Determine whether a value is a `StateOptions` object (as opposed to a raw default value).
- */
-function isOptionsObject<T>(value: unknown): value is StateOptions<T> {
-	return value !== null && typeof value === 'object' && 'default' in value
-}
-
-/**
  * Extract the single key and value from a `{ key: defaultValue }` entry object.
  */
 function extractEntry<T>(entry: Record<string, T>): [string, T] {
@@ -54,6 +47,29 @@ function scopeShortcut<T>(
 	const [key, defaultValue] = extractEntry(entry)
 
 	return createBase(key, { ...options, default: defaultValue, scope })
+}
+
+/**
+ * Resolve the overloaded `optionsOrDefault` / `extraOptions` arguments into a
+ * single `StateOptions<T>` object.
+ */
+function resolveOptions<T>(
+	extraOptions: Partial<StateOptions<T>> | undefined,
+	optionsOrDefault: T | StateOptions<T> | null,
+): StateOptions<T> {
+	if (extraOptions) {
+		return { ...extraOptions, default: optionsOrDefault } as StateOptions<T>
+	}
+
+	if (
+		optionsOrDefault !== null &&
+		typeof optionsOrDefault === 'object' &&
+		'default' in optionsOrDefault
+	) {
+		return optionsOrDefault as StateOptions<T>
+	}
+
+	return { default: optionsOrDefault } as StateOptions<T>
 }
 
 // ---------------------------------------------------------------------------
@@ -131,11 +147,7 @@ function _state<T>(
 	} else {
 		key = keyOrEntry
 
-		options = extraOptions
-			? ({ ...extraOptions, default: optionsOrDefault } as StateOptions<T>)
-			: isOptionsObject<T>(optionsOrDefault)
-				? optionsOrDefault
-				: ({ default: optionsOrDefault } as StateOptions<T>)
+		options = resolveOptions(extraOptions, optionsOrDefault as T | StateOptions<T> | null)
 	}
 
 	return createBase(key, options)
