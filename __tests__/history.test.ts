@@ -157,4 +157,21 @@ describe('withHistory', () => {
 		expect(h.canUndo).toBe(false)
 		expect(h.isDestroyed).toBe(true)
 	})
+
+	it('undo/redo are no-ops when underlying instance is destroyed directly', () => {
+		const base = state('h-destroyed-base', { default: 0, scope: 'memory' })
+
+		const h = withHistory(base)
+
+		h.set(1)
+		h.set(2)
+
+		// Destroy the underlying instance directly (not via h.destroy())
+		base.destroy()
+
+		// undo/redo should be no-ops — must not corrupt stacks
+		h.undo()
+		expect(h.canUndo).toBe(true) // stack unchanged
+		expect(h.canRedo).toBe(false) // nothing pushed to redo
+	})
 })

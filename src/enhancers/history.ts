@@ -70,7 +70,7 @@ export function withHistory<T>(
 	})
 
 	function navigate(from: T[], to: T[]): void {
-		if (from.length === 0) return
+		if (from.length === 0 || instance.isDestroyed) return
 
 		const current = instance.get()
 
