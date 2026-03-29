@@ -110,6 +110,7 @@ export function withSync<T>(adapter: Adapter<T>, key: string, scope?: Scope): Ad
 
 			try {
 				unsubscribeAdapter()
+
 				listeners.clear()
 
 				try {

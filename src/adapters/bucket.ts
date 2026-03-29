@@ -117,6 +117,7 @@ export function createBucketAdapter<T>(
 
 	// Start with the fallback storage synchronously so get()/set() work immediately
 	const fallbackStorage = fallbackScope === 'session' ? sessionStorage : localStorage
+
 	let delegate: Adapter<T> = createStorageAdapter(fallbackStorage, key, options)
 
 	let isDestroyed = false
@@ -191,10 +192,12 @@ export function createBucketAdapter<T>(
 
 			// Capture any value the user wrote to the fallback during init
 			const currentValue = delegate.get()
+
 			hadUserWrite = !shallowEqual(currentValue, defaultValue)
 
 			// Swap to the bucket delegate — destroy old (also removes old subscription)
 			delegate.destroy?.()
+
 			delegate = createStorageAdapter(storage, key, options)
 
 			// If destroy() was called during the synchronous swap above,
@@ -268,6 +271,7 @@ export function createBucketAdapter<T>(
 			isDestroyed = true
 			try {
 				delegateUnsub?.()
+
 				listeners.clear()
 			} finally {
 				delegate.destroy?.()

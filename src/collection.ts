@@ -143,7 +143,6 @@ export function collection<T>(key: string, options: StateOptions<T[]>): Collecti
 				if (prevItem === curr) continue
 
 				const p = isRecord(prevItem) ? prevItem : undefined
-
 				const n = isRecord(curr) ? curr : undefined
 
 				if (!p || !n) {

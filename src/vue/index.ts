@@ -31,6 +31,7 @@ export function useGjendje<T>(
 
 			if (!Object.is(value, last)) {
 				last = value
+
 				trigger()
 			}
 		})
@@ -40,6 +41,7 @@ export function useGjendje<T>(
 		return {
 			get() {
 				track()
+
 				return selector ? selector(instance.get()) : instance.get()
 			},
 			set(value) {

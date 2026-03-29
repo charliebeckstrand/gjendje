@@ -163,6 +163,7 @@ let globalConfig: GjendjeConfig = {}
 export const PERSISTENT_SCOPES = new Set<Scope>(['local', 'session', 'bucket'])
 
 const VALID_LOG_LEVELS = new Set<string>(['silent', 'warn', 'error', 'debug'])
+
 const VALID_SCOPES = new Set<string>([
 	'memory',
 	'render',

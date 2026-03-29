@@ -43,7 +43,9 @@ function callSelector<TSource, TResult>(
 		return fn(value)
 	} catch (err) {
 		const wrapped = new ComputedError(key, 'memory', err)
+
 		reportError(key, 'memory', wrapped)
+
 		throw wrapped
 	}
 }

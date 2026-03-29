@@ -29,6 +29,7 @@ export function useGjendje<T>(
 	// Stabilize the selector ref so getSnapshot identity doesn't change
 	// when the caller passes an inline arrow.
 	const selectorRef = useRef(selector)
+
 	selectorRef.current = selector
 
 	const subscribe = useCallback(

@@ -90,6 +90,7 @@ export function effect<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 			cleanup = fn(depValues)
 		} catch (err) {
 			console.error('[gjendje] Effect callback threw:', err)
+
 			reportError(effectKey, 'memory', err)
 		}
 	}
@@ -124,6 +125,7 @@ export function effect<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 						cleanup()
 					} catch (err) {
 						console.error('[gjendje] Effect cleanup threw:', err)
+
 						reportError(effectKey, 'memory', err)
 					}
 

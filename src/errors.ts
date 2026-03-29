@@ -34,8 +34,11 @@ export class GjendjeError extends Error {
 
 	constructor(message: string, key: string, scope: Scope, options?: ErrorOptions) {
 		super(message, options)
+
 		this.name = 'GjendjeError'
+
 		this.key = key
+
 		this.scope = scope
 	}
 }
@@ -55,6 +58,7 @@ export class StorageReadError extends GjendjeError {
 			scope,
 			cause !== undefined ? { cause } : undefined,
 		)
+
 		this.name = 'StorageReadError'
 	}
 }
@@ -76,7 +80,9 @@ export class StorageWriteError extends GjendjeError {
 			scope,
 			cause !== undefined ? { cause } : undefined,
 		)
+
 		this.name = 'StorageWriteError'
+
 		this.isQuotaError = isQuotaError
 	}
 }
@@ -99,8 +105,11 @@ export class MigrationError extends GjendjeError {
 			scope,
 			cause !== undefined ? { cause } : undefined,
 		)
+
 		this.name = 'MigrationError'
+
 		this.fromVersion = fromVersion
+
 		this.toVersion = toVersion
 	}
 }
@@ -113,7 +122,9 @@ export class ValidationError extends GjendjeError {
 
 	constructor(key: string, scope: Scope, rejectedValue: unknown) {
 		super(`Validation failed for key "${key}" in ${scope} storage.`, key, scope)
+
 		this.name = 'ValidationError'
+
 		this.rejectedValue = rejectedValue
 	}
 }
@@ -133,6 +144,7 @@ export class InterceptorError extends GjendjeError {
 			scope,
 			cause !== undefined ? { cause } : undefined,
 		)
+
 		this.name = 'InterceptorError'
 	}
 }
@@ -152,6 +164,7 @@ export class ComputedError extends GjendjeError {
 			scope,
 			cause !== undefined ? { cause } : undefined,
 		)
+
 		this.name = 'ComputedError'
 	}
 }
@@ -171,6 +184,7 @@ export class SyncError extends GjendjeError {
 			scope,
 			cause !== undefined ? { cause } : undefined,
 		)
+
 		this.name = 'SyncError'
 	}
 }
@@ -190,6 +204,7 @@ export class HydrationError extends GjendjeError {
 			scope,
 			cause !== undefined ? { cause } : undefined,
 		)
+
 		this.name = 'HydrationError'
 	}
 }

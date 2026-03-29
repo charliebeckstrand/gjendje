@@ -167,6 +167,7 @@ class StateImpl<T> implements StateInstance<T> {
 	) {
 		this.key = key
 		this.scope = scope
+
 		this._rKey = rKey
 		this._adapter = adapter
 		this._defaultValue = options.default
@@ -289,6 +290,7 @@ class StateImpl<T> implements StateInstance<T> {
 		}
 
 		s.lastValue = next
+
 		s.hasUserWrite = true
 
 		s.settled = this._adapter.ready
@@ -320,6 +322,7 @@ class StateImpl<T> implements StateInstance<T> {
 		}
 
 		s.lastValue = next
+
 		s.hasUserWrite = true
 
 		s.settled = this._adapter.ready
@@ -560,6 +563,7 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 		config: Readonly<GjendjeConfig>,
 	) {
 		this.key = key
+
 		this._rKey = rKey
 		this._defaultValue = options.default
 		this._options = options
@@ -615,6 +619,7 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 			if (next === undefined) {
 				log('warn', `Interceptor for state("${this.key}") returned undefined — ignoring.`)
+
 				return
 			}
 
@@ -623,6 +628,7 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 					'warn',
 					`Interceptor for state("${this.key}") returned a Promise — interceptors must be synchronous. Ignoring.`,
 				)
+
 				return
 			}
 
@@ -718,6 +724,7 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 			if (next === undefined) {
 				log('warn', `Interceptor for state("${this.key}") returned undefined — ignoring.`)
+
 				return
 			}
 
@@ -726,6 +733,7 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 					'warn',
 					`Interceptor for state("${this.key}") returned a Promise — interceptors must be synchronous. Ignoring.`,
 				)
+
 				return
 			}
 
@@ -900,6 +908,7 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 			}
 
 			c.listeners?.clear()
+
 			c.notifyFn = undefined
 
 			if (this._rKey) unregisterByKey(this._rKey)

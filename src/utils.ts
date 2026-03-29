@@ -42,6 +42,7 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 	// Set: compare size and shallow-compare elements
 	if (a instanceof Set) {
 		if (!(b instanceof Set)) return false
+
 		if (a.size !== b.size) return false
 
 		for (const item of a) {
@@ -54,6 +55,7 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 	// Map: compare size and shallow-compare entries
 	if (a instanceof Map) {
 		if (!(b instanceof Map)) return false
+
 		if (a.size !== b.size) return false
 
 		for (const [key, val] of a) {

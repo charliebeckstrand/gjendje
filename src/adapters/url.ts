@@ -40,6 +40,7 @@ export function createUrlAdapter<T>(
 			if (raw === null) {
 				cachedSearch = search
 				cachedValue = defaultValue
+
 				return defaultValue
 			}
 

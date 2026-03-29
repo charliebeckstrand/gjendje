@@ -83,6 +83,7 @@ export function createStorageAdapter<T>(
 				cachedRaw = null
 				cachedValue = defaultValue
 				cacheValid = true
+
 				return defaultValue
 			}
 
@@ -100,6 +101,7 @@ export function createStorageAdapter<T>(
 				cachedRaw = undefined
 				cachedValue = undefined
 				cacheValid = false
+
 				return defaultValue
 			}
 
@@ -216,6 +218,7 @@ export function createStorageAdapter<T>(
 			write(value)
 
 			lastNotifiedValue = value
+
 			notify(notifyListeners)
 		},
 
