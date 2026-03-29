@@ -232,11 +232,9 @@ const computedSuite = defineSuite('computed', {
 		const gjC = computed([gjA, gjB], ([a, b]) => a + b)
 
 		const vpA = proxy({ value: 1 })
-
 		const vpB = proxy({ value: 2 })
 
 		const zA = createZustandStore<{ value: number }>(() => ({ value: 1 }))
-
 		const zB = createZustandStore<{ value: number }>(() => ({ value: 2 }))
 
 		let zDerived = zA.getState().value + zB.getState().value

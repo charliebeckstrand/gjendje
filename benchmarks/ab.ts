@@ -113,6 +113,7 @@ export function saveBaseline(filePath: string, data: BaselineData): void {
 	const dir = dirname(filePath)
 
 	mkdirSync(dir, { recursive: true })
+	
 	writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
 }
 

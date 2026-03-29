@@ -21,6 +21,7 @@ const diamond = defineSuite('diamond', {
 	'Computed Diamond Dependency': (bench) => {
 		// --- gjendje ---
 		const gjSrc = state(uniqueKey('diamond'), { default: 0 })
+		
 		const gjMid1 = computed([gjSrc], ([v]) => v * 2)
 		const gjMid2 = computed([gjSrc], ([v]) => v + 10)
 		const gjFinal = computed([gjMid1, gjMid2], ([a, b]) => a + b)
@@ -58,6 +59,7 @@ const diamond = defineSuite('diamond', {
 
 		bench.add('zustand (diamond, manual)', () => {
 			zSrc.setState({ value: ++iz })
+			
 			void zFinalValue
 		})
 
@@ -259,7 +261,8 @@ const effectLifecycle = defineSuite('effect-lifecycle', {
 		const gjSrc = state(uniqueKey('eff-lc'), { default: 0 })
 
 		bench.add('gjendje effect create + stop', () => {
-			const handle = effect([gjSrc], () => {})
+			const handle = effect([gjSrc], () => undefined)
+
 			handle.stop()
 		})
 
@@ -268,6 +271,7 @@ const effectLifecycle = defineSuite('effect-lifecycle', {
 
 		bench.add('zustand subscribe + unsubscribe', () => {
 			const unsub = zSrc.subscribe(() => {})
+
 			unsub()
 		})
 
@@ -276,6 +280,7 @@ const effectLifecycle = defineSuite('effect-lifecycle', {
 
 		bench.add('valtio subscribe + unsubscribe', () => {
 			const unsub = valtioSubscribe(vpSrc, () => {})
+
 			unsub()
 		})
 	},
@@ -388,7 +393,7 @@ const batchDerived = defineSuite('batch-derived', {
 		const gjSrcs = Array.from({ length: SRC_COUNT }, (_, i) =>
 			state(uniqueKey(`bcomp-${i}`), { default: i }),
 		)
-		const gjComp = computed(gjSrcs, (vals) => vals.reduce((a: number, b: number) => a + b, 0))
+		const gjComp = computed(gjSrcs, (vals: number[]) => vals.reduce((a, b) => a + b, 0))
 
 		gjComp.subscribe(() => {})
 
@@ -427,10 +432,12 @@ const batchDerived = defineSuite('batch-derived', {
 
 		// --- valtio ---
 		const vpSrcs = proxy({ values: Array.from({ length: SRC_COUNT }, (_, i) => i) })
+		
 		let vpDerived = 0
 
 		valtioSubscribe(vpSrcs, () => {
 			const snap = valtioSnapshot(vpSrcs)
+
 			vpDerived = snap.values.reduce((a, b) => a + b, 0)
 		})
 
@@ -485,6 +492,7 @@ const readWrite = defineSuite('read-write', {
 
 		bench.add('valtio mutate + snapshot', () => {
 			vpS.value = ++iv
+
 			valtioSnapshot(vpS).value
 		})
 	},
@@ -584,6 +592,7 @@ const subscribeChurn = defineSuite('subscribe-churn', {
 
 		bench.add('gjendje sub + unsub', () => {
 			const unsub = gjS.subscribe(() => {})
+
 			unsub()
 		})
 
@@ -592,6 +601,7 @@ const subscribeChurn = defineSuite('subscribe-churn', {
 
 		bench.add('zustand sub + unsub', () => {
 			const unsub = zS.subscribe(() => {})
+
 			unsub()
 		})
 
@@ -600,6 +610,7 @@ const subscribeChurn = defineSuite('subscribe-churn', {
 
 		bench.add('valtio sub + unsub', () => {
 			const unsub = valtioSubscribe(vpS, () => {})
+
 			unsub()
 		})
 
@@ -722,6 +733,7 @@ const middleware = defineSuite('middleware', {
 		const gjI = state(uniqueKey('intercept'), { default: 0 })
 
 		gjI.intercept((next) => Math.max(0, next))
+
 		gjI.subscribe(() => {})
 
 		let igj = 0
@@ -734,6 +746,7 @@ const middleware = defineSuite('middleware', {
 		const zI = createZustandStore<{ value: number }>(() => ({ value: 0 }))
 
 		const origSetState = zI.setState.bind(zI)
+
 		const wrappedSetState = (partial: { value: number }) => {
 			origSetState({ value: Math.max(0, partial.value) })
 		}

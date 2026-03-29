@@ -23,6 +23,7 @@ const triggerSuite = defineSuite('effect-trigger', {
 
 		// With cleanup
 		const effSrc2 = state(uniqueKey('eff2'), { default: 0 })
+
 		let effSink2 = 0
 
 		effect([effSrc2], ([v]) => {
@@ -43,6 +44,7 @@ const triggerSuite = defineSuite('effect-trigger', {
 		const effDeps5 = Array.from({ length: 5 }, (_, i) =>
 			state(uniqueKey(`eff5-${i}`), { default: i }),
 		)
+
 		let effSum = 0
 
 		effect(effDeps5, (vals) => {
@@ -100,12 +102,15 @@ const effectLifecycleSuite = defineSuite('effect-lifecycle', {
 
 		bench.add('create effect + stop', () => {
 			const handle = effect([src], () => {})
+
 			handle.stop()
 		})
 
 		bench.add('create effect + write + stop', () => {
 			const handle = effect([src], () => {})
+
 			src.set((v) => v + 1)
+			
 			handle.stop()
 		})
 	},

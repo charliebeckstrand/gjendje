@@ -22,6 +22,7 @@ const selectVsComputedSuite = defineSuite('select-vs-computed', {
 
 		bench.add('select (field projection)', () => {
 			sSrc.set({ ...userDefault, age: ++is })
+
 			sName.get()
 		})
 
@@ -79,6 +80,7 @@ const selectChainSuite = defineSuite('select-chain', {
 
 		bench.add('select flat (1 level, deep access)', () => {
 			srcFlat.set({ data: { items: { count: ++iterFlat } } })
+			
 			countFlat.get()
 		})
 	},

@@ -22,6 +22,7 @@ const interceptorSuite = defineSuite('interceptor', {
 		const m1i = state(uniqueKey('mw-1i'), { default: 0 })
 
 		m1i.intercept((next) => next)
+
 		m1i.subscribe(() => {})
 
 		let i1i = 0
@@ -49,6 +50,7 @@ const interceptorSuite = defineSuite('interceptor', {
 		const mTransform = state(uniqueKey('mw-transform'), { default: 0 })
 
 		mTransform.intercept((next) => Math.max(0, next))
+		
 		mTransform.subscribe(() => {})
 
 		let iTr = 0

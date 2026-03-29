@@ -31,6 +31,7 @@ const crudSuite = defineSuite('collection-crud', {
 
 		// --- remove ---
 		const colRemove = collection(uniqueKey('col-rm'), { default: [...items] })
+
 		let rmId = 0
 
 		bench.add('collection.remove (from 1000 items)', () => {
@@ -40,6 +41,7 @@ const crudSuite = defineSuite('collection-crud', {
 
 		// --- remove one ---
 		const colRemoveOne = collection(uniqueKey('col-rm1'), { default: [...items] })
+
 		let rmOneId = 0
 
 		bench.add('collection.remove one (from 1000 items)', () => {
@@ -49,6 +51,7 @@ const crudSuite = defineSuite('collection-crud', {
 
 		// --- update ---
 		const colUpdate = collection(uniqueKey('col-up'), { default: [...items] })
+
 		let upId = 0
 
 		bench.add('collection.update (in 1000 items)', () => {
@@ -57,6 +60,7 @@ const crudSuite = defineSuite('collection-crud', {
 
 		// --- update one ---
 		const colUpdateOne = collection(uniqueKey('col-up1'), { default: [...items] })
+
 		let upOneId = 0
 
 		bench.add('collection.update one (in 1000 items)', () => {
@@ -65,6 +69,7 @@ const crudSuite = defineSuite('collection-crud', {
 
 		// --- find ---
 		const colFind = collection(uniqueKey('col-find'), { default: [...items] })
+
 		let findId = 0
 
 		bench.add('collection.find (in 1000 items)', () => {
@@ -123,6 +128,7 @@ const utilSuite = defineSuite('collection-util', {
 		const items500: Item[] = Array.from({ length: 500 }, (_, i) => ({ id: i }))
 
 		const colHas = collection(uniqueKey('col-has'), { default: [...items500] })
+		
 		let hasId = 0
 
 		bench.add('collection.has (500 items)', () => {

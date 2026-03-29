@@ -11,12 +11,15 @@ const churnSuite = defineSuite('subscribe-churn', {
 
 		bench.add('subscribe + immediate unsubscribe', () => {
 			const unsub = sSrc.subscribe(() => {})
+			
 			unsub()
 		})
 
 		bench.add('subscribe + write + unsubscribe', () => {
 			const unsub = sSrc.subscribe(() => {})
+
 			sSrc.set((v) => v + 1)
+
 			unsub()
 		})
 

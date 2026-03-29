@@ -111,11 +111,13 @@ export function defineSuite(name: string, sections: Record<string, SuiteSetup>):
 				const bench = new Bench(benchConfig)
 
 				await setup(bench)
+
 				await bench.run()
 
 				console.log(`── ${title} ──`)
 
 				printResults(bench)
+
 				benches.push(bench)
 			}
 
@@ -209,6 +211,7 @@ export async function runSuites(title: string, suites: Suite[], benchFile?: stri
 		}
 
 		saveBaseline(baselinePath, data)
+		
 		console.log(`\nBaseline saved to ${baselinePath}`)
 	} else if (flags.mode === 'compare') {
 		const baselinePath = getBaselinePath(fileId)

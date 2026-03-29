@@ -93,7 +93,9 @@ const primitiveSuite = defineSuite('primitive', {
 		const vp = proxy({ value: 42 })
 
 		gj.get()
+
 		zStore.getState()
+
 		valtioSnapshot(vp)
 
 		bench
@@ -129,7 +131,9 @@ const smallSuite = defineSuite('small', {
 		const vp = proxy({ ...small })
 
 		gj.get()
+
 		zStore.getState()
+
 		valtioSnapshot(vp)
 
 		bench
@@ -165,7 +169,9 @@ const largeSuite = defineSuite('large', {
 		const vp = proxy({ ...large })
 
 		gj.get()
+		
 		zStore.getState()
+		
 		valtioSnapshot(vp)
 
 		bench

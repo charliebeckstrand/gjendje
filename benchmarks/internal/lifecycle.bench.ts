@@ -22,6 +22,7 @@ const basicLifecycleSuite = defineSuite('lifecycle-basic', {
 
 		bench.add('collection: create + destroy', () => {
 			const col = collection(uniqueKey('lc-col'), { default: [] as number[] })
+
 			col.destroy()
 		})
 
@@ -49,6 +50,7 @@ const basicLifecycleSuite = defineSuite('lifecycle-basic', {
 			const handle = effect([src], () => {})
 
 			handle.stop()
+
 			src.destroy()
 		})
 
@@ -78,17 +80,25 @@ const fullLifecycleSuite = defineSuite('lifecycle-full', {
 	'Full Lifecycle (create → subscribe → write → unsub → destroy)': (bench) => {
 		bench.add('state: full lifecycle', () => {
 			const s = state(uniqueKey('lc-full'), { default: 0 })
+
 			const unsub = s.subscribe(() => {})
+
 			s.set(42)
+
 			unsub()
+
 			s.destroy()
 		})
 
 		bench.add('collection: full lifecycle', () => {
 			const col = collection(uniqueKey('lc-cfull'), { default: [] as number[] })
+
 			const unsub = col.subscribe(() => {})
+
 			col.add(1)
+
 			unsub()
+
 			col.destroy()
 		})
 
@@ -97,9 +107,13 @@ const fullLifecycleSuite = defineSuite('lifecycle-full', {
 			const b = state(uniqueKey('lc-cb'), { default: 2 })
 
 			const c = computed([a, b], ([x, y]) => x + y)
+
 			const unsub = c.subscribe(() => {})
+
 			a.set(10)
+			
 			c.get()
+
 			unsub()
 
 			c.destroy()
