@@ -15,5 +15,6 @@ export default defineConfig({
 	external: ['react', 'vue'],
 	clean: true,
 	sourcemap: false,
+	minify: true,
 	outDir: 'dist',
 })
