@@ -235,6 +235,32 @@ volume.set(-10) // stored as 0
 
 ---
 
+## Serializer
+
+Custom serializer for types that don't round-trip through JSON.
+
+```ts
+interface Serializer<T> {
+  stringify(value: T): string
+  parse(raw: string): T
+}
+```
+
+```ts
+import { state } from 'gjendje'
+
+const lastLogin = state('lastLogin', {
+  default: new Date(),
+  scope: 'local',
+  serialize: {
+    stringify: (d) => d.toISOString(),
+    parse: (raw) => new Date(raw),
+  },
+})
+```
+
+---
+
 ## `onChange(fn)`
 
 Registers a post-set handler that fires after each value change. Return value is ignored.
@@ -274,34 +300,8 @@ theme.set('dark') // logs "theme: light -> dark"
 
 | Type | Extends | Methods |
 |------|---------|---------|
-| `ReadonlyInstance<T>` | — | `get`, `peek`, `subscribe`, `destroy`, lifecycle properties |
+| `ReadonlyInstance<T>` | — | `get`, `peek`, `subscribe`, `destroy` |
 | `BaseInstance<T>` | `ReadonlyInstance<T>` | `set`, `reset`, `intercept`, `onChange` |
 | `StateInstance<T>` | `BaseInstance<T>` | `watch`, `patch` |
 
 `computed` and `select` return `ReadonlyInstance`. `collection` returns `CollectionInstance` (extends `BaseInstance`).
-
----
-
-## Serializer
-
-Custom serializer for types that don't round-trip through JSON.
-
-```ts
-interface Serializer<T> {
-  stringify(value: T): string
-  parse(raw: string): T
-}
-```
-
-```ts
-import { state } from 'gjendje'
-
-const lastLogin = state('lastLogin', {
-  default: new Date(),
-  scope: 'local',
-  serialize: {
-    stringify: (d) => d.toISOString(),
-    parse: (raw) => new Date(raw),
-  },
-})
-```
