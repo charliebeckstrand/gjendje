@@ -19,6 +19,13 @@ type BucketShortcutOptions<T> = Omit<StateOptions<T>, 'default' | 'scope' | 'buc
 	Pick<StateOptions<T>, 'bucket'>
 
 /**
+ * Determine whether a value is a `StateOptions` object (as opposed to a raw default value).
+ */
+function isOptionsObject<T>(value: unknown): value is StateOptions<T> {
+	return value !== null && typeof value === 'object' && 'default' in value
+}
+
+/**
  * Extract the single key and value from a `{ key: defaultValue }` entry object.
  */
 function extractEntry<T>(entry: Record<string, T>): [string, T] {
@@ -126,10 +133,8 @@ function _state<T>(
 
 		options = extraOptions
 			? ({ ...extraOptions, default: optionsOrDefault } as StateOptions<T>)
-			: optionsOrDefault !== null &&
-					typeof optionsOrDefault === 'object' &&
-					'default' in optionsOrDefault
-				? (optionsOrDefault as StateOptions<T>)
+			: isOptionsObject<T>(optionsOrDefault)
+				? optionsOrDefault
 				: ({ default: optionsOrDefault } as StateOptions<T>)
 	}
 
