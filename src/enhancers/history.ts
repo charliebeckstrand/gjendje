@@ -81,10 +81,14 @@ export function withHistory<T>(
 		try {
 			instance.set(value)
 
-			// Only mutate stacks after successful set
-			from.pop()
+			// Only mutate stacks if the state actually changed.
+			// isEqual or interceptors may cause set() to be a no-op —
+			// modifying the stacks in that case would corrupt history.
+			if (!Object.is(instance.get(), current)) {
+				from.pop()
 
-			to.push(current)
+				to.push(current)
+			}
 		} finally {
 			isNavigating = false
 		}

@@ -204,7 +204,7 @@ class StateImpl<T> implements StateInstance<T> {
 		return this._s.isDestroyed ? this._s.lastValue : this._adapter.get()
 	}
 
-	protected _applyInterceptors(next: T, prev: T): T {
+	protected _applyInterceptors(next: T, prev: T): T | undefined {
 		const s = this._s
 
 		if (s.interceptors === undefined || s.interceptors.size === 0) return next
@@ -225,7 +225,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 		if (next === undefined) {
 			log('warn', `Interceptor for state("${this.key}") returned undefined — ignoring.`)
-			return prev
+			return undefined
 		}
 
 		if (next instanceof Promise) {
@@ -233,7 +233,7 @@ class StateImpl<T> implements StateInstance<T> {
 				'warn',
 				`Interceptor for state("${this.key}") returned a Promise — interceptors must be synchronous. Ignoring.`,
 			)
-			return prev
+			return undefined
 		}
 
 		if (!Object.is(original, next)) {
@@ -281,7 +281,13 @@ class StateImpl<T> implements StateInstance<T> {
 				? (valueOrUpdater as (prev: T) => T)(prev)
 				: valueOrUpdater
 
-		next = this._applyInterceptors(next, prev)
+		const intercepted = this._applyInterceptors(next, prev)
+
+		// _applyInterceptors returns undefined when an interceptor returned
+		// undefined or a Promise — the update should be silently ignored.
+		if (intercepted === undefined) return
+
+		next = intercepted
 
 		if (this._options.isEqual?.(next, prev)) return
 
@@ -315,7 +321,11 @@ class StateImpl<T> implements StateInstance<T> {
 
 		const prev = this._adapter.get()
 
-		const next = this._applyInterceptors(this._defaultValue, prev)
+		const intercepted = this._applyInterceptors(this._defaultValue, prev)
+
+		if (intercepted === undefined) return
+
+		const next = intercepted
 
 		if (this._options.isEqual?.(next, prev)) return
 
@@ -436,9 +446,11 @@ class StateImpl<T> implements StateInstance<T> {
 
 		fn(prev)
 
-		let next: T = prev
+		const intercepted = this._applyInterceptors(prev, prev)
 
-		next = this._applyInterceptors(next, prev)
+		if (intercepted === undefined) return
+
+		const next: T = intercepted
 
 		// Skip isEqual — the reference is the same, so equality checks would
 		// always bail, but the user explicitly signalled a mutation happened.

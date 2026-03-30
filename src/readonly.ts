@@ -29,6 +29,7 @@ export function readonly<T>(instance: ReadonlyInstance<T>): ReadonlyInstance<T> 
 		set: { value: undefined },
 		reset: { value: undefined },
 		patch: { value: undefined },
+		mutate: { value: undefined },
 		intercept: { value: undefined },
 		onChange: { value: undefined },
 	}) as ReadonlyInstance<T>
