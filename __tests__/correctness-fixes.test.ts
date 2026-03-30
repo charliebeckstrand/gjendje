@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createMemoryAdapter } from '../src/adapters/memory.js'
 import { withHistory } from '../src/enhancers/history.js'
 import { state } from '../src/index.js'
 import { readonly } from '../src/readonly.js'
@@ -85,7 +86,45 @@ describe('StateImpl interceptor rejection (non-memory scopes)', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Bug fix 2: readonly() should shadow mutate
+// Bug fix 2: createMemoryAdapter should snapshot listeners during notification
+// ---------------------------------------------------------------------------
+
+describe('createMemoryAdapter listener snapshot', () => {
+	it('does not skip listeners when one unsubscribes another during notification', () => {
+		const adapter = createMemoryAdapter(0)
+
+		const callOrder: string[] = []
+
+		let unsubB: (() => void) | undefined
+
+		const listenerA = () => {
+			callOrder.push('A')
+			// Unsubscribe B during A's notification
+			unsubB?.()
+		}
+
+		const listenerB = () => {
+			callOrder.push('B')
+		}
+
+		const listenerC = () => {
+			callOrder.push('C')
+		}
+
+		adapter.subscribe(listenerA)
+		unsubB = adapter.subscribe(listenerB)
+		adapter.subscribe(listenerC)
+
+		adapter.set(1)
+
+		// All three should fire because the snapshot was taken before iteration.
+		// Without snapshot, B would be skipped since A unsubscribes it mid-iteration.
+		expect(callOrder).toEqual(['A', 'B', 'C'])
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Bug fix 3: readonly() should shadow mutate
 // ---------------------------------------------------------------------------
 
 describe('readonly() shadows mutate', () => {
@@ -121,7 +160,7 @@ describe('readonly() shadows mutate', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Bug fix 3: withHistory.navigate() should not mutate stacks when set is a no-op
+// Bug fix 4: withHistory.navigate() should not mutate stacks when set is a no-op
 // ---------------------------------------------------------------------------
 
 describe('withHistory navigate with isEqual/interceptor no-op', () => {

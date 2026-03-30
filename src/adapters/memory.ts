@@ -9,8 +9,12 @@ export function createMemoryAdapter<T>(defaultValue: T): Adapter<T> {
 	const listeners = new Set<Listener<T>>()
 
 	const notifyListeners = () => {
-		for (const listener of listeners) {
-			safeCall(listener, current)
+		// Snapshot to protect against subscribe/unsubscribe during iteration,
+		// consistent with createListeners and MemoryStateImpl.
+		const snapshot = Array.from(listeners)
+
+		for (let i = 0; i < snapshot.length; i++) {
+			safeCall(snapshot[i] as Listener<T>, current)
 		}
 	}
 
