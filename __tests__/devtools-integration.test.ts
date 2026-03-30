@@ -680,7 +680,7 @@ describe('enableDevTools', () => {
 		expect(setCall).toBeDefined()
 
 		expect(spy).toHaveBeenCalledWith(
-			expect.stringContaining('original config callback threw'),
+			expect.stringContaining('Config callback threw'),
 			expect.any(Error),
 		)
 
@@ -811,6 +811,128 @@ describe('enableDevTools', () => {
 		)
 
 		spy.mockRestore()
+
+		disableDevTools()
+
+		s.destroy()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// DevTools + configure() coexistence (callback loss regression)
+// ---------------------------------------------------------------------------
+
+describe('devtools callback coexistence with configure()', () => {
+	it('configure({ onChange }) AFTER enableDevTools() — both fire', () => {
+		const customLogger = vi.fn()
+		const userOnChange = vi.fn()
+
+		enableDevTools({
+			reduxDevTools: false,
+			loggerOptions: { logger: customLogger },
+		})
+
+		// User sets a callback AFTER devtools is enabled
+		configure({ onChange: userOnChange })
+
+		const s = state('dt-coexist-after', { default: 0 })
+
+		s.set(42)
+
+		// User callback should fire
+		expect(userOnChange).toHaveBeenCalledWith(
+			expect.objectContaining({ key: 'dt-coexist-after', value: 42 }),
+		)
+
+		// DevTools logger should also fire
+		const setCall = customLogger.mock.calls.find(
+			(call) => (call[0] as { type: string }).type === 'set',
+		)
+
+		expect(setCall).toBeDefined()
+
+		disableDevTools()
+
+		configure({ onChange: undefined })
+
+		s.destroy()
+	})
+
+	it('disableDevTools() preserves user callbacks set after enableDevTools()', () => {
+		const userOnChange = vi.fn()
+
+		enableDevTools({ reduxDevTools: false, logger: false })
+
+		// User sets callback after devtools enabled
+		configure({ onChange: userOnChange })
+
+		disableDevTools()
+
+		const s = state('dt-preserve-user', { default: 0 })
+
+		s.set(1)
+
+		// User callback should still work after devtools is disabled
+		expect(userOnChange).toHaveBeenCalledWith(
+			expect.objectContaining({ key: 'dt-preserve-user', value: 1 }),
+		)
+
+		configure({ onChange: undefined })
+
+		s.destroy()
+	})
+
+	it('multiple enable/disable cycles do not leak hooks', () => {
+		const customLogger = vi.fn()
+
+		// Enable and disable multiple times
+		enableDevTools({ reduxDevTools: false, loggerOptions: { logger: customLogger } })
+		disableDevTools()
+
+		enableDevTools({ reduxDevTools: false, loggerOptions: { logger: customLogger } })
+		disableDevTools()
+
+		enableDevTools({ reduxDevTools: false, loggerOptions: { logger: customLogger } })
+
+		const s = state('dt-no-leak', { default: 0 })
+
+		s.set(99)
+
+		// Logger should fire exactly once per event, not accumulate from previous cycles
+		const setCalls = customLogger.mock.calls.filter(
+			(call) => (call[0] as { type: string }).type === 'set',
+		)
+
+		expect(setCalls).toHaveLength(1)
+
+		disableDevTools()
+
+		s.destroy()
+	})
+
+	it('configure({ onChange: undefined }) clears user callback but devtools still fires', () => {
+		const customLogger = vi.fn()
+
+		configure({ onChange: vi.fn() })
+
+		enableDevTools({
+			reduxDevTools: false,
+			loggerOptions: { logger: customLogger },
+		})
+
+		// Clear user callback
+		configure({ onChange: undefined })
+
+		const s = state('dt-clear-user', { default: 0 })
+
+		s.set(5)
+
+		// DevTools logger should still fire even though user callback is cleared
+		const setCall = customLogger.mock.calls.find(
+			(call) => (call[0] as { type: string }).type === 'set',
+		)
+
+		expect(setCall).toBeDefined()
 
 		disableDevTools()
 

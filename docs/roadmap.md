@@ -187,21 +187,6 @@ A prioritized plan to close the gap between gjendje's engineering quality and it
 
 ---
 
-## Svelte Bindings (`gjendje/svelte`) — Stretch Goal
-
-**Goal**: Complete the framework coverage trifecta.
-
-**Why last**: Svelte's store contract (`subscribe` method) means gjendje instances already work with `$store` syntax with minimal wrapping. The ROI is lower than React/Vue because less adapter code is needed and the audience is smaller.
-
-- [ ] **Create `src/svelte/index.ts` entry point**
-  - Export a Svelte-compatible store contract wrapper
-  - Should be usable with `$store` syntax directly
-- [ ] Add `svelte` as optional peer dependency
-- [ ] Add exports map entry, tsup config, size budget, tests
-- [ ] Write `docs/svelte.md`
-
----
-
 ## Summary: Execution Order
 
 | Phase | Effort | Impact | Dependency | Can Parallel? |
@@ -212,4 +197,3 @@ A prioritized plan to close the gap between gjendje's engineering quality and it
 | Community infra | Low | Medium | None | Anytime |
 | Signals story | Low-Medium | Medium | None | Anytime |
 | Content/social proof | Medium | Medium | Phases 3-5 (need product to promote) | — |
-| Svelte bindings | Low | Low-Medium | None | Anytime |

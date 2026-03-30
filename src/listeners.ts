@@ -1,4 +1,4 @@
-import { reportError } from './config.js'
+import { getConfigHooks, reportError } from './config.js'
 import type { Listener, Scope, Unsubscribe } from './types.js'
 
 /**
@@ -61,6 +61,37 @@ export function safeCallConfig<A>(fn: ((arg: A) => void) | undefined, arg: A): v
 		fn(arg)
 	} catch (err) {
 		console.error('[gjendje] Config callback threw:', err)
+	}
+}
+
+/**
+ * Invoke a global config callback AND any registered config hooks for the
+ * given event. Hooks (used by DevTools) run after the user's callback so
+ * that `configure()` and `enableDevTools()` never overwrite each other.
+ */
+export function fireConfigCallback<A>(
+	fn: ((arg: A) => void) | undefined,
+	event: string,
+	arg: A,
+): void {
+	if (fn !== undefined) {
+		try {
+			fn(arg)
+		} catch (err) {
+			console.error('[gjendje] Config callback threw:', err)
+		}
+	}
+
+	const hooks = getConfigHooks(event)
+
+	if (hooks !== undefined && hooks.size > 0) {
+		for (const hook of hooks) {
+			try {
+				hook(arg)
+			} catch (err) {
+				console.error('[gjendje] Config hook threw:', err)
+			}
+		}
 	}
 }
 
