@@ -158,11 +158,13 @@ export function resource<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 
 			destroyed = true
 
-			unsubscribeAll(depUnsubscribers)
-
-			dataState.destroy()
-			loadingState.destroy()
-			errorState.destroy()
+			try {
+				unsubscribeAll(depUnsubscribers)
+			} finally {
+				dataState.destroy()
+				loadingState.destroy()
+				errorState.destroy()
+			}
 		},
 
 		get isDestroyed() {

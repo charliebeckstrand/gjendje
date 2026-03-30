@@ -1,7 +1,7 @@
 import { notify } from './batch.js'
 import { createListeners } from './listeners.js'
 import type { BaseInstance, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
-import { createLazyDestroyed, RESOLVED } from './utils.js'
+import { createLazyDestroyed, NOOP, RESOLVED } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -129,7 +129,11 @@ export function fromSignal<T>(
 			return current
 		},
 
-		subscribe: listeners.subscribe,
+		subscribe(listener: Listener<T>): Unsubscribe {
+			if (isDestroyed) return NOOP
+
+			return listeners.subscribe(listener)
+		},
 
 		destroy() {
 			if (isDestroyed) return

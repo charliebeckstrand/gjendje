@@ -91,10 +91,14 @@ export function when<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 		}
 
 		function onChange(): void {
-			readDeps()
+			try {
+				readDeps()
 
-			if (predicate(depValues)) {
-				settle(() => resolve())
+				if (predicate(depValues)) {
+					settle(() => resolve())
+				}
+			} catch (err) {
+				settle(() => reject(err))
 			}
 		}
 

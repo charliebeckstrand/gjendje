@@ -1,5 +1,6 @@
 import { createListeners } from './listeners.js'
 import type { Listener, Unsubscribe } from './types.js'
+import { NOOP } from './utils.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,6 +64,8 @@ export function channel<T>(nameOrOptions?: string | ChannelOptions): ChannelInst
 		},
 
 		subscribe(listener: Listener<T>): Unsubscribe {
+			if (destroyed) return NOOP
+
 			return listeners.subscribe(listener)
 		},
 
