@@ -1,5 +1,6 @@
 import { batch } from './batch.js'
 import { createBase } from './core.js'
+import { ResourceError } from './errors.js'
 import { readonly } from './readonly.js'
 import type { DepValues, ReadonlyInstance } from './types.js'
 import { subscribeAll, unsubscribeAll } from './utils.js'
@@ -11,7 +12,7 @@ import { subscribeAll, unsubscribeAll } from './utils.js'
 export interface ResourceInstance<T> {
 	readonly data: ReadonlyInstance<T | undefined>
 	readonly loading: ReadonlyInstance<boolean>
-	readonly error: ReadonlyInstance<Error | undefined>
+	readonly error: ReadonlyInstance<ResourceError | undefined>
 	refetch(): void
 	destroy(): void
 	readonly isDestroyed: boolean
@@ -69,7 +70,7 @@ export function resource<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 	})
 	const loadingState = createBase(`${resourceKey}:loading`, { default: true })
 	const errorState = createBase(`${resourceKey}:error`, {
-		default: undefined as Error | undefined,
+		default: undefined as ResourceError | undefined,
 	})
 
 	const dataReadonly = readonly(dataState)
@@ -119,10 +120,8 @@ export function resource<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 				promise = (fn as () => Promise<T>)()
 			}
 		} catch (err) {
-			const wrappedError = err instanceof Error ? err : new Error(String(err))
-
 			batch(() => {
-				errorState.set(wrappedError)
+				errorState.set(new ResourceError(resourceKey, err))
 				loadingState.set(false)
 			})
 
@@ -141,10 +140,8 @@ export function resource<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 			(err: unknown) => {
 				if (destroyed || fetchId !== currentFetchId) return
 
-				const wrappedError = err instanceof Error ? err : new Error(String(err))
-
 				batch(() => {
-					errorState.set(wrappedError)
+					errorState.set(new ResourceError(resourceKey, err))
 					loadingState.set(false)
 				})
 			},

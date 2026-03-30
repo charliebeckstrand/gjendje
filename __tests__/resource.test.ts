@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resource, state } from '../src/index.js'
+import { ResourceError, resource, state } from '../src/index.js'
 
 describe('resource', () => {
 	it('starts in loading state', () => {
@@ -25,30 +25,35 @@ describe('resource', () => {
 		r.destroy()
 	})
 
-	it('sets error on rejection', async () => {
+	it('sets ResourceError on rejection', async () => {
 		const r = resource(async () => {
 			throw new Error('boom')
 		})
 
 		await new Promise((resolve) => setTimeout(resolve, 0))
 
-		expect(r.error.get() instanceof Error).toBe(true)
-		expect(r.error.get()?.message).toBe('boom')
+		const err = r.error.get()
+
+		expect(err instanceof ResourceError).toBe(true)
+		expect(err?.cause instanceof Error).toBe(true)
+		expect((err?.cause as Error).message).toBe('boom')
 		expect(r.loading.get()).toBe(false)
 		expect(r.data.get()).toBeUndefined()
 
 		r.destroy()
 	})
 
-	it('wraps non-Error rejections', async () => {
+	it('wraps non-Error rejections in ResourceError', async () => {
 		const r = resource(async () => {
 			throw 'string error'
 		})
 
 		await new Promise((resolve) => setTimeout(resolve, 0))
 
-		expect(r.error.get() instanceof Error).toBe(true)
-		expect(r.error.get()?.message).toBe('string error')
+		const err = r.error.get()
+
+		expect(err instanceof ResourceError).toBe(true)
+		expect(err?.cause).toBe('string error')
 
 		r.destroy()
 	})
@@ -134,7 +139,7 @@ describe('resource', () => {
 		})
 
 		await new Promise((resolve) => setTimeout(resolve, 0))
-		expect(r.error.get() instanceof Error).toBe(true)
+		expect(r.error.get() instanceof ResourceError).toBe(true)
 
 		shouldFail = false
 		r.refetch()
@@ -157,8 +162,11 @@ describe('resource', () => {
 			throw new Error('sync boom')
 		})
 
-		expect(r.error.get() instanceof Error).toBe(true)
-		expect(r.error.get()?.message).toBe('sync boom')
+		const err = r.error.get()
+
+		expect(err instanceof ResourceError).toBe(true)
+		expect(err?.cause instanceof Error).toBe(true)
+		expect((err?.cause as Error).message).toBe('sync boom')
 		expect(r.loading.get()).toBe(false)
 
 		r.destroy()
@@ -179,8 +187,12 @@ describe('resource', () => {
 		expect(r.data.get()).toBe(0)
 
 		dep.set(1)
-		expect(r.error.get() instanceof Error).toBe(true)
-		expect(r.error.get()?.message).toBe('sync dep boom')
+
+		const err = r.error.get()
+
+		expect(err instanceof ResourceError).toBe(true)
+		expect(err?.cause instanceof Error).toBe(true)
+		expect((err?.cause as Error).message).toBe('sync dep boom')
 		expect(r.loading.get()).toBe(false)
 
 		r.destroy()
