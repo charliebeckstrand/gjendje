@@ -1,4 +1,4 @@
-import type { ReadonlyInstance } from '../types/index.js'
+import type { BaseInstance, ReadonlyInstance } from '../types/index.js'
 
 // Shared resolved promise — avoids allocating a new one per instance.
 // Exported so that computed/select can short-circuit Promise.all when
@@ -130,6 +130,11 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 	}
 
 	return true
+}
+
+/** Runtime check for writable instances (has a real `set` function, not shadowed by `readonly`). */
+export function isWritable<T>(instance: ReadonlyInstance<T>): instance is BaseInstance<T> {
+	return typeof (instance as BaseInstance<T>).set === 'function'
 }
 
 /**

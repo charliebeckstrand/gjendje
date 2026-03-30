@@ -3,7 +3,7 @@ import { withHistory } from '../src/enhancers/history.js'
 import { withWatch } from '../src/enhancers/watch.js'
 import { collection, computed, readonly, select, state } from '../src/index.js'
 import { previous } from '../src/previous.js'
-import { isWritable } from '../src/utilities/is-writable.js'
+import { isWritable } from '../src/utilities/common.js'
 
 describe('isWritable', () => {
 	it('returns true for a writable state instance', () => {

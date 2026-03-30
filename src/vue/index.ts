@@ -1,6 +1,6 @@
 import { customRef, onScopeDispose, type Ref } from 'vue'
 import type { BaseInstance, ReadonlyInstance } from '../types/index.js'
-import { isWritable } from '../utilities/is-writable.js'
+import { isWritable } from '../utilities/common.js'
 
 /**
  * Subscribe to a gjendje state instance in Vue.
