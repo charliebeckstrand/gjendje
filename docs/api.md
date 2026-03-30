@@ -113,6 +113,43 @@ user.patch({ name: 'John', role: 'admin' }, { strict: true })
 
 ---
 
+## `mutate(fn)`
+
+Mutates the current value in place and notifies subscribers. Zero-copy — no spread, no allocation. Ideal for hot-path updates on large objects.
+
+```ts
+mutate(fn: (draft: T) => void): void
+```
+
+```ts
+import { state } from 'gjendje'
+
+const settings = state('settings', {
+  default: { theme: 'light', lang: 'en', fontSize: 14 },
+  scope: 'local',
+})
+
+settings.mutate((draft) => {
+  draft.theme = 'dark'
+})
+```
+
+<details>
+<summary>Details</summary>
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `fn` | `(draft: T) => void` | Receives the current value by reference. Mutate it in place. |
+
+- **Bypasses `isEqual`** — the reference is identical before and after, so equality checks would always bail. `mutate()` always notifies because calling it signals intent to change.
+- **Interceptors still run** — interceptors can transform or reject the mutated value, same as `set()`.
+- **`prev` and `next` are the same reference** in `onChange` handlers and subscribers, since the value was mutated in place.
+- **Not compatible with `withHistory`** — history stores references, so in-place mutation would corrupt the undo stack.
+
+</details>
+
+---
+
 ## `reset()`
 
 Restores the value to the `default` provided at creation.
@@ -302,6 +339,6 @@ theme.set('dark') // logs "theme: light -> dark"
 |------|---------|---------|
 | `ReadonlyInstance<T>` | — | `get`, `peek`, `subscribe`, `destroy` |
 | `BaseInstance<T>` | `ReadonlyInstance<T>` | `set`, `reset`, `intercept`, `onChange` |
-| `StateInstance<T>` | `BaseInstance<T>` | `watch`, `patch` |
+| `StateInstance<T>` | `BaseInstance<T>` | `watch`, `patch`, `mutate` |
 
 `computed` and `select` return `ReadonlyInstance`. `collection` returns `CollectionInstance` (extends `BaseInstance`).

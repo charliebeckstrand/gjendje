@@ -427,6 +427,39 @@ class StateImpl<T> implements StateInstance<T> {
 		})
 	}
 
+	mutate(fn: (draft: T) => void): void {
+		const s = this._s
+
+		if (s.isDestroyed) return
+
+		const prev = this._adapter.get()
+
+		fn(prev)
+
+		let next: T = prev
+
+		next = this._applyInterceptors(next, prev)
+
+		// Skip isEqual — the reference is the same, so equality checks would
+		// always bail, but the user explicitly signalled a mutation happened.
+
+		try {
+			this._adapter.set(next)
+		} catch (err) {
+			if (err instanceof StorageWriteError) return
+
+			throw err
+		}
+
+		s.lastValue = next
+
+		s.hasUserWrite = true
+
+		s.settled = this._adapter.ready
+
+		this._notifyChange(next, prev)
+	}
+
 	destroy(): void {
 		const s = this._s
 
@@ -878,6 +911,87 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 			return { ...prev, ...partial } as T
 		})
+	}
+
+	mutate(fn: (draft: T) => void): void {
+		const c = this._c
+
+		if (c.isDestroyed) return
+
+		const prev = c.current
+
+		fn(prev)
+
+		let next: T = prev
+
+		// Inline interceptors for hot-path performance (same as set()).
+		const ext = c.ext
+
+		if (ext !== undefined && ext.interceptors !== undefined && ext.interceptors.size > 0) {
+			const original = next
+
+			try {
+				for (const interceptor of ext.interceptors) {
+					next = interceptor(next, prev)
+				}
+			} catch (err) {
+				const wrapped = new InterceptorError(this.key, this.scope, err)
+
+				reportError(this.key, this.scope, wrapped)
+
+				throw wrapped
+			}
+
+			if (next === undefined) {
+				log('warn', `Interceptor for state("${this.key}") returned undefined — ignoring.`)
+
+				return
+			}
+
+			if (next instanceof Promise) {
+				log(
+					'warn',
+					`Interceptor for state("${this.key}") returned a Promise — interceptors must be synchronous. Ignoring.`,
+				)
+
+				return
+			}
+
+			if (!Object.is(original, next)) {
+				safeCallConfig(this._config.onIntercept, {
+					key: this.key,
+					scope: this.scope,
+					original,
+					intercepted: next,
+				})
+			}
+		}
+
+		// Skip isEqual — the reference is the same, so equality checks would
+		// always bail, but the user explicitly signalled a mutation happened.
+
+		c.current = next
+
+		if (c.notifyFn !== undefined) {
+			notify(c.notifyFn)
+		}
+
+		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
+			const snapshot = Array.from(ext.changeHandlers)
+
+			for (let i = 0; i < snapshot.length; i++) {
+				safeCallChange(snapshot[i] as (next: T, prev: T) => void, next, prev, this.key, this.scope)
+			}
+		}
+
+		if (this._config.onChange !== undefined) {
+			safeCallConfig(this._config.onChange, {
+				key: this.key,
+				scope: this.scope,
+				value: next,
+				previousValue: prev,
+			})
+		}
 	}
 
 	private _ensureWatchSubscription(): void {
