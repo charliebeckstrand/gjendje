@@ -20,8 +20,6 @@ export type {
 	ValidationFailContext,
 } from './config.js'
 export { configure, resetConfig } from './config.js'
-export type { StateSnapshot } from './devtools.js'
-export { snapshot } from './devtools.js'
 export type { EffectHandle, EffectOptions } from './effect.js'
 export { effect } from './effect.js'
 // Enhancers — for extending state with custom capabilities
@@ -48,6 +46,8 @@ export type { SelectInstance, SelectOptions } from './select.js'
 export { select } from './select.js'
 export type { StateFunction } from './shortcuts.js'
 export { state } from './shortcuts.js'
+export type { StateSnapshot } from './snapshot.js'
+export { snapshot } from './snapshot.js'
 export type {
 	Adapter,
 	BaseInstance,
