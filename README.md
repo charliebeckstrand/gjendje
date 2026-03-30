@@ -62,12 +62,12 @@ function Counter() {
 
 ```vue
 <script setup>
-import { state } from 'gjendje'
-import { useGjendje } from 'gjendje/vue'
+  import { state } from 'gjendje'
+  import { useGjendje } from 'gjendje/vue'
 
-const counter = state({ counter: 0 })
+  const counter = state({ counter: 0 })
 
-const count = useGjendje(counter)
+  const count = useGjendje(counter)
 </script>
 
 <template>
