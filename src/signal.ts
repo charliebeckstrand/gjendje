@@ -90,6 +90,8 @@ export function fromSignal<T>(
 			}
 		})
 	} catch {
+		isDestroyed = true
+
 		listeners.clear()
 
 		throw new Error(`[gjendje] fromSignal(): signal.subscribe() threw for "${instanceKey}".`)

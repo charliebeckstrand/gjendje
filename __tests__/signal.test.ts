@@ -185,4 +185,93 @@ describe('fromSignal', () => {
 
 		expect(inst.scope).toBe('memory')
 	})
+
+	it('peek() returns current value', () => {
+		const mock = createMockSignal(42)
+
+		const inst = fromSignal(mock)
+
+		expect(inst.peek()).toBe(42)
+
+		mock._set(99)
+		expect(inst.peek()).toBe(99)
+
+		inst.destroy()
+	})
+
+	it('peek() returns same value as get()', () => {
+		const mock = createMockSignal('hello')
+
+		const inst = fromSignal(mock)
+
+		expect(inst.peek()).toBe(inst.get())
+
+		mock._set('world')
+		expect(inst.peek()).toBe(inst.get())
+
+		inst.destroy()
+	})
+
+	it('ready resolves immediately', async () => {
+		const mock = createMockSignal(0)
+
+		const inst = fromSignal(mock)
+
+		await inst.ready
+
+		inst.destroy()
+	})
+
+	it('settled resolves immediately', async () => {
+		const mock = createMockSignal(0)
+
+		const inst = fromSignal(mock)
+
+		await inst.settled
+
+		inst.destroy()
+	})
+
+	it('hydrated resolves immediately', async () => {
+		const mock = createMockSignal(0)
+
+		const inst = fromSignal(mock)
+
+		await inst.hydrated
+
+		inst.destroy()
+	})
+
+	it('destroyed resolves after destroy()', async () => {
+		const mock = createMockSignal(0)
+
+		const inst = fromSignal(mock)
+
+		let resolved = false
+
+		inst.destroyed.then(() => {
+			resolved = true
+		})
+
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		expect(resolved).toBe(false)
+
+		inst.destroy()
+
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		expect(resolved).toBe(true)
+	})
+
+	it('subscribe() failure marks instance as destroyed', () => {
+		const badSignal = {
+			get value() {
+				return 0
+			},
+			subscribe(): () => void {
+				throw new Error('subscribe failed')
+			},
+		}
+
+		expect(() => fromSignal(badSignal)).toThrow('signal.subscribe() threw')
+	})
 })

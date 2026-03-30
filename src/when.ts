@@ -65,6 +65,14 @@ export function when<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 		return Promise.reject(err)
 	}
 
+	// With no dependencies to watch, the predicate can never become true.
+	// Reject immediately rather than hanging forever.
+	if (depLen === 0) {
+		return Promise.reject(
+			new Error('when() called with no dependencies and an unsatisfied predicate'),
+		)
+	}
+
 	return new Promise<void>((resolve, reject) => {
 		let settled = false
 
