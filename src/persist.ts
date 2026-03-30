@@ -1,6 +1,6 @@
 import { getConfig, log } from './config.js'
 import { MigrationError, StorageReadError, ValidationError } from './errors.js'
-import type { Scope, StateOptions, VersionedValue } from './types.js'
+import type { Scope, StateOptions, VersionedValue } from './types/index.js'
 import { isRecord } from './utilities/common.js'
 import { safeCallConfig } from './utilities/listeners.js'
 

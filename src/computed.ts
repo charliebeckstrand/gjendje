@@ -1,7 +1,7 @@
 import { notify } from './batch.js'
 import { reportError } from './config.js'
 import { ComputedError } from './errors.js'
-import type { DepValues, Listener, ReadonlyInstance, Unsubscribe } from './types.js'
+import type { DepValues, Listener, ReadonlyInstance, Unsubscribe } from './types/index.js'
 import {
 	createLazyDestroyed,
 	NOOP,

@@ -1,4 +1,4 @@
-import type { Listener, Unsubscribe } from '../types.js'
+import type { Listener, Unsubscribe } from '../types/index.js'
 import { isRecord } from './common.js'
 import { safeCall } from './listeners.js'
 

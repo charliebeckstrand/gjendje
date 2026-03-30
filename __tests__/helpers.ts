@@ -1,4 +1,4 @@
-import type { Listener } from '../src/types.js'
+import type { Listener } from '../src/types/index.js'
 
 export function makeStorage(): Storage {
 	const store = new Map<string, string>()

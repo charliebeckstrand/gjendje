@@ -1,4 +1,4 @@
-import type { BaseInstance, ReadonlyInstance } from '../types.js'
+import type { BaseInstance, ReadonlyInstance } from '../types/index.js'
 import { isWritable } from '../utilities/is-writable.js'
 
 /**

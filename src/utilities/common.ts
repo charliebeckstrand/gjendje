@@ -1,4 +1,4 @@
-import type { ReadonlyInstance } from '../types.js'
+import type { ReadonlyInstance } from '../types/index.js'
 
 // Shared resolved promise — avoids allocating a new one per instance.
 // Exported so that computed/select can short-circuit Promise.all when

@@ -1,5 +1,5 @@
 import { notify } from '../batch.js'
-import type { Adapter, Listener } from '../types.js'
+import type { Adapter, Listener } from '../types/index.js'
 import { RESOLVED } from '../utilities/common.js'
 import { safeCall } from '../utilities/listeners.js'
 
