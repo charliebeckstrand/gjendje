@@ -115,11 +115,9 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 
 	// Already narrowed to non-null objects above — safe to index
 	const objA = a as Record<PropertyKey, unknown>
-
 	const objB = b as Record<PropertyKey, unknown>
 
 	const keysA = Object.keys(objA)
-
 	const keysB = Object.keys(objB)
 
 	// Fast bail-out on different key counts
