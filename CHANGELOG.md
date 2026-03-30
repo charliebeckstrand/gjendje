@@ -1,5 +1,25 @@
 # gjendje
 
+## 1.4.1
+
+### Patch Changes
+
+- 81516ce: Reorganized internal source files into a `src/utilities/` folder:
+
+  - Moved `snapshot()` from `src/devtools.ts` to `src/snapshot.ts` to eliminate the conflict between the `src/devtools.ts` file and the `src/devtools/` folder
+  - Moved `is-writable.ts`, `listeners.ts`, `ssr.ts`, `watchers.ts` into `src/utilities/`
+  - Renamed `utils.ts` to `utilities/common.ts` for clarity
+
+  No public API changes — all exports remain the same.
+
+- 0b7e4fe: Reorganize types into a dedicated `types/` directory:
+
+  - Moved `src/types.ts` → `src/types/index.ts`
+  - Moved `src/adapters/async-hooks.d.ts` → `src/types/async-hooks.d.ts`
+  - Updated all import paths across the codebase
+
+  This is a purely structural refactor with no behavioral changes.
+
 ## 1.4.0
 
 ### Minor Changes
