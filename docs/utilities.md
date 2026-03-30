@@ -113,40 +113,6 @@ b.isDestroyed // true
 
 ---
 
-## `shallowEqual(a, b)`
-
-Shallow equality check for primitives, arrays, and plain objects. Returns `true` if values are structurally equal one level deep.
-
-```ts
-function shallowEqual(a: unknown, b: unknown): boolean
-```
-
-```ts
-import { shallowEqual } from 'gjendje'
-
-shallowEqual({ a: 1, b: 2 }, { a: 1, b: 2 })             // true
-shallowEqual([1, 2, 3], [1, 2, 3])                         // true
-shallowEqual({ a: { nested: 1 } }, { a: { nested: 1 } })   // false — compared by reference
-```
-
-> **Returns** `boolean`
-
-<details>
-<summary>Details</summary>
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `a` | `unknown` | First value |
-| `b` | `unknown` | Second value |
-
-- **Primitives** — uses `Object.is` (handles `NaN`, `+0`/`-0`).
-- **Arrays** — compares length, then each element with `Object.is`.
-- **Objects** — compares key count, then each value with `Object.is`. Only own enumerable keys.
-
-</details>
-
----
-
 ## `withHistory(instance, options?)`
 
 Enhances a state instance with undo/redo capabilities.
