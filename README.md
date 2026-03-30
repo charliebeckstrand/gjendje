@@ -77,6 +77,25 @@ const count = useGjendje(counter)
 
 [Vue guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/vue.md)
 
+### Svelte
+
+```svelte
+<script>
+  import { state } from 'gjendje'
+  import { useGjendje } from 'gjendje/svelte'
+
+  const counter = state({ counter: 0 })
+
+  const count = useGjendje(counter)
+</script>
+
+<button on:click={() => $count++}>
+  {$count}
+</button>
+```
+
+[Svelte guide](https://github.com/charliebeckstrand/gjendje/blob/main/docs/svelte.md)
+
 ## API
 
 `get`, `peek`, `set`, `patch`, `mutate`, `reset`, `destroy`, `subscribe`, `watch`, `intercept`, `onChange`
