@@ -1,5 +1,5 @@
 import type { BaseInstance, Listener, Unsubscribe } from '../types.js'
-import { addWatcher, notifyWatchers } from '../watchers.js'
+import { addWatcher, notifyWatchers } from '../utilities/watchers.js'
 
 export interface WithWatch<T> {
 	/**

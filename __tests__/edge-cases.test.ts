@@ -367,7 +367,7 @@ describe('batch edge cases', () => {
 
 describe('shallowEqual additional edge cases', () => {
 	it('compares Date objects by timestamp', async () => {
-		const { shallowEqual } = await import('../src/utils.js')
+		const { shallowEqual } = await import('../src/utilities/common.js')
 
 		// Dates with the same timestamp are equal
 		expect(shallowEqual(new Date(0), new Date(0))).toBe(true)
@@ -377,7 +377,7 @@ describe('shallowEqual additional edge cases', () => {
 	})
 
 	it('returns false for nested objects', async () => {
-		const { shallowEqual } = await import('../src/utils.js')
+		const { shallowEqual } = await import('../src/utilities/common.js')
 
 		const a = { nested: { x: 1 } }
 		const b = { nested: { x: 1 } }
@@ -387,7 +387,7 @@ describe('shallowEqual additional edge cases', () => {
 	})
 
 	it('returns true for same reference', async () => {
-		const { shallowEqual } = await import('../src/utils.js')
+		const { shallowEqual } = await import('../src/utilities/common.js')
 
 		const obj = { a: 1, b: 2 }
 

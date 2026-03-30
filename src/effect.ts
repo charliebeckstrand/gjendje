@@ -1,6 +1,6 @@
 import { reportError } from './config.js'
 import type { DepValues, ReadonlyInstance } from './types.js'
-import { subscribeAll, unsubscribeAll } from './utils.js'
+import { subscribeAll, unsubscribeAll } from './utilities/common.js'
 
 // ---------------------------------------------------------------------------
 // Types

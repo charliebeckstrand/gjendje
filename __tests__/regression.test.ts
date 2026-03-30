@@ -5,7 +5,7 @@ import { withSync } from '../src/adapters/sync.js'
 import { getConfig } from '../src/config.js'
 import { configure, previous, readonly, select, state, withWatch } from '../src/index.js'
 import { getRegistry, registerByKey, scopedKey } from '../src/registry.js'
-import { afterHydration, isServer } from '../src/ssr.js'
+import { afterHydration, isServer } from '../src/utilities/ssr.js'
 import { makeStorage } from './helpers.js'
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
-import { isWritable } from '../is-writable.js'
 import type { BaseInstance, ReadonlyInstance } from '../types.js'
+import { isWritable } from '../utilities/is-writable.js'
 
 /**
  * Svelte-compatible readable store contract.

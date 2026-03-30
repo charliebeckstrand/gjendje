@@ -1,7 +1,7 @@
 import { notify } from '../batch.js'
-import { safeCall } from '../listeners.js'
 import type { Adapter, Listener } from '../types.js'
-import { RESOLVED } from '../utils.js'
+import { RESOLVED } from '../utilities/common.js'
+import { safeCall } from '../utilities/listeners.js'
 
 export function createMemoryAdapter<T>(defaultValue: T): Adapter<T> {
 	let current = defaultValue

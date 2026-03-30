@@ -1,10 +1,10 @@
 import { notify } from '../batch.js'
 import { log, reportError } from '../config.js'
 import { StorageWriteError } from '../errors.js'
-import { createListeners } from '../listeners.js'
 import { mergeKeys, pickKeys } from '../persist.js'
 import type { Adapter, Serializer } from '../types.js'
-import { RESOLVED } from '../utils.js'
+import { RESOLVED } from '../utilities/common.js'
+import { createListeners } from '../utilities/listeners.js'
 
 export function createUrlAdapter<T>(
 	key: string,
