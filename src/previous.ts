@@ -1,5 +1,5 @@
 import { notify } from './batch.js'
-import type { ReadonlyInstance } from './types.js'
+import type { ReadonlyInstance } from './types/index.js'
 import { createLazyDestroyed } from './utilities/common.js'
 import { createListeners } from './utilities/listeners.js'
 

@@ -1,5 +1,5 @@
 import { getConfigHooks, reportError } from '../config.js'
-import type { Listener, Scope, Unsubscribe } from '../types.js'
+import type { Listener, Scope, Unsubscribe } from '../types/index.js'
 
 /**
  * Invoke a listener inside a try/catch so that one faulty subscriber

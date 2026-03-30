@@ -1,4 +1,4 @@
-import type { ReadonlyInstance } from './types.js'
+import type { ReadonlyInstance } from './types/index.js'
 
 // ---------------------------------------------------------------------------
 // readonly

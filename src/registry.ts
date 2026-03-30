@@ -1,5 +1,5 @@
 import { type GjendjeConfig, log } from './config.js'
-import type { BaseInstance, Scope } from './types.js'
+import type { BaseInstance, Scope } from './types/index.js'
 import { fireConfigCallback } from './utilities/listeners.js'
 
 export function scopedKey(key: string, scope: Scope): string {

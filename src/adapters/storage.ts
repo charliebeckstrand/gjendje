@@ -8,7 +8,7 @@ import {
 	readAndMigrate,
 	wrapForStorage,
 } from '../persist.js'
-import type { Adapter, StateOptions } from '../types.js'
+import type { Adapter, StateOptions } from '../types/index.js'
 import { RESOLVED } from '../utilities/common.js'
 import { createListeners, safeCallConfig } from '../utilities/listeners.js'
 

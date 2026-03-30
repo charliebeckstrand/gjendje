@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { notify } from '../batch.js'
 import { registerServerAdapter } from '../core.js'
-import type { Adapter } from '../types.js'
+import type { Adapter } from '../types/index.js'
 import { createListeners } from '../utilities/listeners.js'
 
 const als = new AsyncLocalStorage<Map<string, unknown>>()

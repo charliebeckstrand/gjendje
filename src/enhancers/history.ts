@@ -1,4 +1,4 @@
-import type { BaseInstance, Unsubscribe } from '../types.js'
+import type { BaseInstance, Unsubscribe } from '../types/index.js'
 
 // ---------------------------------------------------------------------------
 // Types

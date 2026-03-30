@@ -1,5 +1,5 @@
 import { getRegistry } from './registry.js'
-import type { Scope } from './types.js'
+import type { Scope } from './types/index.js'
 
 // ---------------------------------------------------------------------------
 // Types
