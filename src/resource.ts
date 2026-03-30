@@ -108,6 +108,7 @@ export function resource<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 		abortController = new AbortController()
 
 		const currentFetchId = ++fetchId
+
 		const signal = abortController.signal
 
 		batch(() => {
@@ -153,6 +154,7 @@ export function resource<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 					}
 
 					dataState.set(result)
+
 					loadingState.set(false)
 				})
 			},
