@@ -196,4 +196,92 @@ describe('when', () => {
 
 		s.destroy()
 	})
+
+	it('timeout fires first when both timeout and abort are set', async () => {
+		const s = state('when-race-timeout-first', { default: 0, scope: 'memory' })
+
+		const controller = new AbortController()
+
+		let caught: unknown
+
+		try {
+			await when([s], ([v]) => (v as number) > 100, {
+				timeout: 10,
+				signal: controller.signal,
+			})
+		} catch (err) {
+			caught = err
+		}
+
+		expect(caught instanceof WhenTimeoutError).toBe(true)
+
+		// Abort after timeout should be safe (no double-rejection)
+		controller.abort()
+
+		s.destroy()
+	})
+
+	it('abort fires first when both timeout and abort are set', async () => {
+		const s = state('when-race-abort-first', { default: 0, scope: 'memory' })
+
+		const controller = new AbortController()
+
+		const promise = when([s], ([v]) => (v as number) > 100, {
+			timeout: 1000,
+			signal: controller.signal,
+		})
+
+		controller.abort()
+
+		let caught: unknown
+
+		try {
+			await promise
+		} catch (err) {
+			caught = err
+		}
+
+		expect(
+			caught instanceof DOMException || (caught instanceof Error && caught.name === 'AbortError'),
+		).toBe(true)
+
+		s.destroy()
+	})
+
+	it('resolve fires before timeout and abort', async () => {
+		const s = state('when-race-resolve-first', { default: 0, scope: 'memory' })
+
+		const controller = new AbortController()
+
+		const promise = when([s], ([v]) => (v as number) > 0, {
+			timeout: 1000,
+			signal: controller.signal,
+		})
+
+		s.set(1)
+
+		await promise
+
+		// These should be safe no-ops after resolution
+		controller.abort()
+
+		s.destroy()
+	})
+
+	it('rejects with empty deps and unsatisfied predicate', async () => {
+		let caught: unknown
+
+		try {
+			await when([], () => false)
+		} catch (err) {
+			caught = err
+		}
+
+		expect(caught instanceof Error).toBe(true)
+		expect((caught as Error).message).toContain('no dependencies')
+	})
+
+	it('resolves immediately with empty deps and satisfied predicate', async () => {
+		await when([], () => true)
+	})
 })

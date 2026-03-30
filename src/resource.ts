@@ -21,6 +21,8 @@ export interface ResourceInstance<T> {
 export interface ResourceOptions<T> {
 	key?: string
 	initialData?: T
+	/** Compare previous and next data to skip redundant notifications. */
+	isEqual?: (prev: T | undefined, next: T) => boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -77,9 +79,13 @@ export function resource<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 	const loadingReadonly = readonly(loadingState)
 	const errorReadonly = readonly(errorState)
 
+	const isEqual = options?.isEqual
+
 	let fetchId = 0
 
 	let destroyed = false
+
+	let abortController: AbortController | undefined
 
 	let depUnsubscribers: Array<() => void> = []
 
@@ -94,7 +100,15 @@ export function resource<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 	function refetch(): void {
 		if (destroyed) return
 
+		// Abort previous in-flight fetch
+		if (abortController) {
+			abortController.abort()
+		}
+
+		abortController = new AbortController()
+
 		const currentFetchId = ++fetchId
+		const signal = abortController.signal
 
 		batch(() => {
 			loadingState.set(true)
@@ -130,15 +144,20 @@ export function resource<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 
 		promise.then(
 			(result) => {
-				if (destroyed || fetchId !== currentFetchId) return
+				if (signal.aborted || destroyed || fetchId !== currentFetchId) return
 
 				batch(() => {
+					if (isEqual?.(dataState.get(), result)) {
+						loadingState.set(false)
+						return
+					}
+
 					dataState.set(result)
 					loadingState.set(false)
 				})
 			},
 			(err: unknown) => {
-				if (destroyed || fetchId !== currentFetchId) return
+				if (signal.aborted || destroyed || fetchId !== currentFetchId) return
 
 				batch(() => {
 					errorState.set(new ResourceError(resourceKey, err))
@@ -165,6 +184,11 @@ export function resource<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 			if (destroyed) return
 
 			destroyed = true
+
+			if (abortController) {
+				abortController.abort()
+				abortController = undefined
+			}
 
 			try {
 				unsubscribeAll(depUnsubscribers)

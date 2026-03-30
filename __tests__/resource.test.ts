@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ResourceError, resource, state } from '../src/index.js'
 
 describe('resource', () => {
@@ -168,6 +168,125 @@ describe('resource', () => {
 		expect(err?.cause instanceof Error).toBe(true)
 		expect((err?.cause as Error).message).toBe('sync boom')
 		expect(r.loading.get()).toBe(false)
+
+		r.destroy()
+	})
+
+	it('destroy during in-flight fetch does not update state on resolve', async () => {
+		let resolveFetch: (v: string) => void = () => {}
+
+		const r = resource(
+			() =>
+				new Promise<string>((resolve) => {
+					resolveFetch = resolve
+				}),
+		)
+
+		expect(r.loading.get()).toBe(true)
+
+		const dataListener = vi.fn()
+		r.data.subscribe(dataListener)
+
+		r.destroy()
+
+		resolveFetch('late result')
+		await new Promise((resolve) => setTimeout(resolve, 0))
+
+		expect(dataListener).not.toHaveBeenCalled()
+		expect(r.isDestroyed).toBe(true)
+	})
+
+	it('destroy during in-flight fetch does not update state on reject', async () => {
+		let rejectFetch: (e: Error) => void = () => {}
+
+		const r = resource(
+			() =>
+				new Promise<string>((_, reject) => {
+					rejectFetch = reject
+				}),
+		)
+
+		const errorListener = vi.fn()
+		r.error.subscribe(errorListener)
+
+		r.destroy()
+
+		rejectFetch(new Error('late error'))
+		await new Promise((resolve) => setTimeout(resolve, 0))
+
+		expect(errorListener).not.toHaveBeenCalled()
+	})
+
+	it('does not apply stale results after rapid refetches', async () => {
+		let callCount = 0
+
+		const r = resource(async () => {
+			const id = ++callCount
+
+			await new Promise((resolve) => setTimeout(resolve, 10))
+			return id
+		})
+
+		r.refetch()
+		r.refetch()
+		r.refetch()
+
+		await new Promise((resolve) => setTimeout(resolve, 50))
+
+		// Only the last refetch result (id=4, including initial) should be applied
+		expect(r.data.get()).toBe(4)
+
+		r.destroy()
+	})
+
+	it('isEqual skips data notification for identical results', async () => {
+		let fetchCount = 0
+
+		const r = resource(
+			async () => {
+				fetchCount++
+				return { value: 42 }
+			},
+			{ isEqual: (prev, next) => prev?.value === next.value },
+		)
+
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		expect(r.data.get()).toEqual({ value: 42 })
+
+		const dataListener = vi.fn()
+		r.data.subscribe(dataListener)
+
+		r.refetch()
+		await new Promise((resolve) => setTimeout(resolve, 0))
+
+		expect(dataListener).not.toHaveBeenCalled()
+		expect(r.loading.get()).toBe(false)
+		expect(fetchCount).toBe(2)
+
+		r.destroy()
+	})
+
+	it('isEqual allows update when values differ', async () => {
+		let counter = 0
+
+		const r = resource(
+			async () => {
+				return { value: ++counter }
+			},
+			{ isEqual: (prev, next) => prev?.value === next.value },
+		)
+
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		expect(r.data.get()).toEqual({ value: 1 })
+
+		const dataListener = vi.fn()
+		r.data.subscribe(dataListener)
+
+		r.refetch()
+		await new Promise((resolve) => setTimeout(resolve, 0))
+
+		expect(dataListener).toHaveBeenCalledWith({ value: 2 })
+		expect(r.data.get()).toEqual({ value: 2 })
 
 		r.destroy()
 	})
