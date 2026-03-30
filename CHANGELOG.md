@@ -1,5 +1,84 @@
 # gjendje
 
+## 1.4.0
+
+### Minor Changes
+
+- 92fcc18: Add `mutate()` method for zero-copy in-place updates on state instances.
+
+  `mutate()` receives the current value by reference, lets you modify it in place, then re-stores the same reference and notifies subscribers. This avoids the object spread cost that `set()` and `patch()` incur when updating large objects (500+ keys).
+
+  ```ts
+  const settings = state("settings", { default: largeObj });
+
+  // Before: ~1.7M ops/s (copies all keys via spread)
+  settings.set((prev) => ({ ...prev, theme: "dark" }));
+
+  // After: ~14M ops/s (zero-copy, same as raw set())
+  settings.mutate((draft) => {
+    draft.theme = "dark";
+  });
+  ```
+
+  **Key behaviors:**
+
+  - **Bypasses `isEqual`** — the reference is the same before and after, so equality would always bail. Calling `mutate()` explicitly signals intent to change.
+  - **Interceptors still run** — interceptors can transform or reject the mutated value.
+  - **`prev` and `next` share the same reference** in `onChange` handlers and subscribers.
+  - Available on both memory-scoped and adapter-backed (local, session, url, etc.) instances.
+
+- 14a7529: Add **Svelte framework binding** via `gjendje/svelte`.
+
+  The new `useGjendje` function creates a Svelte-compatible store from any gjendje instance:
+
+  - **Writable instances** → returns a `GjendjeWritable<T>` store with `set`, `update`, and `subscribe` (compatible with Svelte's `Writable` contract)
+  - **Readonly / computed instances** → returns a `GjendjeReadable<T>` store with `subscribe` only
+  - **With selector** → returns a readable store holding the selected slice, with automatic deduplication (skips notification when the selected value hasn't changed)
+
+  ```svelte
+  <script>
+    import { state } from 'gjendje'
+    import { useGjendje } from 'gjendje/svelte'
+
+    const count = state('count', { default: 0 })
+    const store = useGjendje(count)
+
+    // Use with Svelte's $store syntax
+  </script>
+
+  <button on:click={() => $store++}>
+    Count: {$store}
+  </button>
+  ```
+
+  The binding implements the standard Svelte store contract without importing from `svelte`, so it works with Svelte 3, 4, and 5 with zero runtime dependency.
+
+### Patch Changes
+
+- e0b0d5c: ### Bug fixes
+
+  - **Interceptor rejection on non-memory scopes**: `StateImpl.set()`, `reset()`, and `mutate()` now correctly skip the update when an interceptor returns `undefined` or a `Promise`. Previously these invalid returns were mapped to the current value and the caller continued with a spurious storage write and change notification. This now matches `MemoryStateImpl`'s behavior of silently ignoring the update.
+
+  - **`readonly()` now shadows `mutate()`**: The `readonly()` wrapper previously left `mutate` accessible, allowing untyped JavaScript callers to bypass read-only protection via in-place mutation. `mutate` is now `undefined` on readonly wrappers, consistent with `set`, `reset`, `patch`, `intercept`, and `onChange`.
+
+  - **`createMemoryAdapter` listener snapshot**: The SSR fallback memory adapter now snapshots listeners before iterating during notification, consistent with all other notification paths. Previously it iterated the live `Set`, which could skip listeners if one unsubscribed another during notification.
+
+  - **`withHistory` undo/redo stack integrity**: `navigate()` no longer modifies the undo/redo stacks when the underlying `set()` is a no-op (e.g., due to `isEqual` returning `true` or an interceptor rejecting the change). Previously the stacks were mutated unconditionally, causing history corruption when interceptors or equality checks prevented the state change.
+
+- f6bf562: ### Bug fix: cross-tab sync double-notification
+
+  When `sync: true` was enabled on a `local` or `bucket` scope, the receiving tab was notified **twice** for a single change from another tab. The BroadcastChannel message handler called `adapter.set()` (first notification), and then the originating tab's `localStorage.setItem()` triggered a `storage` event that fired a second notification with a re-parsed (new reference) value — causing spurious re-renders in React.
+
+  **Fix:** The storage adapter's `onStorageEvent` handler now compares `event.newValue` against the cached raw string before invalidating. When the BroadcastChannel handler has already processed the update and populated the cache, the redundant storage event is skipped. `storage.clear()` events (where `event.key === null`) always invalidate as before.
+
+- f6bf562: ### Bug fix: DevTools callback loss after `configure()`
+
+  Calling `configure({ onChange: fn })` after `enableDevTools()` silently overwrote the DevTools wrapper, causing DevTools to stop dispatching to Redux DevTools and the logger. Calling `disableDevTools()` afterwards restored stale pre-DevTools callbacks, permanently losing the user's handler.
+
+  **Fix:** DevTools now uses an internal **config hook registry** instead of replacing user callbacks via `configure()`. Hooks registered by `enableDevTools()` run alongside — never replace — user-provided callbacks. `configure()` only affects the user's callbacks, and `disableDevTools()` only removes the DevTools hooks. The two systems are fully independent, so they can be set up in any order without conflict.
+
+  **New internal API** (not publicly exported): `addConfigHook(event, fn)` / `removeConfigHook(event, fn)` in `config.ts`. The `fireConfigCallback()` helper in `listeners.ts` invokes the user callback first, then any registered hooks.
+
 ## 1.3.7
 
 ### Patch Changes
