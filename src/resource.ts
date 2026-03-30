@@ -103,19 +103,30 @@ export function resource<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>,
 		// Read dep values fresh on each refetch
 		let promise: Promise<T>
 
-		if (deps) {
-			const depLen = deps.length
-			const depValues = new Array(depLen) as DepValues<TDeps>
+		try {
+			if (deps) {
+				const depLen = deps.length
+				const depValues = new Array(depLen) as DepValues<TDeps>
 
-			for (let i = 0; i < depLen; i++) {
-				const dep = deps[i] as ReadonlyInstance<unknown>
+				for (let i = 0; i < depLen; i++) {
+					const dep = deps[i] as ReadonlyInstance<unknown>
 
-				;(depValues as unknown[])[i] = dep.get()
+					;(depValues as unknown[])[i] = dep.get()
+				}
+
+				promise = fn(depValues)
+			} else {
+				promise = (fn as () => Promise<T>)()
 			}
+		} catch (err) {
+			const wrappedError = err instanceof Error ? err : new Error(String(err))
 
-			promise = fn(depValues)
-		} else {
-			promise = (fn as () => Promise<T>)()
+			batch(() => {
+				errorState.set(wrappedError)
+				loadingState.set(false)
+			})
+
+			return
 		}
 
 		promise.then(

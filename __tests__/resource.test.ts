@@ -151,4 +151,39 @@ describe('resource', () => {
 		r.destroy()
 		// The key is used internally for sub-states — just verify no crash
 	})
+
+	it('handles synchronously throwing fetch function', () => {
+		const r = resource(() => {
+			throw new Error('sync boom')
+		})
+
+		expect(r.error.get() instanceof Error).toBe(true)
+		expect(r.error.get()?.message).toBe('sync boom')
+		expect(r.loading.get()).toBe(false)
+
+		r.destroy()
+	})
+
+	it('handles synchronously throwing fetch function on dep-triggered refetch', async () => {
+		const dep = state('res-sync-throw-dep', { default: 0, scope: 'memory' })
+
+		let callCount = 0
+
+		const r = resource([dep], ([v]) => {
+			callCount++
+			if (callCount > 1) throw new Error('sync dep boom')
+			return Promise.resolve((v as number) * 10)
+		})
+
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		expect(r.data.get()).toBe(0)
+
+		dep.set(1)
+		expect(r.error.get() instanceof Error).toBe(true)
+		expect(r.error.get()?.message).toBe('sync dep boom')
+		expect(r.loading.get()).toBe(false)
+
+		r.destroy()
+		dep.destroy()
+	})
 })
