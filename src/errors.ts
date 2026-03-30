@@ -208,3 +208,42 @@ export class HydrationError extends GjendjeError {
 		this.name = 'HydrationError'
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Resource errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when a `resource()` async fetch function throws or rejects.
+ */
+export class ResourceError extends GjendjeError {
+	constructor(key: string, cause?: unknown) {
+		super(
+			`Resource fetch failed for "${key}".`,
+			key,
+			'memory',
+			cause !== undefined ? { cause } : undefined,
+		)
+
+		this.name = 'ResourceError'
+	}
+}
+
+// ---------------------------------------------------------------------------
+// When errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when `when()` exceeds its configured timeout.
+ */
+export class WhenTimeoutError extends Error {
+	readonly timeout: number
+
+	constructor(timeout: number) {
+		super(`when() timed out after ${timeout}ms`)
+
+		this.name = 'WhenTimeoutError'
+
+		this.timeout = timeout
+	}
+}

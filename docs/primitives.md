@@ -287,3 +287,250 @@ handle.stop()
 - **Batching** — participates in `batch()`.
 
 </details>
+
+---
+
+## `when(deps, predicate, options?)`
+
+Returns a promise that resolves when a predicate over reactive dependencies becomes true. A one-shot conditional awaiter.
+
+```ts
+function when<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
+  deps: TDeps,
+  predicate: (values: DepValues<TDeps>) => boolean,
+  options?: WhenOptions,
+): Promise<void>
+```
+
+```ts
+import { state, when } from 'gjendje'
+
+const auth = state({ auth: null as string | null })
+
+// Wait for authentication
+await when([auth], ([user]) => user !== null)
+
+// With timeout
+await when([auth], ([user]) => user !== null, { timeout: 5000 })
+
+// With AbortController
+const controller = new AbortController()
+await when([auth], ([user]) => user !== null, { signal: controller.signal })
+```
+
+> **Returns** `Promise<void>` — resolves when the predicate is satisfied. Not a reactive instance.
+
+<details>
+<summary>Details</summary>
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `deps` | `ReadonlyArray<ReadonlyInstance>` | State instances to observe |
+| `predicate` | `(values) => boolean` | Condition to wait for |
+| `options.timeout` | `number` | Rejects with `WhenTimeoutError` if exceeded |
+| `options.signal` | `AbortSignal` | Rejects if the signal is aborted |
+
+- **Immediate check** — if the predicate is already true, resolves synchronously without subscribing.
+- **Cleanup** — subscriptions, timers, and abort listeners are cleaned up on settlement.
+- **One-shot** — resolves at most once, then unsubscribes from all dependencies.
+
+</details>
+
+---
+
+## `resource(fn, options?)`
+
+Async data fetching primitive with reactive `data`, `loading`, and `error` states. Handles race conditions and supports reactive dependencies for auto-refetching.
+
+```ts
+function resource<T>(
+  fn: () => Promise<T>,
+  options?: ResourceOptions<T>,
+): ResourceInstance<T>
+
+function resource<TDeps, T>(
+  deps: TDeps,
+  fn: (values: DepValues<TDeps>) => Promise<T>,
+  options?: ResourceOptions<T>,
+): ResourceInstance<T>
+```
+
+```ts
+import { state, resource } from 'gjendje'
+
+// Basic async fetch
+const users = resource(async () => {
+  const res = await fetch('/api/users')
+  return res.json()
+})
+
+users.data.get()     // T | undefined
+users.loading.get()  // boolean
+users.error.get()    // Error | undefined
+users.refetch()      // re-trigger manually
+
+// With reactive deps — auto-refetches when deps change
+const userId = state({ userId: 1 })
+
+const user = resource([userId], async ([id]) => {
+  const res = await fetch(`/api/users/${id}`)
+  return res.json()
+})
+```
+
+> **Returns** `ResourceInstance<T>`.
+
+<details>
+<summary>Details</summary>
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `fn` | `() => Promise<T>` | Async fetch function |
+| `deps` | `ReadonlyArray<ReadonlyInstance>` | Reactive dependencies that trigger refetch |
+| `options.key` | `string` | Optional debugging key |
+| `options.initialData` | `T` | Initial data value before first fetch |
+
+### ResourceInstance
+
+| Property / Method | Type | Description |
+|-------------------|------|-------------|
+| `data` | `ReadonlyInstance<T \| undefined>` | The resolved data |
+| `loading` | `ReadonlyInstance<boolean>` | Whether a fetch is in flight |
+| `error` | `ReadonlyInstance<Error \| undefined>` | The last error |
+| `refetch()` | `() => void` | Re-trigger the async function |
+| `destroy()` | `() => void` | Tear down all internal state |
+| `isDestroyed` | `boolean` | Whether destroyed |
+
+- **Race condition safe** — stale responses from superseded fetches are discarded.
+- **Composable** — `data`, `loading`, and `error` are `ReadonlyInstance` values, so they work as dependencies for `computed()`, `effect()`, `when()`, etc.
+- **Batching** — state transitions (loading + data/error) are grouped in a single `batch()`.
+- **Auto-refetch** — when deps are provided, any dependency change triggers a new fetch.
+
+</details>
+
+---
+
+## `channel(name?)`
+
+Lightweight typed pub/sub event channel. Fire-and-forget — no state stored, no persistence.
+
+```ts
+function channel<T>(nameOrOptions?: string | ChannelOptions): ChannelInstance<T>
+```
+
+```ts
+import { channel } from 'gjendje'
+
+const onClick = channel<{ x: number; y: number }>('click')
+
+const unsub = onClick.subscribe(({ x, y }) => {
+  console.log(`Clicked at ${x}, ${y}`)
+})
+
+onClick.emit({ x: 100, y: 200 })
+
+unsub()          // stop listening
+onClick.destroy() // remove all listeners
+```
+
+> **Returns** `ChannelInstance<T>`.
+
+<details>
+<summary>Details</summary>
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `nameOrOptions` | `string \| { key?: string }` | Channel name or options. Auto-generates a key if omitted. |
+
+### ChannelInstance
+
+| Property / Method | Type | Description |
+|-------------------|------|-------------|
+| `key` | `string` | Channel name |
+| `emit(payload)` | `(payload: T) => void` | Fire an event to all subscribers |
+| `subscribe(listener)` | `(fn: (value: T) => void) => Unsubscribe` | Listen for events |
+| `destroy()` | `() => void` | Remove all listeners |
+| `isDestroyed` | `boolean` | Whether destroyed |
+
+- **Not state** — channels are ephemeral event buses. No `get()`, no persistence, no current value.
+- **Safe** — listener errors are caught internally and do not prevent other listeners from firing.
+- **Emit after destroy** — is a no-op.
+
+</details>
+
+---
+
+## `toSignal(instance)` / `fromSignal(signal)`
+
+Bridge between gjendje instances and TC39 Signal-like objects.
+
+```ts
+function toSignal<T>(instance: BaseInstance<T>): WritableSignal<T>
+function toSignal<T>(instance: ReadonlyInstance<T>): Signal<T>
+
+function fromSignal<T>(
+  signal: SignalLike<T>,
+  options?: { key?: string },
+): ReadonlyInstance<T>
+```
+
+```ts
+import { state, computed, toSignal, fromSignal } from 'gjendje'
+
+// Wrap a gjendje instance as a Signal
+const counter = state({ counter: 0 })
+const sig = toSignal(counter)
+
+sig.value         // 0 (reads counter.get())
+sig.value = 5     // calls counter.set(5)
+
+// Read-only signals from computed
+const doubled = computed([counter], ([n]) => n * 2)
+const readSig = toSignal(doubled)
+readSig.value     // 10 (read-only, no setter)
+
+// Create a gjendje instance from an external Signal
+const inst = fromSignal(externalSignal)
+inst.get()        // mirrors externalSignal.value
+inst.subscribe(v => console.log(v))
+```
+
+> **`toSignal`** returns `WritableSignal<T>` for writable instances, `Signal<T>` for read-only instances.
+>
+> **`fromSignal`** returns `ReadonlyInstance<T>` backed by the external signal's subscription.
+
+<details>
+<summary>Details</summary>
+
+### Signal interfaces
+
+```ts
+interface Signal<T> {
+  readonly value: T
+  subscribe(listener: (value: T) => void): () => void
+}
+
+interface WritableSignal<T> extends Signal<T> {
+  value: T  // getter + setter
+}
+
+interface SignalLike<T> {
+  readonly value: T
+  subscribe(listener: (value: T) => void): () => void
+}
+```
+
+### toSignal
+
+- **Zero-cost** — thin wrapper, no subscriptions created. Delegates to `get()`/`set()`.
+- **Works with any instance** — `state`, `computed`, `select`, `previous`, `readonly`, `collection`.
+- **Duck-typed** — detects writable via `typeof instance.set === 'function'`.
+
+### fromSignal
+
+- **Mirrors updates** — subscribes to the external signal and notifies gjendje subscribers on change.
+- **Equality check** — skips notification when value is unchanged (`Object.is`).
+- **Destroy** — unsubscribes from the external signal and clears all listeners.
+- **Scope** — always `'memory'`.
+
+</details>

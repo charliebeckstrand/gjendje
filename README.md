@@ -104,7 +104,7 @@ function Counter() {
 
 ## Primitives
 
-`computed`, `select`, `previous`, `readonly`, `collection`, `effect`
+`computed`, `select`, `previous`, `readonly`, `collection`, `effect`, `when`, `resource`, `channel`, `toSignal`, `fromSignal`
 
 [Primitives reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/primitives.md)
 
