@@ -44,7 +44,6 @@ export function notifyWatchers(
 	next: unknown,
 ): void {
 	const prevObj = isRecord(prev) ? prev : undefined
-
 	const nextObj = isRecord(next) ? next : undefined
 
 	// Snapshot entries so that watch()/unwatch() calls from within a listener
@@ -55,7 +54,6 @@ export function notifyWatchers(
 		const [watchKey, listenerSet] = entries[i] as [PropertyKey, Set<Listener<unknown>>]
 
 		const prevVal = prevObj?.[watchKey]
-
 		const nextVal = nextObj?.[watchKey]
 
 		if (!Object.is(prevVal, nextVal)) {
