@@ -51,11 +51,18 @@ export function when<TDeps extends ReadonlyArray<ReadonlyInstance<unknown>>>(
 		}
 	}
 
-	// Check synchronously first — avoid subscribing if already satisfied
-	readDeps()
+	// Check synchronously first — avoid subscribing if already satisfied.
+	// Wrapped in try/catch so that a throwing predicate returns a rejected
+	// promise rather than a synchronous exception (preserving the Promise<void>
+	// contract for callers using .catch() instead of await).
+	try {
+		readDeps()
 
-	if (predicate(depValues)) {
-		return Promise.resolve()
+		if (predicate(depValues)) {
+			return Promise.resolve()
+		}
+	} catch (err) {
+		return Promise.reject(err)
 	}
 
 	return new Promise<void>((resolve, reject) => {

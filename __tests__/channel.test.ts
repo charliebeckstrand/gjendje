@@ -117,6 +117,22 @@ describe('channel', () => {
 		ch.destroy()
 	})
 
+	it('subscribe after destroy returns no-op unsubscribe', () => {
+		const ch = channel<number>('ch-sub-after-destroy')
+
+		ch.destroy()
+
+		const listener = vi.fn()
+		const unsub = ch.subscribe(listener)
+
+		// Should be a no-op function
+		expect(typeof unsub).toBe('function')
+		unsub() // should not throw
+
+		ch.emit(1)
+		expect(listener).not.toHaveBeenCalled()
+	})
+
 	it('isDestroyed reflects lifecycle', () => {
 		const ch = channel<number>('ch-lifecycle')
 

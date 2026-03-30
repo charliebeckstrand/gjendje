@@ -110,6 +110,77 @@ describe('when', () => {
 		s.destroy()
 	})
 
+	it('rejects if predicate throws synchronously on initial check', async () => {
+		const s = state('when-pred-sync-throw', { default: 5, scope: 'memory' })
+
+		let caught: unknown
+
+		try {
+			await when([s], () => {
+				throw new Error('predicate boom')
+			})
+		} catch (err) {
+			caught = err
+		}
+
+		expect(caught instanceof Error).toBe(true)
+		expect((caught as Error).message).toBe('predicate boom')
+
+		s.destroy()
+	})
+
+	it('rejects if predicate throws during onChange', async () => {
+		const s = state('when-pred-async-throw', { default: 0, scope: 'memory' })
+
+		let callCount = 0
+
+		const promise = when([s], () => {
+			callCount++
+			if (callCount > 1) throw new Error('async boom')
+			return false
+		})
+
+		s.set(1)
+
+		let caught: unknown
+
+		try {
+			await promise
+		} catch (err) {
+			caught = err
+		}
+
+		expect(caught instanceof Error).toBe(true)
+		expect((caught as Error).message).toBe('async boom')
+
+		s.destroy()
+	})
+
+	it('returns a rejected promise (not sync throw) for predicate errors', async () => {
+		const s = state('when-promise-contract', { default: 0, scope: 'memory' })
+
+		// This should NOT throw synchronously — it should return a rejected promise
+		const promise = when([s], () => {
+			throw new Error('sync boom')
+		})
+
+		// Verify it's a promise (not a sync throw)
+		expect(promise).toBeDefined()
+		expect(typeof promise.catch).toBe('function')
+
+		let caught: unknown
+
+		try {
+			await promise
+		} catch (err) {
+			caught = err
+		}
+
+		expect(caught instanceof Error).toBe(true)
+
+		s.destroy()
+	})
+
 	it('cleans up subscriptions after timeout', async () => {
 		const s = state('when-cleanup-timeout', { default: 0, scope: 'memory' })
 

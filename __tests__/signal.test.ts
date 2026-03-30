@@ -149,6 +149,35 @@ describe('fromSignal', () => {
 		expect(i1.key).not.toBe(i2.key)
 	})
 
+	it('subscribe after destroy returns no-op', () => {
+		const mock = createMockSignal(0)
+
+		const inst = fromSignal(mock)
+
+		inst.destroy()
+
+		const listener = vi.fn()
+		const unsub = inst.subscribe(listener)
+
+		expect(typeof unsub).toBe('function')
+		unsub() // should not throw
+
+		mock._set(99)
+		expect(listener).not.toHaveBeenCalled()
+	})
+
+	it('skips notification when value is unchanged', () => {
+		const mock = createMockSignal(42)
+
+		const inst = fromSignal(mock)
+
+		const listener = vi.fn()
+
+		inst.subscribe(listener)
+		mock._set(42) // same value
+		expect(listener).not.toHaveBeenCalled()
+	})
+
 	it('scope is memory', () => {
 		const mock = createMockSignal(0)
 
