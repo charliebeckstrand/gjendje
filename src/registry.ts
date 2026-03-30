@@ -1,5 +1,5 @@
 import { type GjendjeConfig, log } from './config.js'
-import { safeCallConfig } from './listeners.js'
+import { fireConfigCallback } from './listeners.js'
 import type { BaseInstance, Scope } from './types.js'
 
 export function scopedKey(key: string, scope: Scope): string {
@@ -30,7 +30,7 @@ export function registerByKey<T>(
 		if (existing.isDestroyed) {
 			registry.set(rKey, instance)
 
-			safeCallConfig(config.onRegister, { key, scope })
+			fireConfigCallback(config.onRegister, 'onRegister', { key, scope })
 		} else if (config.warnOnDuplicate) {
 			log('warn', `Duplicate state("${key}") with scope "${scope}". Returning cached instance.`)
 		}
@@ -47,7 +47,7 @@ export function registerByKey<T>(
 
 	registry.set(rKey, instance)
 
-	safeCallConfig(config.onRegister, { key, scope })
+	fireConfigCallback(config.onRegister, 'onRegister', { key, scope })
 }
 
 /**
@@ -66,7 +66,7 @@ export function registerNew<T>(
 		// Caller already verified !existing || existing.isDestroyed
 		registry.set(rKey, instance)
 
-		safeCallConfig(config.onRegister, { key, scope })
+		fireConfigCallback(config.onRegister, 'onRegister', { key, scope })
 
 		return
 	}
@@ -80,7 +80,7 @@ export function registerNew<T>(
 
 	registry.set(rKey, instance)
 
-	safeCallConfig(config.onRegister, { key, scope })
+	fireConfigCallback(config.onRegister, 'onRegister', { key, scope })
 }
 
 /**

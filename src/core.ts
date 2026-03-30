@@ -7,7 +7,7 @@ import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
 import { getConfig, log, PERSISTENT_SCOPES, reportError } from './config.js'
 import { HydrationError, InterceptorError, StorageWriteError } from './errors.js'
-import { safeCall, safeCallChange, safeCallConfig } from './listeners.js'
+import { fireConfigCallback, safeCall, safeCallChange, safeCallConfig } from './listeners.js'
 import { getRegistered, registerNew, scopedKey, unregisterByKey } from './registry.js'
 import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
 import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
@@ -259,14 +259,12 @@ class StateImpl<T> implements StateInstance<T> {
 			}
 		}
 
-		if (this._config.onChange !== undefined) {
-			safeCallConfig(this._config.onChange, {
-				key: this.key,
-				scope: this.scope,
-				value: next,
-				previousValue: prev,
-			})
-		}
+		fireConfigCallback(this._config.onChange, 'onChange', {
+			key: this.key,
+			scope: this.scope,
+			value: next,
+			previousValue: prev,
+		})
 	}
 
 	set(valueOrUpdater: T | ((prev: T) => T)): void {
@@ -343,7 +341,11 @@ class StateImpl<T> implements StateInstance<T> {
 
 		s.settled = this._adapter.ready
 
-		safeCallConfig(this._config.onReset, { key: this.key, scope: this.scope, previousValue: prev })
+		fireConfigCallback(this._config.onReset, 'onReset', {
+			key: this.key,
+			scope: this.scope,
+			previousValue: prev,
+		})
 
 		this._notifyChange(next, prev)
 	}
@@ -492,7 +494,7 @@ class StateImpl<T> implements StateInstance<T> {
 
 			unregisterByKey(this._rKey)
 
-			safeCallConfig(this._config.onDestroy, { key: this.key, scope: this.scope })
+			fireConfigCallback(this._config.onDestroy, 'onDestroy', { key: this.key, scope: this.scope })
 		} finally {
 			if (s.resolveDestroyed) {
 				s.resolveDestroyed()
@@ -709,14 +711,12 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 			}
 		}
 
-		if (this._config.onChange !== undefined) {
-			safeCallConfig(this._config.onChange, {
-				key: this.key,
-				scope: this.scope,
-				value: next,
-				previousValue: prev,
-			})
-		}
+		fireConfigCallback(this._config.onChange, 'onChange', {
+			key: this.key,
+			scope: this.scope,
+			value: next,
+			previousValue: prev,
+		})
 	}
 
 	subscribe(listener: Listener<T>): Unsubscribe {
@@ -807,14 +807,12 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 		}
 
 		// Fire onReset before changeHandlers — matches StateImpl.reset() order
-		// where safeCallConfig(onReset) precedes _notifyChange().
-		if (this._config.onReset !== undefined) {
-			safeCallConfig(this._config.onReset, {
-				key: this.key,
-				scope: this.scope,
-				previousValue: prev,
-			})
-		}
+		// where fireConfigCallback(onReset) precedes _notifyChange().
+		fireConfigCallback(this._config.onReset, 'onReset', {
+			key: this.key,
+			scope: this.scope,
+			previousValue: prev,
+		})
 
 		if (ext !== undefined && ext.changeHandlers !== undefined && ext.changeHandlers.size > 0) {
 			const snapshot = Array.from(ext.changeHandlers)
@@ -824,14 +822,12 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 			}
 		}
 
-		if (this._config.onChange !== undefined) {
-			safeCallConfig(this._config.onChange, {
-				key: this.key,
-				scope: this.scope,
-				value: next,
-				previousValue: prev,
-			})
-		}
+		fireConfigCallback(this._config.onChange, 'onChange', {
+			key: this.key,
+			scope: this.scope,
+			value: next,
+			previousValue: prev,
+		})
 	}
 
 	get ready(): Promise<void> {
@@ -996,14 +992,12 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 			}
 		}
 
-		if (this._config.onChange !== undefined) {
-			safeCallConfig(this._config.onChange, {
-				key: this.key,
-				scope: this.scope,
-				value: next,
-				previousValue: prev,
-			})
-		}
+		fireConfigCallback(this._config.onChange, 'onChange', {
+			key: this.key,
+			scope: this.scope,
+			value: next,
+			previousValue: prev,
+		})
 	}
 
 	private _ensureWatchSubscription(): void {
@@ -1047,7 +1041,7 @@ class MemoryStateImpl<T> implements StateInstance<T> {
 
 			if (this._rKey) unregisterByKey(this._rKey)
 
-			safeCallConfig(this._config.onDestroy, { key: this.key, scope: this.scope })
+			fireConfigCallback(this._config.onDestroy, 'onDestroy', { key: this.key, scope: this.scope })
 		} finally {
 			if (ext?.resolveDestroyed) {
 				ext.resolveDestroyed()

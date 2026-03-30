@@ -188,6 +188,12 @@ export function createStorageAdapter<T>(
 
 		if (event.key !== null && event.key !== key) return
 
+		// When cross-tab sync (BroadcastChannel) is active, the sync handler
+		// already called adapter.set() which wrote the value and populated the
+		// cache. The storage event from the originating tab carries the same
+		// raw string — skip the redundant notification to prevent double-firing.
+		if (event.key !== null && cacheValid && event.newValue === cachedRaw) return
+
 		// Invalidate cache — another tab changed this key or cleared storage
 		cachedRaw = undefined
 		cachedValue = undefined

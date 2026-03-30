@@ -446,6 +446,135 @@ describe('sync edge cases', () => {
 		x.destroy()
 	})
 
+	it('does not double-notify when storage event arrives after BroadcastChannel message', () => {
+		// Capture the storage event handler registered by the storage adapter
+		const eventHandlers: Array<(event: Partial<StorageEvent>) => void> = []
+
+		Object.defineProperty(globalThis, 'window', {
+			value: {
+				addEventListener: (type: string, handler: (event: Partial<StorageEvent>) => void) => {
+					if (type === 'storage') eventHandlers.push(handler)
+				},
+				removeEventListener: () => {},
+			},
+			configurable: true,
+			writable: true,
+		})
+
+		const a = state('sync-no-double', { default: 0, scope: 'local', sync: true })
+
+		const listener = vi.fn()
+
+		a.subscribe(listener)
+
+		// Simulate incoming broadcast from another tab (via BroadcastChannel)
+		const channels = MockBroadcastChannel.channels.get('state:sync-no-double')
+		const channel = channels ? [...channels][0] : undefined
+
+		channel?.onmessage?.({ data: { value: 42 } })
+
+		// First notification from BroadcastChannel handler
+		expect(listener).toHaveBeenCalledTimes(1)
+		expect(listener).toHaveBeenCalledWith(42)
+
+		// Now simulate the storage event from the originating tab's write —
+		// this should be suppressed because the cache already has the same raw value
+		const raw = localStorage.getItem('sync-no-double')
+
+		for (const handler of eventHandlers) {
+			handler({
+				storageArea: localStorage,
+				key: 'sync-no-double',
+				newValue: raw,
+			})
+		}
+
+		// Still only 1 notification — the storage event was deduplicated
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		a.destroy()
+	})
+
+	it('still notifies on storage event with different value', () => {
+		const eventHandlers: Array<(event: Partial<StorageEvent>) => void> = []
+
+		Object.defineProperty(globalThis, 'window', {
+			value: {
+				addEventListener: (type: string, handler: (event: Partial<StorageEvent>) => void) => {
+					if (type === 'storage') eventHandlers.push(handler)
+				},
+				removeEventListener: () => {},
+			},
+			configurable: true,
+			writable: true,
+		})
+
+		const a = state('sync-diff-value', { default: 0, scope: 'local', sync: true })
+
+		const listener = vi.fn()
+
+		a.subscribe(listener)
+
+		// Set a value locally first to populate the cache
+		a.set(10)
+
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		// Simulate a storage event from another tab with a DIFFERENT value
+		for (const handler of eventHandlers) {
+			handler({
+				storageArea: localStorage,
+				key: 'sync-diff-value',
+				newValue: '999',
+			})
+		}
+
+		// Should notify because the raw value differs from cache
+		expect(listener).toHaveBeenCalledTimes(2)
+
+		a.destroy()
+	})
+
+	it('always invalidates on storage.clear() event (key === null)', () => {
+		const eventHandlers: Array<(event: Partial<StorageEvent>) => void> = []
+
+		Object.defineProperty(globalThis, 'window', {
+			value: {
+				addEventListener: (type: string, handler: (event: Partial<StorageEvent>) => void) => {
+					if (type === 'storage') eventHandlers.push(handler)
+				},
+				removeEventListener: () => {},
+			},
+			configurable: true,
+			writable: true,
+		})
+
+		const a = state('sync-clear', { default: 0, scope: 'local', sync: true })
+
+		const listener = vi.fn()
+
+		a.subscribe(listener)
+
+		// Set a value to populate the cache
+		a.set(5)
+
+		expect(listener).toHaveBeenCalledTimes(1)
+
+		// Simulate storage.clear() event (key is null)
+		for (const handler of eventHandlers) {
+			handler({
+				storageArea: localStorage,
+				key: null,
+				newValue: null,
+			})
+		}
+
+		// Should still notify — clear events always invalidate
+		expect(listener).toHaveBeenCalledTimes(2)
+
+		a.destroy()
+	})
+
 	it('fires onSync callback with source remote on incoming message', () => {
 		const onSync = vi.fn()
 

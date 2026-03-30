@@ -160,6 +160,42 @@ export interface GjendjeConfig {
 
 let globalConfig: GjendjeConfig = {}
 
+// ---------------------------------------------------------------------------
+// Internal config hook registry
+// ---------------------------------------------------------------------------
+// Hooks run AFTER the user's callback for a given config event. Used by
+// DevTools so that enableDevTools()/disableDevTools() never overwrites (or
+// gets overwritten by) user-provided callbacks set via configure().
+
+// biome-ignore lint/suspicious/noExplicitAny: hooks accept heterogeneous context objects
+type ConfigHookFn = (ctx: any) => void
+const configHooks = new Map<string, Set<ConfigHookFn>>()
+
+export function addConfigHook(event: string, fn: ConfigHookFn): void {
+	let hooks = configHooks.get(event)
+
+	if (!hooks) {
+		hooks = new Set()
+		configHooks.set(event, hooks)
+	}
+
+	hooks.add(fn)
+}
+
+export function removeConfigHook(event: string, fn: ConfigHookFn): void {
+	const hooks = configHooks.get(event)
+
+	if (hooks) {
+		hooks.delete(fn)
+
+		if (hooks.size === 0) configHooks.delete(event)
+	}
+}
+
+export function getConfigHooks(event: string): Set<ConfigHookFn> | undefined {
+	return configHooks.get(event)
+}
+
 export const PERSISTENT_SCOPES = new Set<Scope>(['local', 'session', 'bucket'])
 
 const VALID_LOG_LEVELS = new Set<string>(['silent', 'warn', 'error', 'debug'])
@@ -267,6 +303,7 @@ export function configure(config: GjendjeConfig): void {
  */
 export function resetConfig(): void {
 	globalConfig = {}
+	configHooks.clear()
 }
 
 export function getConfig(): Readonly<GjendjeConfig> {

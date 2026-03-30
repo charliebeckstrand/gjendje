@@ -14,7 +14,7 @@
  * ```
  */
 
-import { configure, getConfig } from '../config.js'
+import { addConfigHook, removeConfigHook } from '../config.js'
 import type { Scope } from '../types.js'
 import {
 	disableLogger,
@@ -62,69 +62,36 @@ export interface DevToolsOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Stored original callbacks (for chaining)
+// Hook handlers — dispatched via the config hook registry so they never
+// conflict with user-provided callbacks set via configure().
 // ---------------------------------------------------------------------------
-
-let originalOnChange:
-	| ((ctx: { key: string; scope: Scope; value: unknown; previousValue: unknown }) => void)
-	| undefined
-
-let originalOnReset:
-	| ((ctx: { key: string; scope: Scope; previousValue: unknown }) => void)
-	| undefined
-
-let originalOnRegister: ((ctx: { key: string; scope: Scope }) => void) | undefined
-
-let originalOnDestroy: ((ctx: { key: string; scope: Scope }) => void) | undefined
 
 let devToolsEnabled = false
 
-// ---------------------------------------------------------------------------
-// Config callback wrappers
-// ---------------------------------------------------------------------------
-
-function callOriginal<A>(fn: ((arg: A) => void) | undefined, arg: A): void {
-	if (fn === undefined) return
-
-	try {
-		fn(arg)
-	} catch (err) {
-		console.error('[gjendje] DevTools: original config callback threw:', err)
-	}
-}
-
-function onChangeHandler(ctx: {
+function devToolsOnChange(ctx: {
 	key: string
 	scope: Scope
 	value: unknown
 	previousValue: unknown
 }): void {
-	callOriginal(originalOnChange, ctx)
-
 	dispatchChange(ctx.key, ctx.scope, ctx.value, ctx.previousValue)
 
 	logChange(ctx.key, ctx.scope, ctx.value, ctx.previousValue)
 }
 
-function onResetHandler(ctx: { key: string; scope: Scope; previousValue: unknown }): void {
-	callOriginal(originalOnReset, ctx)
-
+function devToolsOnReset(ctx: { key: string; scope: Scope; previousValue: unknown }): void {
 	dispatchReset(ctx.key, ctx.scope, ctx.previousValue)
 
 	logReset(ctx.key, ctx.scope, ctx.previousValue)
 }
 
-function onRegisterHandler(ctx: { key: string; scope: Scope }): void {
-	callOriginal(originalOnRegister, ctx)
-
+function devToolsOnRegister(ctx: { key: string; scope: Scope }): void {
 	dispatchRegister(ctx.key, ctx.scope)
 
 	logRegister(ctx.key, ctx.scope)
 }
 
-function onDestroyHandler(ctx: { key: string; scope: Scope }): void {
-	callOriginal(originalOnDestroy, ctx)
-
+function devToolsOnDestroy(ctx: { key: string; scope: Scope }): void {
 	dispatchDestroy(ctx.key, ctx.scope)
 
 	logDestroy(ctx.key, ctx.scope)
@@ -137,8 +104,9 @@ function onDestroyHandler(ctx: { key: string; scope: Scope }): void {
 /**
  * Enable gjendje DevTools integration.
  *
- * Hooks into the global `configure()` callbacks to dispatch state changes
- * to the Redux DevTools Extension and/or the enhanced console logger.
+ * Registers internal config hooks for `onChange`, `onReset`, `onRegister`,
+ * and `onDestroy`. These hooks run alongside — never replace — user-provided
+ * callbacks set via `configure()`, so the two cannot overwrite each other.
  *
  * Both Redux DevTools and the logger are enabled by default. Pass options
  * to selectively enable/disable each feature.
@@ -176,24 +144,11 @@ export function enableDevTools(options?: DevToolsOptions): () => void {
 		return disableDevTools
 	}
 
-	const config = getConfig()
-
-	// Store original callbacks for chaining
-	originalOnChange = config.onChange
-
-	originalOnReset = config.onReset
-
-	originalOnRegister = config.onRegister
-
-	originalOnDestroy = config.onDestroy
-
-	// Wire devtools into global config
-	configure({
-		onChange: onChangeHandler,
-		onReset: onResetHandler,
-		onRegister: onRegisterHandler,
-		onDestroy: onDestroyHandler,
-	})
+	// Register hooks — these coexist with user callbacks set via configure()
+	addConfigHook('onChange', devToolsOnChange)
+	addConfigHook('onReset', devToolsOnReset)
+	addConfigHook('onRegister', devToolsOnRegister)
+	addConfigHook('onDestroy', devToolsOnDestroy)
 
 	// Connect Redux DevTools
 	if (options?.reduxDevTools !== false) {
@@ -213,27 +168,16 @@ export function enableDevTools(options?: DevToolsOptions): () => void {
 /**
  * Disable gjendje DevTools integration.
  *
- * Restores original `configure()` callbacks and disconnects from
- * Redux DevTools and the logger.
+ * Removes the internal config hooks and disconnects from Redux DevTools
+ * and the logger. User-provided callbacks are never touched.
  */
 export function disableDevTools(): void {
 	if (!devToolsEnabled) return
 
-	// Restore original callbacks
-	configure({
-		onChange: originalOnChange,
-		onReset: originalOnReset,
-		onRegister: originalOnRegister,
-		onDestroy: originalOnDestroy,
-	})
-
-	originalOnChange = undefined
-
-	originalOnReset = undefined
-
-	originalOnRegister = undefined
-
-	originalOnDestroy = undefined
+	removeConfigHook('onChange', devToolsOnChange)
+	removeConfigHook('onReset', devToolsOnReset)
+	removeConfigHook('onRegister', devToolsOnRegister)
+	removeConfigHook('onDestroy', devToolsOnDestroy)
 
 	disconnectReduxDevTools()
 
