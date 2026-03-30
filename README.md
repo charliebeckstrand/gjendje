@@ -79,7 +79,7 @@ const count = useGjendje(counter)
 
 ## API
 
-`get`, `peek`, `set`, `patch`, `reset`, `destroy`, `subscribe`, `watch`, `intercept`, `onChange`
+`get`, `peek`, `set`, `patch`, `mutate`, `reset`, `destroy`, `subscribe`, `watch`, `intercept`, `onChange`
 
 [API reference](https://github.com/charliebeckstrand/gjendje/blob/main/docs/api.md)
 

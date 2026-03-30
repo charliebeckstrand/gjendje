@@ -124,6 +124,23 @@ export interface StateInstance<T> extends BaseInstance<T> {
 	 * current value — unknown keys are ignored and a warning is logged.
 	 */
 	patch(partial: T extends object ? Partial<T> : never, options?: { strict?: boolean }): void
+
+	/**
+	 * Mutate the current value in place, then notify subscribers.
+	 *
+	 * The callback receives the current value by reference. After it returns,
+	 * the library re-stores the same reference and fires subscribers.
+	 *
+	 * **Bypasses `isEqual`** — the reference is identical, so equality checks
+	 * would always bail. Interceptors still run normally.
+	 *
+	 * @example
+	 * ```ts
+	 * const settings = state('settings', { default: { theme: 'light', lang: 'en' } })
+	 * settings.mutate(draft => { draft.theme = 'dark' })
+	 * ```
+	 */
+	mutate(fn: (draft: T) => void): void
 }
 
 // ---------------------------------------------------------------------------

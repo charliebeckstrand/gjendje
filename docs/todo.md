@@ -4,13 +4,13 @@ Near-term engineering tasks and API proposals. For longer-term product and commu
 
 ---
 
-## `render` scope — add runtime deprecation warning
+## ~~`render` scope — add runtime deprecation warning~~ ✅ Done
 
-The `'render'` scope is silently normalized to `'memory'` (deprecated in 1.0.0, see [deprecations.md](deprecations.md)). Currently there is no runtime feedback — users won't know they're using a deprecated alias. Add a `console.warn` on first use so they can migrate before removal in the next major version.
+~~The `'render'` scope is silently normalized to `'memory'` (deprecated in 1.0.0, see [deprecations.md](deprecations.md)). Currently there is no runtime feedback — users won't know they're using a deprecated alias. Add a `console.warn` on first use so they can migrate before removal in the next major version.~~
 
 ---
 
-## `mutate()` — zero-copy update for large objects
+## ~~`mutate()` — zero-copy update for large objects~~ ✅ Done
 
 ### Problem
 
