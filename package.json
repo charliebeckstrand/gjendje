@@ -11,6 +11,7 @@
 		"typescript",
 		"react",
 		"vue",
+		"svelte",
 		"localStorage",
 		"sessionStorage",
 		"storageBuckets"
@@ -70,6 +71,16 @@
 			"require": {
 				"types": "./dist/vue.d.cts",
 				"default": "./dist/vue.cjs"
+			}
+		},
+		"./svelte": {
+			"import": {
+				"types": "./dist/svelte.d.ts",
+				"default": "./dist/svelte.js"
+			},
+			"require": {
+				"types": "./dist/svelte.d.cts",
+				"default": "./dist/svelte.cjs"
 			}
 		},
 		"./devtools": {
@@ -134,13 +145,17 @@
 	},
 	"peerDependencies": {
 		"react": ">=18.0.0",
-		"vue": ">=3.3.0"
+		"vue": ">=3.3.0",
+		"svelte": ">=3.0.0"
 	},
 	"peerDependenciesMeta": {
 		"react": {
 			"optional": true
 		},
 		"vue": {
+			"optional": true
+		},
+		"svelte": {
 			"optional": true
 		}
 	},
