@@ -1,5 +1,5 @@
 import { createBase } from './core.js'
-import type { Scope, StateInstance, StateOptions } from './types.js'
+import type { Scope, StateInstance, StateOptions } from './types/index.js'
 
 // ---------------------------------------------------------------------------
 // Helpers

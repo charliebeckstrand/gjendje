@@ -1,7 +1,7 @@
 import { getConfig, log, reportError } from '../config.js'
 import { SyncError } from '../errors.js'
-import { createListeners, safeCallConfig } from '../listeners.js'
-import type { Adapter, Scope, Unsubscribe } from '../types.js'
+import type { Adapter, Scope, Unsubscribe } from '../types/index.js'
+import { createListeners, safeCallConfig } from '../utilities/listeners.js'
 
 /**
  * Wraps an existing adapter with BroadcastChannel support so that

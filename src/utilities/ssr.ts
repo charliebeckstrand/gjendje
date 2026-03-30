@@ -1,4 +1,4 @@
-import { RESOLVED } from './utils.js'
+import { RESOLVED } from './common.js'
 
 /**
  * True when running on the server (no window/document).

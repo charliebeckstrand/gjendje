@@ -1,6 +1,6 @@
-import { createListeners } from './listeners.js'
-import type { Listener, Unsubscribe } from './types.js'
-import { NOOP } from './utils.js'
+import type { Listener, Unsubscribe } from './types/index.js'
+import { NOOP } from './utilities/common.js'
+import { createListeners } from './utilities/listeners.js'
 
 // ---------------------------------------------------------------------------
 // Types

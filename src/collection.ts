@@ -1,8 +1,8 @@
 import { createBase } from './core.js'
-import { safeCall } from './listeners.js'
-import type { BaseInstance, Listener, StateOptions, Unsubscribe } from './types.js'
-import { isRecord } from './utils.js'
-import { addWatcher } from './watchers.js'
+import type { BaseInstance, Listener, StateOptions, Unsubscribe } from './types/index.js'
+import { isRecord } from './utilities/common.js'
+import { safeCall } from './utilities/listeners.js'
+import { addWatcher } from './utilities/watchers.js'
 
 type WatcherMap<T> = Map<PropertyKey, Set<Listener<T[]>>>
 

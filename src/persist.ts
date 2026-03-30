@@ -1,8 +1,8 @@
 import { getConfig, log } from './config.js'
 import { MigrationError, StorageReadError, ValidationError } from './errors.js'
-import { safeCallConfig } from './listeners.js'
-import type { Scope, StateOptions, VersionedValue } from './types.js'
-import { isRecord } from './utils.js'
+import type { Scope, StateOptions, VersionedValue } from './types/index.js'
+import { isRecord } from './utilities/common.js'
+import { safeCallConfig } from './utilities/listeners.js'
 
 function isVersionedValue(value: unknown): value is VersionedValue<unknown> {
 	if (!isRecord(value)) return false

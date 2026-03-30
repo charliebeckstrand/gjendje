@@ -1,4 +1,4 @@
-import type { Scope } from '../types.js'
+import type { Scope } from '../types/index.js'
 
 // ---------------------------------------------------------------------------
 // Types

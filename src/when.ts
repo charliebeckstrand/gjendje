@@ -1,6 +1,6 @@
 import { WhenTimeoutError } from './errors.js'
-import type { DepValues, ReadonlyInstance } from './types.js'
-import { subscribeAll, unsubscribeAll } from './utils.js'
+import type { DepValues, ReadonlyInstance } from './types/index.js'
+import { subscribeAll, unsubscribeAll } from './utilities/common.js'
 
 // ---------------------------------------------------------------------------
 // Types

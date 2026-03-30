@@ -2,8 +2,8 @@ import { batch } from './batch.js'
 import { createBase } from './core.js'
 import { ResourceError } from './errors.js'
 import { readonly } from './readonly.js'
-import type { DepValues, ReadonlyInstance } from './types.js'
-import { subscribeAll, unsubscribeAll } from './utils.js'
+import type { DepValues, ReadonlyInstance } from './types/index.js'
+import { subscribeAll, unsubscribeAll } from './utilities/common.js'
 
 // ---------------------------------------------------------------------------
 // Types

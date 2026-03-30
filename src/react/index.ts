@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react'
-import { isWritable } from '../is-writable.js'
-import type { BaseInstance, ReadonlyInstance } from '../types.js'
+import type { BaseInstance, ReadonlyInstance } from '../types/index.js'
+import { isWritable } from '../utilities/common.js'
 
 /**
  * Reactive result tuple for writable instances.

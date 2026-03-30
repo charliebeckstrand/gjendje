@@ -22,8 +22,6 @@ export type {
 	ValidationFailContext,
 } from './config.js'
 export { configure, resetConfig } from './config.js'
-export type { StateSnapshot } from './devtools.js'
-export { snapshot } from './devtools.js'
 export type { EffectHandle, EffectOptions } from './effect.js'
 export { effect } from './effect.js'
 // Enhancers — for extending state with custom capabilities
@@ -56,6 +54,8 @@ export type { StateFunction } from './shortcuts.js'
 export { state } from './shortcuts.js'
 export type { FromSignalOptions, Signal, SignalLike, WritableSignal } from './signal.js'
 export { fromSignal, toSignal } from './signal.js'
+export type { StateSnapshot } from './snapshot.js'
+export { snapshot } from './snapshot.js'
 export type {
 	Adapter,
 	BaseInstance,
@@ -69,7 +69,7 @@ export type {
 	StateInstance,
 	StateOptions,
 	Unsubscribe,
-} from './types.js'
-export { shallowEqual } from './utils.js'
+} from './types/index.js'
+export { shallowEqual } from './utilities/common.js'
 export type { WhenOptions } from './when.js'
 export { when } from './when.js'

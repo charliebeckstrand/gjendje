@@ -7,12 +7,24 @@ import { notify } from './batch.js'
 import type { GjendjeConfig } from './config.js'
 import { getConfig, log, PERSISTENT_SCOPES, reportError } from './config.js'
 import { HydrationError, InterceptorError, StorageWriteError } from './errors.js'
-import { fireConfigCallback, safeCall, safeCallChange, safeCallConfig } from './listeners.js'
 import { getRegistered, registerNew, scopedKey, unregisterByKey } from './registry.js'
-import { afterHydration, BROWSER_SCOPES, isServer } from './ssr.js'
-import type { Adapter, Listener, Scope, StateInstance, StateOptions, Unsubscribe } from './types.js'
-import { RESOLVED, shallowEqual } from './utils.js'
-import { addWatcher, notifyWatchers } from './watchers.js'
+import type {
+	Adapter,
+	Listener,
+	Scope,
+	StateInstance,
+	StateOptions,
+	Unsubscribe,
+} from './types/index.js'
+import { RESOLVED, shallowEqual } from './utilities/common.js'
+import {
+	fireConfigCallback,
+	safeCall,
+	safeCallChange,
+	safeCallConfig,
+} from './utilities/listeners.js'
+import { afterHydration, BROWSER_SCOPES, isServer } from './utilities/ssr.js'
+import { addWatcher, notifyWatchers } from './utilities/watchers.js'
 
 // ---------------------------------------------------------------------------
 // Lazy server adapter registration — avoids pulling node:async_hooks into

@@ -15,7 +15,7 @@
  */
 
 import { addConfigHook, removeConfigHook } from '../config.js'
-import type { Scope } from '../types.js'
+import type { Scope } from '../types/index.js'
 import {
 	disableLogger,
 	enableLogger,

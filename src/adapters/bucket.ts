@@ -1,8 +1,8 @@
 import { notify } from '../batch.js'
 import { getConfig, log, reportError } from '../config.js'
-import { createListeners, safeCallConfig } from '../listeners.js'
-import type { Adapter, BucketOptions, StateOptions } from '../types.js'
-import { shallowEqual } from '../utils.js'
+import type { Adapter, BucketOptions, StateOptions } from '../types/index.js'
+import { shallowEqual } from '../utilities/common.js'
+import { createListeners, safeCallConfig } from '../utilities/listeners.js'
 import { createStorageAdapter } from './storage.js'
 
 // ---------------------------------------------------------------------------
