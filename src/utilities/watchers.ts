@@ -1,6 +1,6 @@
+import type { Listener, Unsubscribe } from '../types.js'
+import { isRecord } from './common.js'
 import { safeCall } from './listeners.js'
-import type { Listener, Unsubscribe } from './types.js'
-import { isRecord } from './utils.js'
 
 /**
  * Register a listener for a specific key in a watcher map.

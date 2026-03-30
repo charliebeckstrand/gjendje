@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createListeners, safeCall, safeCallChange, safeCallConfig } from '../src/listeners.js'
+import {
+	createListeners,
+	safeCall,
+	safeCallChange,
+	safeCallConfig,
+} from '../src/utilities/listeners.js'
 
 describe('safeCall', () => {
 	it('invokes listener with value', () => {

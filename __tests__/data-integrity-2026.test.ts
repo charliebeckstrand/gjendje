@@ -3,7 +3,7 @@ import { batch, notify } from '../src/batch.js'
 import { configure, resetConfig } from '../src/config.js'
 import { readAndMigrate } from '../src/persist.js'
 import { state } from '../src/shortcuts.js'
-import { shallowEqual } from '../src/utils.js'
+import { shallowEqual } from '../src/utilities/common.js'
 import { makeStorage, setupBrowserEnv } from './helpers.js'
 
 // ---------------------------------------------------------------------------

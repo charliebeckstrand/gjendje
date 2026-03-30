@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { configure, resetConfig, state } from '../../src/index.js'
-import { afterHydration, isServer } from '../../src/ssr.js'
+import { afterHydration, isServer } from '../../src/utilities/ssr.js'
 import { makeStorage } from '../helpers.js'
 
 beforeEach(() => {

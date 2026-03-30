@@ -2,8 +2,8 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { computed, configure, readonly, resetConfig, select, state } from '../src/index.js'
-import { createOptimizedListeners } from '../src/listeners.js'
-import { afterHydration } from '../src/ssr.js'
+import { createOptimizedListeners } from '../src/utilities/listeners.js'
+import { afterHydration } from '../src/utilities/ssr.js'
 import { useGjendje } from '../src/vue/index.js'
 
 // ---------------------------------------------------------------------------

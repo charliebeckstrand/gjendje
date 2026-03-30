@@ -1,7 +1,7 @@
 import { notify } from './batch.js'
-import { createListeners } from './listeners.js'
 import type { ReadonlyInstance } from './types.js'
-import { createLazyDestroyed } from './utils.js'
+import { createLazyDestroyed } from './utilities/common.js'
+import { createListeners } from './utilities/listeners.js'
 
 // ---------------------------------------------------------------------------
 // Types

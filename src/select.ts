@@ -1,9 +1,9 @@
 import { notify } from './batch.js'
 import { reportError } from './config.js'
 import { ComputedError } from './errors.js'
-import { createOptimizedListeners } from './listeners.js'
 import type { Listener, ReadonlyInstance, Unsubscribe } from './types.js'
-import { createLazyDestroyed, NOOP, RESOLVED } from './utils.js'
+import { createLazyDestroyed, NOOP, RESOLVED } from './utilities/common.js'
+import { createOptimizedListeners } from './utilities/listeners.js'
 
 // ---------------------------------------------------------------------------
 // Types

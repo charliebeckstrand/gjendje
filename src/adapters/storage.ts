@@ -1,7 +1,6 @@
 import { notify } from '../batch.js'
 import { getConfig, log, reportError } from '../config.js'
 import { StorageWriteError } from '../errors.js'
-import { createListeners, safeCallConfig } from '../listeners.js'
 import {
 	mergeKeys,
 	pickKeys,
@@ -10,7 +9,8 @@ import {
 	wrapForStorage,
 } from '../persist.js'
 import type { Adapter, StateOptions } from '../types.js'
-import { RESOLVED } from '../utils.js'
+import { RESOLVED } from '../utilities/common.js'
+import { createListeners, safeCallConfig } from '../utilities/listeners.js'
 
 export function createStorageAdapter<T>(
 	storage: Storage,

@@ -62,4 +62,4 @@ export type {
 	StateOptions,
 	Unsubscribe,
 } from './types.js'
-export { shallowEqual } from './utils.js'
+export { shallowEqual } from './utilities/common.js'
